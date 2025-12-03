@@ -1,0 +1,16 @@
+-- AlterTable
+ALTER TABLE "Recommendation" ADD COLUMN     "brand" TEXT,
+ADD COLUMN     "color" TEXT,
+ADD COLUMN     "cuisine" TEXT,
+ADD COLUMN     "director" TEXT,
+ADD COLUMN     "duration" TEXT,
+ADD COLUMN     "genre" TEXT,
+ADD COLUMN     "hours" TEXT,
+ADD COLUMN     "location" TEXT,
+ADD COLUMN     "model" TEXT,
+ADD COLUMN     "price" TEXT,
+ADD COLUMN     "priceRange" TEXT,
+ADD COLUMN     "productType" TEXT,
+ADD COLUMN     "purchaseLink" TEXT,
+ADD COLUMN     "size" TEXT,
+ADD COLUMN     "year" INTEGER;

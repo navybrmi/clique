@@ -91,6 +91,29 @@ model Recommendation {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Restaurant-specific fields
+  cuisine     String?
+  location    String?
+  priceRange  String?
+  hours       String?
+
+  // Movie-specific fields
+  director    String?
+  year        Int?
+  genre       String?
+  duration    String?
+
+  // Fashion-specific fields
+  brand       String?
+  price       String?
+  size        String?
+  color       String?
+
+  // Household-specific fields
+  productType String?
+  model       String?
+  purchaseLink String?
+
   userId   String
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   comments Comment[]
