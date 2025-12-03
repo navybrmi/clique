@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Heart, MessageCircle } from "lucide-react"
 import { AddRecommendationDialog } from "@/components/add-recommendation-dialog"
+import { Header } from "@/components/header"
 
 type Recommendation = {
   id: string
@@ -46,16 +47,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black">
-      {/* Header */}
-      <header className="border-b bg-white/50 backdrop-blur-sm dark:bg-black/50">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <h1 className="text-2xl font-bold">Clique</h1>
-          <nav className="flex items-center gap-4">
-            <Button variant="ghost">Sign In</Button>
-            <Button>Get Started</Button>
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       {/* Hero Section */}
       <main className="container mx-auto px-4 py-16">

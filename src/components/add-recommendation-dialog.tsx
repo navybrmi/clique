@@ -65,6 +65,16 @@ export function AddRecommendationDialog({ onSuccess, trigger }: AddRecommendatio
     setLoading(true)
 
     try {
+      // Get current session
+      const sessionRes = await fetch('/api/auth/session')
+      const session = await sessionRes.json()
+      
+      if (!session?.user?.id) {
+        alert('Please sign in to create recommendations')
+        setLoading(false)
+        return
+      }
+
       const payload: Record<string, any> = {
         title: formData.title,
         description: formData.description || null,
@@ -72,7 +82,7 @@ export function AddRecommendationDialog({ onSuccess, trigger }: AddRecommendatio
         link: formData.link || null,
         imageUrl: formData.imageUrl || null,
         rating: formData.rating ? parseInt(formData.rating) : null,
-        userId: "demo-user-1",
+        userId: session.user.id,
       }
 
       // Add category-specific fields

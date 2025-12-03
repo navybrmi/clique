@@ -18,17 +18,19 @@ A social web application for sharing recommendations among friends. Discover and
 ## Features
 
 ### ✅ Implemented
+- 🔐 User authentication with GitHub and Google OAuth
 - 📝 Create and share recommendations via dialog form
 - 🔍 Browse recommendations on homepage with interactive cards
 - 📄 View detailed recommendation pages with comments and likes
 - 🏷️ Category-based organization (Restaurant, Movie, Fashion, Household, Other)
+- 📊 Category-specific fields (cuisine, director, brand, etc.)
 - ⭐ Rating system (0-10 scale)
 - 🔗 Link and image URL support for recommendations
 - 📡 RESTful API routes for CRUD operations
 - 🔄 Auto-refresh after creating new recommendations
+- 👤 User menu with profile dropdown
 
 ### 🚧 Coming Soon
-- 🔐 User authentication and sign-in flow
 - 💬 Add comments to recommendations
 - ❤️ Like/unlike functionality
 - 🖼️ Image upload capability
@@ -62,8 +64,16 @@ Create a `.env` file in the root directory:
 ```env
 DATABASE_URL="postgresql://user:password@localhost:5432/clique?schema=public"
 NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-secret-key-here"
+AUTH_SECRET="your-secret-key-here"
+
+# OAuth Providers (see AUTH_SETUP.md for setup instructions)
+GITHUB_ID="your-github-client-id"
+GITHUB_SECRET="your-github-client-secret"
+GOOGLE_ID="your-google-client-id"
+GOOGLE_SECRET="your-google-client-secret"
 ```
+
+**Note**: For authentication setup, see [AUTH_SETUP.md](./AUTH_SETUP.md) for detailed OAuth configuration instructions.
 
 4. Set up the database:
 ```bash
