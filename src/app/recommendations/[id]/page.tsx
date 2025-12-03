@@ -42,7 +42,7 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
         },
       },
     },
-  })
+  }) as any
 
   if (!recommendation) {
     notFound()
@@ -335,7 +335,7 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
               </CardHeader>
               <CardContent className="space-y-4">
                 {recommendation.comments.length > 0 ? (
-                  recommendation.comments.map((comment) => (
+                  recommendation.comments.map((comment: any) => (
                     <div key={comment.id} className="flex gap-3">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={comment.user.image || undefined} />
