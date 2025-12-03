@@ -16,7 +16,7 @@ export async function GET() {
         },
         _count: {
           select: {
-            likes: true,
+            upvotes: true,
             comments: true,
           },
         },
@@ -71,6 +71,22 @@ export async function POST(request: NextRequest) {
         imageUrl,
         rating: rating || 0,
         userId,
+        // Category-specific fields
+        cuisine: body.cuisine || null,
+        location: body.location || null,
+        priceRange: body.priceRange || null,
+        hours: body.hours || null,
+        director: body.director || null,
+        year: body.year || null,
+        genre: body.genre || null,
+        duration: body.duration || null,
+        movieAttributes: body.movieAttributes || [],
+        brand: body.brand || null,
+        price: body.price || null,
+        size: body.size || null,
+        color: body.color || null,
+        productType: body.productType || null,
+        model: body.model || null,
       },
       include: {
         user: {
@@ -82,7 +98,7 @@ export async function POST(request: NextRequest) {
         },
         _count: {
           select: {
-            likes: true,
+            upvotes: true,
             comments: true,
           },
         },

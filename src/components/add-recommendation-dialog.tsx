@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Plus } from "lucide-react"
+import { Plus, Star } from "lucide-react"
 
 const categories = ["RESTAURANT", "MOVIE", "FASHION", "HOUSEHOLD", "OTHER"]
 
@@ -37,9 +37,12 @@ export function AddRecommendationDialog({ onSuccess, trigger, editMode = false, 
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [movieSuggestions, setMovieSuggestions] = useState<any[]>([])
+  const [restaurantSuggestions, setRestaurantSuggestions] = useState<any[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [searchingMovies, setSearchingMovies] = useState(false)
+  const [searchingRestaurants, setSearchingRestaurants] = useState(false)
   const debounceTimer = useRef<NodeJS.Timeout | null>(null)
+  const [movieAttributes, setMovieAttributes] = useState<string[]>([])
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -92,10 +95,13 @@ export function AddRecommendationDialog({ onSuccess, trigger, editMode = false, 
         productType: initialData.productType || "",
         model: initialData.model || "",
       })
+      if (initialData.movieAttributes) {
+        setMovieAttributes(initialData.movieAttributes)
+      }
     }
   }, [editMode, initialData])
 
-  const handleSubmit = async (e: React.FormEvent) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
@@ -135,6 +141,7 @@ export function AddRecommendationDialog({ onSuccess, trigger, editMode = false, 
         payload.year = formData.year ? parseInt(formData.year) : null
         payload.genre = formData.genre || null
         payload.duration = formData.duration || null
+        payload.movieAttributes = movieAttributes
       } else if (formData.category === "FASHION") {
         payload.brand = formData.brand || null
         payload.price = formData.price || null
@@ -186,6 +193,7 @@ export function AddRecommendationDialog({ onSuccess, trigger, editMode = false, 
           productType: "",
           model: "",
         })
+        setMovieAttributes([])
       }
       
       setOpen(false)
@@ -275,6 +283,94 @@ export function AddRecommendationDialog({ onSuccess, trigger, editMode = false, 
     }
   }
 
+  // Search restaurants from Yelp
+  const searchRestaurants = async (query: string) => {
+    if (!query || query.trim().length < 2) {
+      setRestaurantSuggestions([])
+      setShowSuggestions(false)
+      return
+    }
+
+    setSearchingRestaurants(true)
+    try {
+      const response = await fetch(`/api/restaurants/search?query=${encodeURIComponent(query)}`)
+      const data = await response.json()
+      setRestaurantSuggestions(data.results || [])
+      setShowSuggestions(true)
+    } catch (error) {
+      console.error("Error searching restaurants:", error)
+      setRestaurantSuggestions([])
+    } finally {
+      setSearchingRestaurants(false)
+    }
+  }
+
+  // Handle restaurant title input change with debouncing
+  const handleRestaurantTitleChange = (value: string) => {
+    setFormData({ ...formData, title: value })
+
+    // Only search if category is RESTAURANT
+    if (formData.category !== "RESTAURANT") return
+
+    // Clear existing timer
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current)
+    }
+
+    // Set new timer
+    debounceTimer.current = setTimeout(() => {
+      searchRestaurants(value)
+    }, 300) // 300ms debounce
+  }
+
+  // Handle restaurant selection from suggestions
+  const handleRestaurantSelect = async (restaurant: any) => {
+    setShowSuggestions(false)
+    setRestaurantSuggestions([])
+    setSearchingRestaurants(true)
+
+    try {
+      // Fetch detailed restaurant information
+      const response = await fetch(`/api/restaurants/${restaurant.id}`)
+      const details = await response.json()
+
+      setFormData({
+        ...formData,
+        title: details.name,
+        cuisine: details.cuisine || "",
+        location: details.location || "",
+        priceRange: details.priceRange || "",
+        hours: details.hours || "",
+        imageUrl: details.imageUrl || formData.imageUrl,
+        link: details.url || formData.link,
+        rating: details.rating?.toString() || formData.rating,
+      })
+    } catch (error) {
+      console.error("Error fetching restaurant details:", error)
+      // Just use the basic info from search
+      setFormData({
+        ...formData,
+        title: restaurant.name,
+        location: restaurant.location || "",
+        cuisine: restaurant.categories || "",
+        priceRange: restaurant.price || "",
+      })
+    } finally {
+      setSearchingRestaurants(false)
+    }
+  }
+
+  // Handle title change based on category
+  const handleTitleChange = (value: string) => {
+    if (formData.category === "MOVIE") {
+      handleMovieTitleChange(value)
+    } else if (formData.category === "RESTAURANT") {
+      handleRestaurantTitleChange(value)
+    } else {
+      setFormData({ ...formData, title: value })
+    }
+  }
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -334,9 +430,15 @@ export function AddRecommendationDialog({ onSuccess, trigger, editMode = false, 
               <div className="relative">
                 <Input
                   id="title"
-                  placeholder={formData.category === "MOVIE" ? "Start typing a movie name..." : "e.g., The Best Pizza in Town"}
+                  placeholder={
+                    formData.category === "MOVIE" 
+                      ? "Start typing a movie name..." 
+                      : formData.category === "RESTAURANT"
+                      ? "Start typing a restaurant name..."
+                      : "e.g., The Best Pizza in Town"
+                  }
                   value={formData.title}
-                  onChange={(e) => handleMovieTitleChange(e.target.value)}
+                  onChange={(e) => handleTitleChange(e.target.value)}
                   onFocus={() => {
                     if (formData.category === "MOVIE" && movieSuggestions.length > 0) {
                       setShowSuggestions(true)
@@ -345,7 +447,7 @@ export function AddRecommendationDialog({ onSuccess, trigger, editMode = false, 
                   required
                   autoComplete="off"
                 />
-                {searchingMovies && (
+                {(searchingMovies || searchingRestaurants) && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900"></div>
                   </div>
@@ -376,6 +478,41 @@ export function AddRecommendationDialog({ onSuccess, trigger, editMode = false, 
                     ))}
                   </div>
                 )}
+                {formData.category === "RESTAURANT" && restaurantSuggestions.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full rounded-md border bg-white shadow-lg max-h-60 overflow-auto">
+                    {restaurantSuggestions.map((restaurant) => (
+                      <button
+                        key={restaurant.id}
+                        type="button"
+                        className="flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-zinc-100 transition-colors"
+                        onClick={() => handleRestaurantSelect(restaurant)}
+                      >
+                        {restaurant.imageUrl && (
+                          <img
+                            src={restaurant.imageUrl}
+                            alt={restaurant.name}
+                            className="w-10 h-10 object-cover rounded"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{restaurant.name}</p>
+                          {restaurant.location && (
+                            <p className="text-xs text-zinc-500 truncate">{restaurant.location}</p>
+                          )}
+                          {restaurant.categories && (
+                            <p className="text-xs text-zinc-400 truncate">{restaurant.categories}</p>
+                          )}
+                        </div>
+                        {restaurant.rating && (
+                          <div className="flex items-center gap-1 text-xs text-zinc-600">
+                            <span>⭐</span>
+                            <span>{restaurant.rating}</span>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -391,16 +528,25 @@ export function AddRecommendationDialog({ onSuccess, trigger, editMode = false, 
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="rating">Rating (0-10)</Label>
-              <Input
-                id="rating"
-                type="number"
-                min="0"
-                max="10"
-                placeholder="Rate it from 0 to 10"
-                value={formData.rating}
-                onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
-              />
+              <Label htmlFor="rating">Rating</Label>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, rating: star.toString() })}
+                    className="focus:outline-none transition-colors"
+                  >
+                    <Star
+                      className={`h-6 w-6 ${
+                        formData.rating && parseInt(formData.rating) >= star
+                          ? 'fill-yellow-400 text-yellow-400 drop-shadow-[0_2px_4px_rgba(234,179,8,0.6)]'
+                          : 'text-gray-300'
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="grid gap-2">
@@ -511,6 +657,63 @@ export function AddRecommendationDialog({ onSuccess, trigger, editMode = false, 
                     value={formData.duration}
                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                   />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Why Recommend This Movie?</Label>
+                  <p className="text-sm text-gray-500 mb-2">Select characteristics that apply:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      "Great plot twists",
+                      "Complex narrative",
+                      "Character-driven",
+                      "Fast-paced",
+                      "Slow burn",
+                      "Non-linear storytelling",
+                      "Based on true story",
+                      "Strong dialogue",
+                      "Unpredictable ending",
+                      "Beautiful cinematography",
+                      "Amazing visuals/CGI",
+                      "Great soundtrack/score",
+                      "Excellent acting performances",
+                      "Award-winning",
+                      "Innovative/Original",
+                      "Well-directed",
+                      "Binge-worthy",
+                      "Rewatchable",
+                      "Great for date night",
+                      "Perfect for group watching",
+                      "Good for kids",
+                      "Educational",
+                      "Escapist entertainment",
+                      "Strong female lead",
+                      "Ensemble cast",
+                      "Underrated gem",
+                      "Cult classic",
+                      "Franchise starter",
+                      "Standalone masterpiece",
+                      "Great world-building"
+                    ].map((attribute) => (
+                      <label
+                        key={attribute}
+                        className="flex items-center space-x-2 p-2 rounded border cursor-pointer hover:bg-gray-50 transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={movieAttributes.includes(attribute)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setMovieAttributes([...movieAttributes, attribute])
+                            } else {
+                              setMovieAttributes(movieAttributes.filter(a => a !== attribute))
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-gray-300"
+                        />
+                        <span className="text-sm">{attribute}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </>
             )}

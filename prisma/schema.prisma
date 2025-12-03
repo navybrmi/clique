@@ -27,7 +27,7 @@ model User {
   sessions      Session[]
   recommendations Recommendation[]
   comments      Comment[]
-  likes         Like[]
+  upvotes       UpVote[]
 }
 
 // NextAuth.js models
@@ -102,6 +102,7 @@ model Recommendation {
   year        Int?
   genre       String?
   duration    String?
+  movieAttributes String[] @default([])
 
   // Fashion-specific fields
   brand       String?
@@ -117,7 +118,7 @@ model Recommendation {
   userId   String
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   comments Comment[]
-  likes    Like[]
+  upvotes  UpVote[]
 
   @@index([userId])
   @@index([category])
@@ -140,8 +141,8 @@ model Comment {
   @@index([recommendationId])
 }
 
-// Like model
-model Like {
+// UpVote model
+model UpVote {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
 

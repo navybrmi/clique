@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Heart, MessageCircle, Share2, ArrowLeft, ExternalLink, MapPin, Clock, Star, Calendar, Film, ShoppingBag, Package } from "lucide-react"
+import { ArrowUp, MessageCircle, Share2, ArrowLeft, ExternalLink, MapPin, Clock, Star, Calendar, Film, ShoppingBag, Package } from "lucide-react"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
@@ -39,7 +39,7 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
       },
       _count: {
         select: {
-          likes: true,
+          upvotes: true,
           comments: true,
         },
       },
@@ -77,24 +77,23 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
             <div>
               <div className="mb-4 flex items-center gap-3">
                 <Badge className="text-sm">{recommendation.category}</Badge>
-                <div className="flex items-center gap-1 text-sm">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-semibold">{recommendation.rating || 0}/10</span>
+                <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                      <Star
+                        key={star}
+                        className={`h-4 w-4 ${
+                          (recommendation.rating || 0) >= star
+                            ? 'fill-yellow-400 text-yellow-400 drop-shadow-[0_1px_3px_rgba(234,179,8,0.6)]'
+                            : 'text-gray-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm font-semibold ml-1">{recommendation.rating || 0}/10</span>
                 </div>
               </div>
               <h1 className="text-4xl font-bold tracking-tight">{recommendation.title}</h1>
-            </div>
-
-            {/* User Info */}
-            <div className="flex items-center gap-3">
-              <Avatar>
-                <AvatarImage src={recommendation.user.image || undefined} />
-                <AvatarFallback>{recommendation.user.name?.[0] || '?'}</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-medium">Recommended by {recommendation.user.name || 'Anonymous'}</p>
-                <p className="text-sm text-zinc-500">{new Date(recommendation.createdAt).toLocaleDateString()}</p>
-              </div>
             </div>
 
             {/* Category-Specific Details */}
@@ -145,49 +144,92 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
             )}
 
             {recommendation.category === 'MOVIE' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recommendation Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {recommendation.director && (
-                    <div className="flex items-start gap-3">
-                      <Film className="h-5 w-5 text-zinc-500 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-zinc-500">Director</p>
-                        <p className="text-base">{recommendation.director}</p>
+              <>
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <CardTitle>Recommendation Details</CardTitle>
+                      <div className="text-right">
+                        <p className="text-sm text-zinc-600">by <span className="font-semibold">{recommendation.user.name || 'Anonymous'}</span></p>
+                        <p className="text-xs text-zinc-500">{new Date(recommendation.createdAt).toLocaleDateString()}</p>
                       </div>
                     </div>
-                  )}
-                  {recommendation.year && (
-                    <div className="flex items-start gap-3">
-                      <Calendar className="h-5 w-5 text-zinc-500 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-zinc-500">Year</p>
-                        <p className="text-base">{recommendation.year}</p>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {recommendation.movieAttributes && recommendation.movieAttributes.length > 0 && (
+                      <div className="flex items-start gap-3">
+                        <Star className="h-5 w-5 text-zinc-500 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-zinc-500 mb-2">Why This Movie?</p>
+                          <div className="flex flex-wrap gap-2">
+                            {recommendation.movieAttributes.map((attr: string) => (
+                              <Badge key={attr} variant="secondary" className="text-xs">
+                                {attr}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {recommendation.genre && (
-                    <div className="flex items-start gap-3">
-                      <Package className="h-5 w-5 text-zinc-500 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-zinc-500">Genre</p>
-                        <p className="text-base">{recommendation.genre}</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Description */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>About</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                      {recommendation.description}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Movie Info</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {recommendation.director && (
+                      <div className="flex items-start gap-3">
+                        <Film className="h-5 w-5 text-zinc-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-zinc-500">Director</p>
+                          <p className="text-base">{recommendation.director}</p>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {recommendation.duration && (
-                    <div className="flex items-start gap-3">
-                      <Clock className="h-5 w-5 text-zinc-500 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-zinc-500">Duration</p>
-                        <p className="text-base">{recommendation.duration}</p>
+                    )}
+                    {recommendation.year && (
+                      <div className="flex items-start gap-3">
+                        <Calendar className="h-5 w-5 text-zinc-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-zinc-500">Year</p>
+                          <p className="text-base">{recommendation.year}</p>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                    )}
+                    {recommendation.genre && (
+                      <div className="flex items-start gap-3">
+                        <Package className="h-5 w-5 text-zinc-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-zinc-500">Genre</p>
+                          <p className="text-base">{recommendation.genre}</p>
+                        </div>
+                      </div>
+                    )}
+                    {recommendation.duration && (
+                      <div className="flex items-start gap-3">
+                        <Clock className="h-5 w-5 text-zinc-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-zinc-500">Duration</p>
+                          <p className="text-base">{recommendation.duration}</p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
             )}
 
             {recommendation.category === 'FASHION' && (
@@ -282,17 +324,19 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
               </Card>
             )}
 
-            {/* Description */}
-            <Card>
-              <CardHeader>
-                <CardTitle>About</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                  {recommendation.description}
-                </p>
-              </CardContent>
-            </Card>
+            {/* Description - only show for non-MOVIE categories */}
+            {recommendation.category !== 'MOVIE' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>About</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                    {recommendation.description}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Comments Section */}
             <Card>
@@ -330,46 +374,18 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
             <Card>
               <CardContent className="pt-6 space-y-3">
                 <EditRecommendationButton recommendation={recommendation} />
-                <Button className="w-full gap-2" size="lg">
-                  <Heart className="h-5 w-5" />
-                  Like ({recommendation._count.likes})
-                </Button>
-                <Button variant="outline" className="w-full gap-2" size="lg">
-                  <MessageCircle className="h-5 w-5" />
-                  Comment ({recommendation._count.comments})
-                </Button>
-                <Button variant="outline" className="w-full gap-2" size="lg">
-                  <Share2 className="h-5 w-5" />
-                  Share
-                </Button>
-                {recommendation.link && (
-                  <Button variant="secondary" className="w-full gap-2" size="lg" asChild>
-                    <a href={recommendation.link} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-5 w-5" />
-                      Visit Link
-                    </a>
+                <div className="flex items-start justify-around pt-2">
+                  <Button variant="ghost" size="icon" className="flex flex-col h-auto py-2">
+                    <ArrowUp className="h-5 w-5" />
+                    <span className="text-xs mt-1">{recommendation._count.upvotes}</span>
                   </Button>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Stats Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Statistics</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-zinc-600">Rating</span>
-                  <span className="font-semibold">{recommendation.rating || 0}/10</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-zinc-600">Likes</span>
-                  <span className="font-semibold">{recommendation._count.likes}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-zinc-600">Comments</span>
-                  <span className="font-semibold">{recommendation._count.comments}</span>
+                  <Button variant="ghost" size="icon" className="flex flex-col h-auto py-2">
+                    <MessageCircle className="h-5 w-5" />
+                    <span className="text-xs mt-1">{recommendation._count.comments}</span>
+                  </Button>
+                  <Button variant="ghost" size="icon" className="py-2">
+                    <Share2 className="h-5 w-5" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>

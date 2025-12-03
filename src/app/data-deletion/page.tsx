@@ -16,7 +16,7 @@ export default function DataDeletionPage() {
         <li>Your profile picture</li>
         <li>Your Facebook user ID</li>
         <li>Recommendations you create</li>
-        <li>Comments and likes you make</li>
+        <li>Comments and upvotes you make</li>
       </ul>
 
       <h2>How to Request Data Deletion</h2>

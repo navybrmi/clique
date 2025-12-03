@@ -18,7 +18,7 @@ export interface RecommendationWithUser {
     image: string | null
   }
   _count: {
-    likes: number
+    upvotes: number
     comments: number
   }
 }

@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Heart, MessageCircle } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { ArrowUp, MessageCircle, Star } from "lucide-react"
 import { AddRecommendationDialog } from "@/components/add-recommendation-dialog"
 import { Header } from "@/components/header"
 
@@ -14,11 +16,17 @@ type Recommendation = {
   description: string | null
   category: string
   rating: number | null
+  imageUrl: string | null
+  director?: string | null
+  year?: number | null
+  genre?: string | null
+  duration?: string | null
+  movieAttributes?: string[]
   user: {
     name: string | null
   }
   _count: {
-    likes: number
+    upvotes: number
     comments: number
   }
 }
@@ -91,21 +99,69 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {recommendations.map((rec) => (
               <Link key={rec.id} href={`/recommendations/${rec.id}`}>
                 <Card className="overflow-hidden transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer">
+                  {(rec.category === 'MOVIE' || rec.category === 'RESTAURANT') && rec.imageUrl && (
+                    <div className="relative h-48 w-full">
+                      <Image
+                        src={rec.imageUrl}
+                        alt={rec.title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      />
+                    </div>
+                  )}
                   <CardHeader>
-                    <div className="mb-2 flex items-center justify-between">
+                    <div className="mb-2 flex items-start justify-between gap-2 flex-wrap">
                       <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium dark:bg-zinc-800">
                         {rec.category}
                       </span>
-                      <div className="flex items-center gap-1 text-sm text-zinc-500">
-                        ⭐ {rec.rating || 0}
+                      <div className="flex items-center gap-1 min-w-fit">
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                            <Star
+                              key={star}
+                              className={`h-3 w-3 flex-shrink-0 ${
+                                (rec.rating || 0) >= star
+                                  ? 'fill-yellow-400 text-yellow-400 drop-shadow-[0_1px_2px_rgba(234,179,8,0.5)]'
+                                  : 'text-gray-300'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs text-zinc-500 ml-1 whitespace-nowrap">{rec.rating || 0}/10</span>
                       </div>
                     </div>
                     <CardTitle>{rec.title}</CardTitle>
                     <CardDescription>{rec.description}</CardDescription>
+                    {rec.category === 'MOVIE' && (
+                      <div className="mt-3 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+                        {rec.director && <p>Director: {rec.director}</p>}
+                        {rec.year && <p>Year: {rec.year}</p>}
+                        {rec.genre && <p>Genre: {rec.genre}</p>}
+                        {rec.duration && <p>Duration: {rec.duration}</p>}
+                        {rec.movieAttributes && rec.movieAttributes.length > 0 && (
+                          <div className="mt-2">
+                            <p className="text-xs font-medium mb-1">Why watch:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {rec.movieAttributes.slice(0, 3).map((attr) => (
+                                <Badge key={attr} variant="secondary" className="text-xs px-2 py-0">
+                                  {attr}
+                                </Badge>
+                              ))}
+                              {rec.movieAttributes.length > 3 && (
+                                <Badge variant="secondary" className="text-xs px-2 py-0">
+                                  +{rec.movieAttributes.length - 3} more
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between text-sm text-zinc-500">
@@ -114,11 +170,11 @@ export default function Home() {
                           className="flex items-center gap-1 transition-colors hover:text-red-500"
                           onClick={(e) => {
                             e.preventDefault()
-                            // Like functionality will be implemented later
+                            // UpVote functionality will be implemented later
                           }}
                         >
-                          <Heart className="h-4 w-4" />
-                          {rec._count.likes}
+                          <ArrowUp className="h-4 w-4" />
+                          {rec._count.upvotes}
                         </button>
                         <button 
                           className="flex items-center gap-1 transition-colors hover:text-blue-500"

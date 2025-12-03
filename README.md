@@ -75,6 +75,9 @@ GOOGLE_SECRET="your-google-client-secret"
 
 # TMDB API for movie search (get your free API key at https://www.themoviedb.org/settings/api)
 TMDB_API_KEY="your-tmdb-api-key"
+
+# Google Places API for restaurant search (get your API key at https://console.cloud.google.com/apis/credentials)
+GOOGLE_PLACES_API_KEY="your-google-places-api-key"
 ```
 
 **Note**: For authentication setup, see [AUTH_SETUP.md](./AUTH_SETUP.md) for detailed OAuth configuration instructions.
@@ -84,6 +87,14 @@ TMDB_API_KEY="your-tmdb-api-key"
 2. Go to [API Settings](https://www.themoviedb.org/settings/api)
 3. Request an API key (it's free for non-commercial use)
 4. Add the API key to your `.env` file as `TMDB_API_KEY`
+
+**To enable restaurant typeahead search:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the **Places API** in the API Library
+4. Go to **Credentials** and create an API key
+5. (Recommended) Restrict the API key to Places API only
+6. Add the API key to your `.env` file as `GOOGLE_PLACES_API_KEY`
 
 4. Set up the database:
 ```bash

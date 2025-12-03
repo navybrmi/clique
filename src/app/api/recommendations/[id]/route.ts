@@ -34,7 +34,7 @@ export async function GET(
             createdAt: "desc",
           },
         },
-        likes: {
+        upvotes: {
           include: {
             user: {
               select: {
@@ -46,7 +46,7 @@ export async function GET(
         },
         _count: {
           select: {
-            likes: true,
+            upvotes: true,
             comments: true,
           },
         },
@@ -118,6 +118,7 @@ export async function PUT(
         year: body.year ? parseInt(body.year) : null,
         genre: body.genre || null,
         duration: body.duration || null,
+        movieAttributes: body.movieAttributes || [],
         brand: body.brand || null,
         price: body.price || null,
         size: body.size || null,
