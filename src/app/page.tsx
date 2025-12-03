@@ -30,13 +30,25 @@ export default function Home() {
   const fetchRecommendations = () => {
     setLoading(true)
     fetch('/api/recommendations')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`)
+        }
+        return res.json()
+      })
       .then(data => {
-        setRecommendations(data)
+        // Ensure data is an array
+        if (Array.isArray(data)) {
+          setRecommendations(data)
+        } else {
+          console.error('Expected array, got:', data)
+          setRecommendations([])
+        }
         setLoading(false)
       })
       .catch(error => {
         console.error('Error fetching recommendations:', error)
+        setRecommendations([])
         setLoading(false)
       })
   }

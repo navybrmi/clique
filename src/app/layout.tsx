@@ -27,7 +27,20 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <div className="min-h-screen flex flex-col">
+          <main className="flex-1">
+            {children}
+          </main>
+          <footer className="border-t text-sm text-zinc-600 dark:text-zinc-400">
+            <div className="mx-auto max-w-5xl px-4 py-4 flex items-center justify-between">
+              <span>© {new Date().getFullYear()} Clique</span>
+              <div className="flex gap-4">
+                <a href="/privacy" className="hover:underline">Privacy</a>
+                <a href="/terms" className="hover:underline">Terms</a>
+              </div>
+            </div>
+          </footer>
+        </div>
       </body>
     </html>
   );

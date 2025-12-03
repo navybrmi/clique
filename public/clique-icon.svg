@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Clique icon">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22C55E"/>
+      <stop offset="100%" stop-color="#16A34A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="240" fill="url(#g)"/>
+  <g fill="white">
+    <!-- Stylized C -->
+    <path d="M672 704c-160 0-288-128-288-288s128-288 288-288c60 0 116 18 162 49l-64 96c-27-18-60-29-98-29-106 0-192 86-192 192s86 192 192 192c38 0 71-11 98-29l64 96c-46 31-102 49-162 49z"/>
+    <!-- Dot to hint a clique node -->
+    <circle cx="320" cy="512" r="56" fill="white" opacity="0.9"/>
+  </g>
+</svg>
