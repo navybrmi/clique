@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -28,11 +28,18 @@ const categories = ["RESTAURANT", "MOVIE", "FASHION", "HOUSEHOLD", "OTHER"]
 interface AddRecommendationDialogProps {
   onSuccess?: () => void
   trigger?: React.ReactNode
+  editMode?: boolean
+  recommendationId?: string
+  initialData?: any
 }
 
-export function AddRecommendationDialog({ onSuccess, trigger }: AddRecommendationDialogProps) {
+export function AddRecommendationDialog({ onSuccess, trigger, editMode = false, recommendationId, initialData }: AddRecommendationDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [movieSuggestions, setMovieSuggestions] = useState<any[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [searchingMovies, setSearchingMovies] = useState(false)
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null)
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -60,7 +67,35 @@ export function AddRecommendationDialog({ onSuccess, trigger }: AddRecommendatio
     model: "",
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Load initial data when in edit mode
+  useEffect(() => {
+    if (editMode && initialData) {
+      setFormData({
+        title: initialData.title || "",
+        description: initialData.description || "",
+        category: initialData.category || "",
+        link: initialData.link || "",
+        imageUrl: initialData.imageUrl || "",
+        rating: initialData.rating?.toString() || "",
+        cuisine: initialData.cuisine || "",
+        location: initialData.location || "",
+        priceRange: initialData.priceRange || "",
+        hours: initialData.hours || "",
+        director: initialData.director || "",
+        year: initialData.year?.toString() || "",
+        genre: initialData.genre || "",
+        duration: initialData.duration || "",
+        brand: initialData.brand || "",
+        price: initialData.price || "",
+        size: initialData.size || "",
+        color: initialData.color || "",
+        productType: initialData.productType || "",
+        model: initialData.model || "",
+      })
+    }
+  }, [editMode, initialData])
+
+  const handleSubmit = async (e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
 
@@ -82,7 +117,11 @@ export function AddRecommendationDialog({ onSuccess, trigger }: AddRecommendatio
         link: formData.link || null,
         imageUrl: formData.imageUrl || null,
         rating: formData.rating ? parseInt(formData.rating) : null,
-        userId: session.user.id,
+      }
+
+      // Only include userId for create, not update
+      if (!editMode) {
+        payload.userId = session.user.id
       }
 
       // Add category-specific fields
@@ -108,8 +147,11 @@ export function AddRecommendationDialog({ onSuccess, trigger }: AddRecommendatio
         payload.price = formData.price || null
       }
 
-      const response = await fetch("/api/recommendations", {
-        method: "POST",
+      const url = editMode ? `/api/recommendations/${recommendationId}` : "/api/recommendations"
+      const method = editMode ? "PUT" : "POST"
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
@@ -117,32 +159,34 @@ export function AddRecommendationDialog({ onSuccess, trigger }: AddRecommendatio
       })
 
       if (!response.ok) {
-        throw new Error("Failed to create recommendation")
+        throw new Error(editMode ? "Failed to update recommendation" : "Failed to create recommendation")
       }
 
-      // Reset form
-      setFormData({
-        title: "",
-        description: "",
-        category: "",
-        link: "",
-        imageUrl: "",
-        rating: "",
-        cuisine: "",
-        location: "",
-        priceRange: "",
-        hours: "",
-        director: "",
-        year: "",
-        genre: "",
-        duration: "",
-        brand: "",
-        price: "",
-        size: "",
-        color: "",
-        productType: "",
-        model: "",
-      })
+      // Reset form only in create mode
+      if (!editMode) {
+        setFormData({
+          title: "",
+          description: "",
+          category: "",
+          link: "",
+          imageUrl: "",
+          rating: "",
+          cuisine: "",
+          location: "",
+          priceRange: "",
+          hours: "",
+          director: "",
+          year: "",
+          genre: "",
+          duration: "",
+          brand: "",
+          price: "",
+          size: "",
+          color: "",
+          productType: "",
+          model: "",
+        })
+      }
       
       setOpen(false)
       
@@ -150,12 +194,95 @@ export function AddRecommendationDialog({ onSuccess, trigger }: AddRecommendatio
         onSuccess()
       }
     } catch (error) {
-      console.error("Error creating recommendation:", error)
+      console.error(editMode ? "Error updating recommendation:" : "Error creating recommendation:", error)
       alert("Failed to create recommendation. Please try again.")
     } finally {
       setLoading(false)
     }
   }
+
+  // Search movies from TMDB
+  const searchMovies = async (query: string) => {
+    if (!query || query.trim().length < 2) {
+      setMovieSuggestions([])
+      setShowSuggestions(false)
+      return
+    }
+
+    setSearchingMovies(true)
+    try {
+      const response = await fetch(`/api/movies/search?query=${encodeURIComponent(query)}`)
+      const data = await response.json()
+      setMovieSuggestions(data.results || [])
+      setShowSuggestions(true)
+    } catch (error) {
+      console.error("Error searching movies:", error)
+      setMovieSuggestions([])
+    } finally {
+      setSearchingMovies(false)
+    }
+  }
+
+  // Handle movie title input change with debouncing
+  const handleMovieTitleChange = (value: string) => {
+    setFormData({ ...formData, title: value })
+
+    // Only search if category is MOVIE
+    if (formData.category !== "MOVIE") return
+
+    // Clear existing timer
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current)
+    }
+
+    // Set new timer
+    debounceTimer.current = setTimeout(() => {
+      searchMovies(value)
+    }, 300) // 300ms debounce
+  }
+
+  // Handle movie selection from suggestions
+  const handleMovieSelect = async (movie: any) => {
+    setShowSuggestions(false)
+    setSearchingMovies(true)
+
+    try {
+      // Fetch detailed movie information
+      const response = await fetch(`/api/movies/${movie.id}`)
+      const details = await response.json()
+
+      setFormData({
+        ...formData,
+        title: details.title,
+        director: details.director || "",
+        year: details.year?.toString() || "",
+        genre: details.genre || "",
+        duration: details.duration || "",
+        imageUrl: details.posterPath || formData.imageUrl,
+        description: details.overview || formData.description,
+        link: details.imdbLink || formData.link,
+      })
+    } catch (error) {
+      console.error("Error fetching movie details:", error)
+      // Just use the basic info from search
+      setFormData({
+        ...formData,
+        title: movie.title,
+        year: movie.year?.toString() || "",
+      })
+    } finally {
+      setSearchingMovies(false)
+    }
+  }
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current)
+      }
+    }
+  }, [])
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -170,26 +297,13 @@ export function AddRecommendationDialog({ onSuccess, trigger }: AddRecommendatio
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Add Recommendation</DialogTitle>
+            <DialogTitle>{editMode ? "Edit Recommendation" : "Add Recommendation"}</DialogTitle>
             <DialogDescription>
-              Share something you love with your friends. Fill in the details below.
+              {editMode ? "Update your recommendation details below." : "Share something you love with your friends. Fill in the details below."}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            {/* Basic Fields */}
-            <div className="grid gap-2">
-              <Label htmlFor="title">
-                Title <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="title"
-                placeholder="e.g., The Best Pizza in Town"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                required
-              />
-            </div>
-            
+            {/* Category Field - First to determine form behavior */}
             <div className="grid gap-2">
               <Label htmlFor="category">
                 Category <span className="text-red-500">*</span>
@@ -210,6 +324,59 @@ export function AddRecommendationDialog({ onSuccess, trigger }: AddRecommendatio
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Title Field */}
+            <div className="grid gap-2">
+              <Label htmlFor="title">
+                Title <span className="text-red-500">*</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="title"
+                  placeholder={formData.category === "MOVIE" ? "Start typing a movie name..." : "e.g., The Best Pizza in Town"}
+                  value={formData.title}
+                  onChange={(e) => handleMovieTitleChange(e.target.value)}
+                  onFocus={() => {
+                    if (formData.category === "MOVIE" && movieSuggestions.length > 0) {
+                      setShowSuggestions(true)
+                    }
+                  }}
+                  required
+                  autoComplete="off"
+                />
+                {searchingMovies && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900"></div>
+                  </div>
+                )}
+                {showSuggestions && movieSuggestions.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full rounded-md border bg-white shadow-lg max-h-60 overflow-auto">
+                    {movieSuggestions.map((movie) => (
+                      <button
+                        key={movie.id}
+                        type="button"
+                        className="flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-zinc-100 transition-colors"
+                        onClick={() => handleMovieSelect(movie)}
+                      >
+                        {movie.posterPath && (
+                          <img
+                            src={movie.posterPath}
+                            alt={movie.title}
+                            className="w-10 h-14 object-cover rounded"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{movie.title}</p>
+                          {movie.year && (
+                            <p className="text-xs text-zinc-500">{movie.year}</p>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="grid gap-2">
@@ -446,7 +613,7 @@ export function AddRecommendationDialog({ onSuccess, trigger }: AddRecommendatio
               Cancel
             </Button>
             <Button type="submit" disabled={loading || !formData.title || !formData.category}>
-              {loading ? "Creating..." : "Create Recommendation"}
+              {loading ? (editMode ? "Updating..." : "Creating...") : (editMode ? "Update Recommendation" : "Create Recommendation")}
             </Button>
           </DialogFooter>
         </form>

@@ -24,6 +24,7 @@ A social web application for sharing recommendations among friends. Discover and
 - 📄 View detailed recommendation pages with comments and likes
 - 🏷️ Category-based organization (Restaurant, Movie, Fashion, Household, Other)
 - 📊 Category-specific fields (cuisine, director, brand, etc.)
+- 🎬 Movie typeahead search with TMDB integration (auto-fill movie details)
 - ⭐ Rating system (0-10 scale)
 - 🔗 Link and image URL support for recommendations
 - 📡 RESTful API routes for CRUD operations
@@ -71,9 +72,18 @@ GITHUB_ID="your-github-client-id"
 GITHUB_SECRET="your-github-client-secret"
 GOOGLE_ID="your-google-client-id"
 GOOGLE_SECRET="your-google-client-secret"
+
+# TMDB API for movie search (get your free API key at https://www.themoviedb.org/settings/api)
+TMDB_API_KEY="your-tmdb-api-key"
 ```
 
 **Note**: For authentication setup, see [AUTH_SETUP.md](./AUTH_SETUP.md) for detailed OAuth configuration instructions.
+
+**To enable movie typeahead search:**
+1. Create a free account at [The Movie Database (TMDB)](https://www.themoviedb.org/signup)
+2. Go to [API Settings](https://www.themoviedb.org/settings/api)
+3. Request an API key (it's free for non-commercial use)
+4. Add the API key to your `.env` file as `TMDB_API_KEY`
 
 4. Set up the database:
 ```bash

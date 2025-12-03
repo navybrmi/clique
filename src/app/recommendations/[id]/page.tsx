@@ -7,6 +7,8 @@ import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import Image from "next/image"
+import { Header } from "@/components/header"
+import { EditRecommendationButton } from "@/components/edit-recommendation-button"
 
 export default async function RecommendationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -51,23 +53,7 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black">
       {/* Header */}
-      <header className="border-b bg-white/50 backdrop-blur-sm dark:bg-black/50">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </Button>
-            </Link>
-            <h1 className="text-xl font-bold">Clique</h1>
-          </div>
-          <nav className="flex items-center gap-4">
-            <Button variant="ghost">Sign In</Button>
-            <Button>Get Started</Button>
-          </nav>
-        </div>
-      </header>
+      <Header showBack={true} />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
@@ -161,7 +147,7 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
             {recommendation.category === 'MOVIE' && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Movie Details</CardTitle>
+                  <CardTitle>Recommendation Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {recommendation.director && (
@@ -308,26 +294,6 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
               </CardContent>
             </Card>
 
-            {/* Link if available */}
-            {recommendation.link && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Link</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <a 
-                    href={recommendation.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline flex items-center gap-2"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    {recommendation.link}
-                  </a>
-                </CardContent>
-              </Card>
-            )}
-
             {/* Comments Section */}
             <Card>
               <CardHeader>
@@ -363,6 +329,7 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
             {/* Action Card */}
             <Card>
               <CardContent className="pt-6 space-y-3">
+                <EditRecommendationButton recommendation={recommendation} />
                 <Button className="w-full gap-2" size="lg">
                   <Heart className="h-5 w-5" />
                   Like ({recommendation._count.likes})
