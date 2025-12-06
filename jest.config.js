@@ -26,6 +26,8 @@ const customJestConfig = {
     '!src/app/**',
     '!src/lib/**',
   ],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov', 'json-summary'],
   coverageThreshold: {
     global: {
       branches: 35,
