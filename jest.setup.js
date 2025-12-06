@@ -12,6 +12,19 @@ global.TransformStream = TransformStream
 global.MessageChannel = MessageChannel
 global.MessagePort = MessagePort
 
+// Mock React.act to avoid circular dependency
+// This provides a simple implementation that @testing-library/react can use
+const React = require('react')
+if (!React.act) {
+  React.act = (callback) => {
+    const result = callback()
+    if (result && typeof result.then === 'function') {
+      return result
+    }
+    return Promise.resolve()
+  }
+}
+
 // Now import undici for Web API polyfills
 const { fetch, Request, Response, Headers, FormData } = require('undici')
 
