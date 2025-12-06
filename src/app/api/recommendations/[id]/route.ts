@@ -2,7 +2,27 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 
-// GET /api/recommendations/[id] - Fetch a single recommendation by ID
+/**
+ * GET /api/recommendations/[id]
+ * 
+ * Retrieves a single recommendation with complete details including:
+ * - Entity information with category-specific data
+ * - User details
+ * - All comments with user info
+ * - All upvotes with user info
+ * - Engagement counts
+ * 
+ * Route Parameters:
+ * @param {string} id - Recommendation ID
+ * 
+ * @returns {Promise<NextResponse>} Complete recommendation object
+ * @throws {404} If recommendation is not found
+ * @throws {500} If database query fails
+ * 
+ * @example
+ * // Response includes full recommendation with:
+ * // - user, entity, comments[], upvotes[], _count
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -80,7 +100,36 @@ export async function GET(
   }
 }
 
-// PUT /api/recommendations/[id] - Update a recommendation
+/**
+ * PUT /api/recommendations/[id]
+ * 
+ * Updates an existing recommendation. Only the recommendation owner can update.
+ * Supports updating both recommendation fields and category-specific data.
+ * 
+ * Route Parameters:
+ * @param {string} id - Recommendation ID
+ * 
+ * Request Body:
+ * @param {string[]} [tags] - Updated tags array
+ * @param {string} [link] - External link
+ * @param {string} [imageUrl] - Image URL
+ * @param {number} [rating] - User rating (0-5)
+ * @param {object} [restaurantData] - Restaurant fields to update
+ * @param {object} [movieData] - Movie fields to update
+ * @param {object} [fashionData] - Fashion fields to update
+ * @param {object} [householdData] - Household fields to update
+ * @param {object} [otherData] - Generic category fields to update
+ * 
+ * @returns {Promise<NextResponse>} Updated recommendation with all relations
+ * @throws {401} If user is not authenticated
+ * @throws {404} If recommendation is not found
+ * @throws {403} If user is not the recommendation owner
+ * @throws {500} If database operation fails
+ * 
+ * @example
+ * // PUT /api/recommendations/rec123
+ * // Body: { tags: ["Updated"], rating: 5, restaurantData: { cuisine: "Italian" } }
+ */
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -212,7 +261,27 @@ export async function PUT(
   }
 }
 
-// DELETE /api/recommendations/[id] - Delete a recommendation
+/**
+ * DELETE /api/recommendations/[id]
+ * 
+ * Deletes a recommendation. Only the recommendation owner can delete.
+ * Automatically cascades deletion to related comments and upvotes.
+ * 
+ * Route Parameters:
+ * @param {string} id - Recommendation ID
+ * 
+ * @returns {Promise<NextResponse>} Success message
+ * @throws {401} If user is not authenticated
+ * @throws {404} If recommendation is not found
+ * @throws {403} If user is not the recommendation owner
+ * @throws {500} If database operation fails
+ * 
+ * @example
+ * // DELETE /api/recommendations/rec123
+ * // Response: { message: "Recommendation deleted" }
+ * 
+ * @note This operation cannot be undone. Related entities are not deleted.
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

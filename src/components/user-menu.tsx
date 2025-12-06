@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -10,17 +11,31 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import Link from "next/link"
+import { signOut } from "next-auth/react"
 
+/**
+ * Props for the UserMenu component
+ */
 interface UserMenuProps {
+  /** User information from authentication session */
   user: {
     name?: string | null
     email?: string | null
     image?: string | null
   }
-  onSignOut: () => void
+  /** Optional custom sign-out handler. If not provided, uses default NextAuth signOut */
+  onSignOut?: () => void
 }
 
+/**
+ * Dropdown menu component for authenticated user actions.
+ * 
+ * Displays user avatar and provides access to sign-out functionality.
+ * Shows user name and email in the dropdown menu.
+ * 
+ * @param props - Component props
+ * @returns A dropdown menu with user info and actions
+ */
 export function UserMenu({ user, onSignOut }: UserMenuProps) {
   return (
     <DropdownMenu>
@@ -47,7 +62,7 @@ export function UserMenu({ user, onSignOut }: UserMenuProps) {
           <Link href="/my-recommendations">My Recommendations</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={onSignOut} className="text-red-600">
+        <DropdownMenuItem onClick={onSignOut || (() => signOut())} className="text-red-600">
           Sign Out
         </DropdownMenuItem>
       </DropdownMenuContent>

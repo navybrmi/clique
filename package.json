@@ -31,7 +31,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "lucide-react": "^0.555.0",
-    "next": "16.0.6",
+    "next": "^16.0.7",
     "next-auth": "^5.0.0-beta.30",
     "react": "19.2.0",
     "react-dom": "19.2.0",

@@ -1,7 +1,14 @@
 import { Category, Entity } from '@prisma/client'
 
+/**
+ * Re-exported Prisma types for Category and Entity models
+ */
 export type { Category, Entity }
 
+/**
+ * Restaurant-specific details for recommendations.
+ * Contains information about dining establishments including location, cuisine, and contact details.
+ */
 export interface Restaurant {
   entityId: string
   cuisine: string | null
@@ -12,6 +19,10 @@ export interface Restaurant {
   placeId: string | null
 }
 
+/**
+ * Movie-specific details for recommendations.
+ * Contains comprehensive movie metadata including director, genre, and external identifiers.
+ */
 export interface Movie {
   entityId: string
   director: string | null
@@ -23,6 +34,10 @@ export interface Movie {
   imdbId: string | null
 }
 
+/**
+ * Fashion item details for recommendations.
+ * Contains apparel and accessory information including brand, size, and seasonal attributes.
+ */
 export interface Fashion {
   entityId: string
   brand: string | null
@@ -33,6 +48,10 @@ export interface Fashion {
   material: string | null
 }
 
+/**
+ * Household item details for recommendations.
+ * Contains product information for home goods and appliances.
+ */
 export interface Household {
   entityId: string
   productType: string | null
@@ -41,11 +60,20 @@ export interface Household {
   warranty: string | null
 }
 
+/**
+ * Generic category details for miscellaneous recommendations.
+ * Provides flexible storage for recommendations that don't fit standard categories.
+ */
 export interface Other {
   entityId: string
+  /** Flexible key-value storage for custom attributes */
   customFields: Record<string, any> | null
 }
 
+/**
+ * Complete entity with all possible category-specific details.
+ * Extends the base Entity model with relationships to category-specific data.
+ */
 export interface EntityWithDetails extends Entity {
   category: Category
   restaurant?: Restaurant | null
@@ -55,6 +83,10 @@ export interface EntityWithDetails extends Entity {
   other?: Other | null
 }
 
+/**
+ * Complete recommendation with entity details, user info, and engagement metrics.
+ * This is the primary data structure for displaying recommendations throughout the app.
+ */
 export interface RecommendationWithEntity {
   id: string
   tags: string[]
@@ -75,6 +107,10 @@ export interface RecommendationWithEntity {
   }
 }
 
+/**
+ * Comment with associated user information.
+ * Used for displaying comments on recommendations.
+ */
 export interface CommentWithUser {
   id: string
   content: string

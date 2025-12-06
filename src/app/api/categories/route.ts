@@ -1,6 +1,21 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
+/**
+ * GET /api/categories
+ * 
+ * Retrieves all active categories sorted alphabetically.
+ * 
+ * @returns {Promise<NextResponse>} JSON array of active categories
+ * @throws {500} If database query fails
+ * 
+ * @example
+ * // Response format:
+ * // [
+ * //   { id: "1", name: "RESTAURANT", displayName: "Restaurants", isActive: true, ... },
+ * //   { id: "2", name: "MOVIE", displayName: "Movies", isActive: true, ... }
+ * // ]
+ */
 export async function GET() {
   try {
     const categories = await prisma.category.findMany({

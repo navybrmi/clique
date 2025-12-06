@@ -1,6 +1,36 @@
 import { NextRequest, NextResponse } from "next/server"
 
-// Google Places API - Text Search endpoint
+/**
+ * GET /api/restaurants/search
+ * 
+ * Searches for restaurants using Google Places API Text Search.
+ * Returns top 5 results with photos and detailed information.
+ * 
+ * Query Parameters:
+ * @param {string} query - Restaurant name or search term (required)
+ * @param {string} [location] - Optional location to narrow search (e.g., "New York")
+ * 
+ * @returns {Promise<NextResponse>} JSON object with results array containing:
+ *   - id: Google Place ID
+ *   - name: Restaurant name
+ *   - imageUrl: Full URL to restaurant photo (maxwidth=400)
+ *   - location: Formatted address
+ *   - categories: Up to 2 cuisine types (excluding generic types)
+ *   - price: Price level as dollar signs (e.g., "$$")
+ *   - rating: Google rating (0-5)
+ *   - reviewCount: Number of reviews
+ *   - phone: Formatted phone number
+ * 
+ * @throws {400} If query parameter is missing
+ * @throws {500} If GOOGLE_PLACES_API_KEY is not configured
+ * @throws {500} If API request fails or returns non-OK status
+ * 
+ * @example
+ * // GET /api/restaurants/search?query=pizza&location=NYC
+ * // Response: { results: [{ id: "ChIJ...", name: "Joe's Pizza", ... }] }
+ * 
+ * @note Filters out common generic place types from categories
+ */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams

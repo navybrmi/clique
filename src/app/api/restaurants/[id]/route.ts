@@ -1,6 +1,35 @@
 import { NextRequest, NextResponse } from "next/server"
 
-// Google Places API - Place Details endpoint
+/**
+ * GET /api/restaurants/[id]
+ * 
+ * Retrieves detailed information for a specific restaurant using Google Places API.
+ * 
+ * Route Parameters:
+ * @param {string} id - Google Place ID
+ * 
+ * @returns {Promise<NextResponse>} JSON object with restaurant details:
+ *   - id: Google Place ID
+ *   - name: Restaurant name
+ *   - imageUrl: Full URL to restaurant photo (maxwidth=800)
+ *   - rating: Google rating (0-5)
+ *   - reviewCount: Number of reviews
+ *   - cuisine: Up to 3 cuisine types (generic types filtered out)
+ *   - location: Formatted address
+ *   - priceRange: Price level as dollar signs (e.g., "$$") or null
+ *   - phone: Formatted phone number
+ *   - url: Restaurant website
+ *   - hours: Opening hours formatted as comma-separated string
+ * 
+ * @throws {500} If GOOGLE_PLACES_API_KEY is not configured
+ * @throws {500} If API request fails or returns non-OK status
+ * 
+ * @example
+ * // GET /api/restaurants/ChIJN1t_tDeuEmsRUsoyG83frY4
+ * // Response: { id: "ChIJ...", name: "Joe's Pizza", rating: 4.5, ... }
+ * 
+ * @note Filters out common generic place types from cuisine list
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
