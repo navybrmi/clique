@@ -130,8 +130,8 @@ export default function Home() {
             {recommendations.map((rec) => (
               <Link key={rec.id} href={`/recommendations/${rec.id}`}>
                 <Card className="overflow-hidden transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer">
-                  {(rec.entity.category.displayName === 'Movie' || rec.entity.category.displayName === 'Restaurant') && rec.imageUrl && (
-                    <div className="relative h-48 w-full">
+                  <div className="relative h-48 w-full bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900">
+                    {rec.imageUrl ? (
                       <Image
                         src={rec.imageUrl}
                         alt={rec.entity.name}
@@ -139,8 +139,23 @@ export default function Home() {
                         className="object-cover"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       />
-                    </div>
-                  )}
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center p-4">
+                          <div className="text-4xl mb-2">
+                            {rec.entity.category.displayName === 'Movie' && '🎬'}
+                            {rec.entity.category.displayName === 'Restaurant' && '🍽️'}
+                            {rec.entity.category.displayName === 'Fashion' && '👗'}
+                            {rec.entity.category.displayName === 'Household' && '🏠'}
+                            {!['Movie', 'Restaurant', 'Fashion', 'Household'].includes(rec.entity.category.displayName) && '⭐'}
+                          </div>
+                          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                            {rec.entity.name}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <CardHeader>
                     <div className="mb-2 flex items-start justify-between gap-2 flex-wrap">
                       <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium dark:bg-zinc-800">
