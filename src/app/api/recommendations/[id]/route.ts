@@ -131,12 +131,16 @@ export async function PUT(
         },
       })
     } else if (body.movieData) {
+      const movieDataWithParsedYear = {
+        ...body.movieData,
+        year: body.movieData.year ? parseInt(body.movieData.year) : null,
+      }
       await prisma.movie.upsert({
         where: { entityId: existingRecommendation.entityId },
-        update: body.movieData,
+        update: movieDataWithParsedYear,
         create: {
           entityId: existingRecommendation.entityId,
-          ...body.movieData,
+          ...movieDataWithParsedYear,
         },
       })
     } else if (body.fashionData) {

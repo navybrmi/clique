@@ -29,13 +29,22 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json()
     
+    // Get genre information
+    const genresResponse = await fetch(
+      `${TMDB_BASE_URL}/genre/movie/list?api_key=${TMDB_API_KEY}&language=en-US`,
+      { next: { revalidate: 86400 } } // Cache for 24 hours
+    )
+    const genresData = await genresResponse.json()
+    const genreMap = new Map(genresData.genres?.map((g: any) => [g.id, g.name]) || [])
+    
     // Return top 5 results with relevant information
     const movies = data.results.slice(0, 5).map((movie: any) => ({
       id: movie.id,
       title: movie.title,
       year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
-      posterPath: movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : null,
+      posterPath: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : null,
       overview: movie.overview,
+      genre: movie.genre_ids?.map((id: number) => genreMap.get(id)).filter(Boolean).join(", ") || "",
     }))
 
     return NextResponse.json({ results: movies })

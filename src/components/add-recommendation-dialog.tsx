@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -14,13 +14,34 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Star, X } from "lucide-react"
+import { Plus, Star, X, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 interface Category {
   id: string
   name: string
   displayName: string
+}
+
+interface MovieSuggestion {
+  id: number
+  title: string
+  year: string
+  posterPath?: string
+  overview?: string
+  genre?: string
+}
+
+interface RestaurantSuggestion {
+  id: string
+  name: string
+  imageUrl: string
+  location: string
+  categories?: string
+  price?: string
+  rating?: number
+  reviewCount?: number
+  phone?: string
 }
 
 interface AddRecommendationDialogProps {
@@ -48,6 +69,14 @@ export function AddRecommendationDialog({
   const [link, setLink] = useState("")
   const [imageUrl, setImageUrl] = useState("")
   const [rating, setRating] = useState("")
+
+  // Search functionality
+  const [movieSuggestions, setMovieSuggestions] = useState<MovieSuggestion[]>([])
+  const [restaurantSuggestions, setRestaurantSuggestions] = useState<RestaurantSuggestion[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [searchingMovies, setSearchingMovies] = useState(false)
+  const [searchingRestaurants, setSearchingRestaurants] = useState(false)
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null)
 
   // Category-specific fields
   const [restaurantData, setRestaurantData] = useState({
@@ -114,6 +143,92 @@ export function AddRecommendationDialog({
       }
     }
   }, [editMode, initialData, open])
+
+  const handleMovieSearch = async (query: string) => {
+    setEntityName(query)
+    
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current)
+    }
+
+    if (!query.trim()) {
+      setMovieSuggestions([])
+      setShowSuggestions(false)
+      return
+    }
+
+    setSearchingMovies(true)
+    debounceTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/movies/search?query=${encodeURIComponent(query)}`)
+        if (res.ok) {
+          const data = await res.json()
+          setMovieSuggestions(data.results || [])
+          setShowSuggestions(true)
+        }
+      } catch (error) {
+        console.error("Error searching movies:", error)
+      } finally {
+        setSearchingMovies(false)
+      }
+    }, 300)
+  }
+
+  const handleRestaurantSearch = async (query: string) => {
+    setEntityName(query)
+    
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current)
+    }
+
+    if (!query.trim()) {
+      setRestaurantSuggestions([])
+      setShowSuggestions(false)
+      return
+    }
+
+    setSearchingRestaurants(true)
+    debounceTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/restaurants/search?query=${encodeURIComponent(query)}`)
+        if (res.ok) {
+          const data = await res.json()
+          setRestaurantSuggestions(data.results || [])
+          setShowSuggestions(true)
+        }
+      } catch (error) {
+        console.error("Error searching restaurants:", error)
+      } finally {
+        setSearchingRestaurants(false)
+      }
+    }, 300)
+  }
+
+  const handleMovieSelect = (movie: MovieSuggestion) => {
+    setEntityName(movie.title)
+    setImageUrl(movie.posterPath || "")
+    setMovieData({
+      year: movie.year?.toString() || "",
+      genre: movie.genre || "",
+      director: "", // TMDB doesn't provide director in search results
+      duration: "",
+    })
+    setShowSuggestions(false)
+    setMovieSuggestions([])
+  }
+
+  const handleRestaurantSelect = (restaurant: RestaurantSuggestion) => {
+    setEntityName(restaurant.name)
+    setImageUrl(restaurant.imageUrl || "")
+    setRestaurantData({
+      cuisine: restaurant.categories || "",
+      location: restaurant.location || "",
+      priceRange: restaurant.price || "",
+      hours: "", // Google Places doesn't provide hours in text search
+    })
+    setShowSuggestions(false)
+    setRestaurantSuggestions([])
+  }
 
   const handleAddTag = () => {
     if (currentTag.trim() && !tags.includes(currentTag.trim())) {
@@ -190,6 +305,8 @@ export function AddRecommendationDialog({
         setMovieData({ director: "", year: "", genre: "", duration: "" })
         setFashionData({ brand: "", price: "", size: "", color: "" })
         setHouseholdData({ productType: "", model: "", purchaseLink: "" })
+        setMovieSuggestions([])
+        setRestaurantSuggestions([])
 
         if (onSuccess) {
           onSuccess()
@@ -229,20 +346,6 @@ export function AddRecommendationDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Entity Name */}
-          <div className="space-y-2">
-            <Label htmlFor="entityName">
-              {selectedCategory?.displayName || "Item"} Name *
-            </Label>
-            <Input
-              id="entityName"
-              placeholder="e.g., Inception, Joe's Pizza"
-              value={entityName}
-              onChange={(e) => setEntityName(e.target.value)}
-              required
-            />
-          </div>
-
           {/* Category */}
           <div className="space-y-2">
             <Label htmlFor="category">Category *</Label>
@@ -258,6 +361,97 @@ export function AddRecommendationDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Entity Name with Search */}
+          <div className="space-y-2 relative">
+            <Label htmlFor="entityName">
+              {selectedCategory?.displayName || "Item"} Name *
+            </Label>
+            <div className="relative">
+              <Input
+                id="entityName"
+                placeholder={selectedCategory?.name === "MOVIE" ? "Search movies..." : selectedCategory?.name === "RESTAURANT" ? "Search restaurants..." : `e.g., Inception, Joe's Pizza`}
+                value={entityName}
+                onChange={(e) => {
+                  if (selectedCategory?.name === "MOVIE") {
+                    handleMovieSearch(e.target.value)
+                  } else if (selectedCategory?.name === "RESTAURANT") {
+                    handleRestaurantSearch(e.target.value)
+                  } else {
+                    setEntityName(e.target.value)
+                  }
+                }}
+                required
+                autoComplete="off"
+              />
+              {(searchingMovies || searchingRestaurants) && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
+              )}
+            </div>
+
+            {/* Movie Suggestions */}
+            {selectedCategory?.name === "MOVIE" && showSuggestions && movieSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 z-50 mt-1 border rounded-md bg-white shadow-lg max-h-48 overflow-y-auto">
+                {movieSuggestions.map((movie) => (
+                  <button
+                    key={movie.id}
+                    type="button"
+                    onClick={() => handleMovieSelect(movie)}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-start gap-3 border-b last:border-b-0"
+                  >
+                    {movie.posterPath && (
+                      <img
+                        src={movie.posterPath}
+                        alt={movie.title}
+                        className="h-12 w-8 object-cover rounded flex-shrink-0"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{movie.title}</div>
+                      <div className="text-sm text-gray-600">{movie.year}</div>
+                      {movie.genre && (
+                        <div className="text-xs text-gray-500 truncate">{movie.genre}</div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Restaurant Suggestions */}
+            {selectedCategory?.name === "RESTAURANT" && showSuggestions && restaurantSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 z-50 mt-1 border rounded-md bg-white shadow-lg max-h-48 overflow-y-auto">
+                {restaurantSuggestions.map((restaurant) => (
+                  <button
+                    key={restaurant.id}
+                    type="button"
+                    onClick={() => handleRestaurantSelect(restaurant)}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-start gap-3 border-b last:border-b-0"
+                  >
+                    {restaurant.imageUrl && (
+                      <img
+                        src={restaurant.imageUrl}
+                        alt={restaurant.name}
+                        className="h-12 w-12 object-cover rounded flex-shrink-0"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{restaurant.name}</div>
+                      <div className="text-sm text-gray-600 truncate">{restaurant.location}</div>
+                      {restaurant.categories && (
+                        <div className="text-xs text-gray-500 truncate">{restaurant.categories}</div>
+                      )}
+                      {restaurant.price && (
+                        <div className="text-xs text-gray-500">{restaurant.price}</div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Tags */}

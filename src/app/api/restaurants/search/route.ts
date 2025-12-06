@@ -40,16 +40,16 @@ export async function GET(request: NextRequest) {
         imageUrl: photoReference
           ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoReference}&key=${googleApiKey}`
           : "",
-        rating: place.rating || 0,
-        reviewCount: place.user_ratings_total || 0,
+        location: place.formatted_address || "",
         categories: place.types
           ?.filter((t: string) => !["restaurant", "food", "point_of_interest", "establishment"].includes(t))
           .map((t: string) => t.replace(/_/g, " "))
           .slice(0, 2)
           .join(", ") || "",
-        location: place.formatted_address || "",
         price: place.price_level ? "$".repeat(place.price_level) : "",
-        phone: "",
+        rating: place.rating || 0,
+        reviewCount: place.user_ratings_total || 0,
+        phone: place.formatted_phone_number || "",
       }
     })
 

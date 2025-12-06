@@ -9,6 +9,7 @@ import { notFound } from "next/navigation"
 import Image from "next/image"
 import { Header } from "@/components/header"
 import { EditRecommendationButton } from "@/components/edit-recommendation-button"
+import { DeleteRecommendationButton } from "@/components/delete-recommendation-button"
 
 export default async function RecommendationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -342,6 +343,7 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
             <Card>
               <CardContent className="pt-6 space-y-3">
                 <EditRecommendationButton recommendation={recommendation} />
+                <DeleteRecommendationButton recommendation={recommendation} />
                 <div className="flex items-start justify-around pt-2">
                   <Button variant="ghost" size="icon" className="flex flex-col h-auto py-2">
                     <ArrowUp className="h-5 w-5" />

@@ -120,6 +120,7 @@ export async function POST(request: NextRequest) {
             data: {
               entityId: entity.id,
               ...movieData,
+              year: movieData.year ? parseInt(movieData.year) : null,
             },
           })
         } else if (category?.name === "FASHION" && fashionData) {
