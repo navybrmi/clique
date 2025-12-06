@@ -12,14 +12,14 @@ const TMDB_BASE_URL = "https://api.themoviedb.org/3"
  * Query Parameters:
  * @param {string} query - Movie title or search term (required)
  * 
- * @returns {Promise<NextResponse>} JSON object with results array containing:
+ * @returns {Promise<NextResponse>} JSON object with a `results` array containing:
  *   - id: TMDB movie ID
  *   - title: Movie title
  *   - year: Release year
  *   - posterPath: Full URL to poster image (w500)
  *   - overview: Movie description
  *   - genre: Comma-separated genre names
- *   - If the query is missing/empty, TMDB_API_KEY is not configured, or the API request fails, returns an empty results array.
+ *   If the query is missing/empty, TMDB_API_KEY is not configured, or the API request fails, the function returns a JSON object with an empty `results` array (no error is thrown).
  * 
  * @example
  * // GET /api/movies/search?query=inception
