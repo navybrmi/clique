@@ -23,6 +23,16 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
           image: true,
         },
       },
+      entity: {
+        include: {
+          category: true,
+          restaurant: true,
+          movie: true,
+          fashion: true,
+          household: true,
+          other: true,
+        },
+      },
       comments: {
         include: {
           user: {
@@ -65,7 +75,7 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
               <div className="relative aspect-video w-full overflow-hidden rounded-lg">
                 <Image
                   src={recommendation.imageUrl}
-                  alt={recommendation.title}
+                  alt={recommendation.entity.name}
                   fill
                   className="object-cover"
                   priority
@@ -76,10 +86,10 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
             {/* Title and Category */}
             <div>
               <div className="mb-4 flex items-center gap-3">
-                <Badge className="text-sm">{recommendation.category}</Badge>
+                <Badge className="text-sm">{recommendation.entity.category.displayName}</Badge>
                 <div className="flex items-center gap-1">
                   <div className="flex items-center gap-0.5">
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                    {[1, 2, 3, 4, 5].map((star) => (
                       <Star
                         key={star}
                         className={`h-4 w-4 ${
@@ -90,14 +100,28 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
                       />
                     ))}
                   </div>
-                  <span className="text-sm font-semibold ml-1">{recommendation.rating || 0}/10</span>
+                  <span className="text-sm font-semibold ml-1">{recommendation.rating || 0}/5</span>
                 </div>
               </div>
-              <h1 className="text-4xl font-bold tracking-tight">{recommendation.title}</h1>
+              <h1 className="text-4xl font-bold tracking-tight">{recommendation.entity.name}</h1>
             </div>
 
+            {/* Tags / Why This Recommendation */}
+            {recommendation.tags && recommendation.tags.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-2">Why This Recommendation?</h3>
+                <div className="flex flex-wrap gap-2">
+                  {recommendation.tags.map((tag: string, idx: number) => (
+                    <Badge key={idx} variant="secondary">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Category-Specific Details */}
-            {recommendation.category === 'RESTAURANT' && (
+            {recommendation.entity.restaurant && (
               <Card>
                 <CardHeader>
                   <CardTitle>Restaurant Details</CardTitle>
@@ -143,134 +167,91 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
               </Card>
             )}
 
-            {recommendation.category === 'MOVIE' && (
-              <>
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <CardTitle>Recommendation Details</CardTitle>
-                      <div className="text-right">
-                        <p className="text-sm text-zinc-600">by <span className="font-semibold">{recommendation.user.name || 'Anonymous'}</span></p>
-                        <p className="text-xs text-zinc-500">{new Date(recommendation.createdAt).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {recommendation.movieAttributes && recommendation.movieAttributes.length > 0 && (
-                      <div className="flex items-start gap-3">
-                        <Star className="h-5 w-5 text-zinc-500 mt-0.5" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-zinc-500 mb-2">Why This Movie?</p>
-                          <div className="flex flex-wrap gap-2">
-                            {recommendation.movieAttributes.map((attr: string) => (
-                              <Badge key={attr} variant="secondary" className="text-xs">
-                                {attr}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Description */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>About</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                      {recommendation.description}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Movie Info</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {recommendation.director && (
-                      <div className="flex items-start gap-3">
-                        <Film className="h-5 w-5 text-zinc-500 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-zinc-500">Director</p>
-                          <p className="text-base">{recommendation.director}</p>
-                        </div>
-                      </div>
-                    )}
-                    {recommendation.year && (
-                      <div className="flex items-start gap-3">
-                        <Calendar className="h-5 w-5 text-zinc-500 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-zinc-500">Year</p>
-                          <p className="text-base">{recommendation.year}</p>
-                        </div>
-                      </div>
-                    )}
-                    {recommendation.genre && (
-                      <div className="flex items-start gap-3">
-                        <Package className="h-5 w-5 text-zinc-500 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-zinc-500">Genre</p>
-                          <p className="text-base">{recommendation.genre}</p>
-                        </div>
-                      </div>
-                    )}
-                    {recommendation.duration && (
-                      <div className="flex items-start gap-3">
-                        <Clock className="h-5 w-5 text-zinc-500 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-zinc-500">Duration</p>
-                          <p className="text-base">{recommendation.duration}</p>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </>
-            )}
-
-            {recommendation.category === 'FASHION' && (
+            {recommendation.entity.movie && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Product Details</CardTitle>
+                  <CardTitle>Movie Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {recommendation.brand && (
+                  {recommendation.entity.movie.director && (
+                    <div className="flex items-start gap-3">
+                      <Film className="h-5 w-5 text-zinc-500 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-zinc-500">Director</p>
+                        <p className="text-base">{recommendation.entity.movie.director}</p>
+                      </div>
+                    </div>
+                  )}
+                  {recommendation.entity.movie.releaseYear && (
+                    <div className="flex items-start gap-3">
+                      <Calendar className="h-5 w-5 text-zinc-500 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-zinc-500">Year</p>
+                        <p className="text-base">{recommendation.entity.movie.releaseYear}</p>
+                      </div>
+                    </div>
+                  )}
+                  {recommendation.entity.movie.genre && (
+                    <div className="flex items-start gap-3">
+                      <Package className="h-5 w-5 text-zinc-500 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-zinc-500">Genre</p>
+                        <p className="text-base">{recommendation.entity.movie.genre}</p>
+                      </div>
+                    </div>
+                  )}
+                  {recommendation.entity.movie.duration && (
+                    <div className="flex items-start gap-3">
+                      <Clock className="h-5 w-5 text-zinc-500 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-zinc-500">Duration</p>
+                        <p className="text-base">{recommendation.entity.movie.duration} mins</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {recommendation.entity.fashion && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Fashion Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {recommendation.entity.fashion.brand && (
                     <div className="flex items-start gap-3">
                       <ShoppingBag className="h-5 w-5 text-zinc-500 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-zinc-500">Brand</p>
-                        <p className="text-base">{recommendation.brand}</p>
+                        <p className="text-base">{recommendation.entity.fashion.brand}</p>
                       </div>
                     </div>
                   )}
-                  {recommendation.price && (
-                    <div className="flex items-start gap-3">
-                      <span className="text-zinc-500 mt-0.5">💰</span>
-                      <div>
-                        <p className="text-sm font-medium text-zinc-500">Price</p>
-                        <p className="text-base">{recommendation.price}</p>
-                      </div>
-                    </div>
-                  )}
-                  {recommendation.size && (
+                  {recommendation.entity.fashion.itemType && (
                     <div className="flex items-start gap-3">
                       <Package className="h-5 w-5 text-zinc-500 mt-0.5" />
                       <div>
-                        <p className="text-sm font-medium text-zinc-500">Size</p>
-                        <p className="text-base">{recommendation.size}</p>
+                        <p className="text-sm font-medium text-zinc-500">Type</p>
+                        <p className="text-base">{recommendation.entity.fashion.itemType}</p>
                       </div>
                     </div>
                   )}
-                  {recommendation.color && (
+                  {recommendation.entity.fashion.size && (
+                    <div className="flex items-start gap-3">
+                      <span className="text-zinc-500 mt-0.5">📏</span>
+                      <div>
+                        <p className="text-sm font-medium text-zinc-500">Size</p>
+                        <p className="text-base">{recommendation.entity.fashion.size}</p>
+                      </div>
+                    </div>
+                  )}
+                  {recommendation.entity.fashion.color && (
                     <div className="flex items-start gap-3">
                       <span className="text-zinc-500 mt-0.5">🎨</span>
                       <div>
                         <p className="text-sm font-medium text-zinc-500">Color</p>
-                        <p className="text-base">{recommendation.color}</p>
+                        <p className="text-base">{recommendation.entity.fashion.color}</p>
                       </div>
                     </div>
                   )}
@@ -278,62 +259,48 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
               </Card>
             )}
 
-            {recommendation.category === 'HOUSEHOLD' && (
+            {recommendation.entity.household && (
               <Card>
                 <CardHeader>
                   <CardTitle>Product Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {recommendation.productType && (
+                  {recommendation.entity.household.productType && (
                     <div className="flex items-start gap-3">
                       <Package className="h-5 w-5 text-zinc-500 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-zinc-500">Product Type</p>
-                        <p className="text-base">{recommendation.productType}</p>
+                        <p className="text-base">{recommendation.entity.household.productType}</p>
                       </div>
                     </div>
                   )}
-                  {recommendation.brand && (
+                  {recommendation.entity.household.brand && (
                     <div className="flex items-start gap-3">
                       <ShoppingBag className="h-5 w-5 text-zinc-500 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-zinc-500">Brand</p>
-                        <p className="text-base">{recommendation.brand}</p>
+                        <p className="text-base">{recommendation.entity.household.brand}</p>
                       </div>
                     </div>
                   )}
-                  {recommendation.model && (
+                  {recommendation.entity.household.model && (
                     <div className="flex items-start gap-3">
                       <span className="text-zinc-500 mt-0.5">🏷️</span>
                       <div>
                         <p className="text-sm font-medium text-zinc-500">Model</p>
-                        <p className="text-base">{recommendation.model}</p>
+                        <p className="text-base">{recommendation.entity.household.model}</p>
                       </div>
                     </div>
                   )}
-                  {recommendation.price && (
+                  {recommendation.entity.household.price && (
                     <div className="flex items-start gap-3">
                       <span className="text-zinc-500 mt-0.5">💰</span>
                       <div>
                         <p className="text-sm font-medium text-zinc-500">Price</p>
-                        <p className="text-base">{recommendation.price}</p>
+                        <p className="text-base">{recommendation.entity.household.price}</p>
                       </div>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Description - only show for non-MOVIE categories */}
-            {recommendation.category !== 'MOVIE' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>About</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    {recommendation.description}
-                  </p>
                 </CardContent>
               </Card>
             )}
@@ -366,6 +333,7 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
                 </div>
               </CardContent>
             </Card>
+
           </div>
 
           {/* Sidebar */}

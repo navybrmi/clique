@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { Category } from "@prisma/client"
 
 // GET /api/recommendations - Fetch all recommendations
 export async function GET() {
@@ -12,6 +11,16 @@ export async function GET() {
             id: true,
             name: true,
             image: true,
+          },
+        },
+        entity: {
+          include: {
+            category: true,
+            restaurant: true,
+            movie: true,
+            fashion: true,
+            household: true,
+            other: true,
           },
         },
         _count: {
@@ -29,7 +38,6 @@ export async function GET() {
     return NextResponse.json(recommendations)
   } catch (error) {
     console.error("Error fetching recommendations:", error)
-    // Return more detailed error info
     return NextResponse.json(
       { 
         error: "Failed to fetch recommendations",
@@ -44,49 +52,111 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, description, category, link, imageUrl, rating, userId } = body
+    const { 
+      entityName, 
+      entityId,
+      tags, 
+      categoryId, 
+      link, 
+      imageUrl, 
+      rating, 
+      userId,
+      restaurantData,
+      movieData,
+      fashionData,
+      householdData,
+      otherData
+    } = body
 
     // Validate required fields
-    if (!title || !category || !userId) {
+    if (!userId || !categoryId) {
       return NextResponse.json(
-        { error: "Title, category, and userId are required" },
+        { error: "userId and categoryId are required" },
         { status: 400 }
       )
     }
 
-    // Validate category
-    if (!Object.values(Category).includes(category)) {
+    if (!entityName && !entityId) {
       return NextResponse.json(
-        { error: "Invalid category" },
+        { error: "Either entityName or entityId is required" },
         { status: 400 }
       )
+    }
+
+    let finalEntityId = entityId
+
+    // If entityName is provided, check if entity exists or create it
+    if (!entityId && entityName) {
+      let entity = await prisma.entity.findFirst({
+        where: {
+          name: entityName,
+          categoryId: categoryId,
+        },
+      })
+
+      if (!entity) {
+        // Create new entity
+        entity = await prisma.entity.create({
+          data: {
+            name: entityName,
+            categoryId: categoryId,
+          },
+        })
+
+        // Create category-specific record based on category
+        const category = await prisma.category.findUnique({
+          where: { id: categoryId },
+        })
+
+        if (category?.name === "RESTAURANT" && restaurantData) {
+          await prisma.restaurant.create({
+            data: {
+              entityId: entity.id,
+              ...restaurantData,
+            },
+          })
+        } else if (category?.name === "MOVIE" && movieData) {
+          await prisma.movie.create({
+            data: {
+              entityId: entity.id,
+              ...movieData,
+            },
+          })
+        } else if (category?.name === "FASHION" && fashionData) {
+          await prisma.fashion.create({
+            data: {
+              entityId: entity.id,
+              ...fashionData,
+            },
+          })
+        } else if (category?.name === "HOUSEHOLD" && householdData) {
+          await prisma.household.create({
+            data: {
+              entityId: entity.id,
+              ...householdData,
+            },
+          })
+        } else if (category?.name === "OTHER" && otherData) {
+          await prisma.other.create({
+            data: {
+              entityId: entity.id,
+              ...otherData,
+            },
+          })
+        }
+      }
+
+      finalEntityId = entity.id
     }
 
     const recommendation = await prisma.recommendation.create({
       data: {
-        title,
-        description,
-        category,
+        tags: tags || [],
         link,
         imageUrl,
         rating: rating || 0,
         userId,
-        // Category-specific fields
-        cuisine: body.cuisine || null,
-        location: body.location || null,
-        priceRange: body.priceRange || null,
-        hours: body.hours || null,
-        director: body.director || null,
-        year: body.year || null,
-        genre: body.genre || null,
-        duration: body.duration || null,
-        movieAttributes: body.movieAttributes || [],
-        brand: body.brand || null,
-        price: body.price || null,
-        size: body.size || null,
-        color: body.color || null,
-        productType: body.productType || null,
-        model: body.model || null,
+        entityId: finalEntityId,
       },
       include: {
         user: {
@@ -94,6 +164,16 @@ export async function POST(request: NextRequest) {
             id: true,
             name: true,
             image: true,
+          },
+        },
+        entity: {
+          include: {
+            category: true,
+            restaurant: true,
+            movie: true,
+            fashion: true,
+            household: true,
+            other: true,
           },
         },
         _count: {
@@ -109,7 +189,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error creating recommendation:", error)
     return NextResponse.json(
-      { error: "Failed to create recommendation" },
+      { error: "Failed to create recommendation", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }

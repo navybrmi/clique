@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowUp, MessageCircle, Star } from "lucide-react"
 import { AddRecommendationDialog } from "@/components/add-recommendation-dialog"
@@ -12,18 +12,23 @@ import { Header } from "@/components/header"
 
 type Recommendation = {
   id: string
-  title: string
-  description: string | null
-  category: string
+  tags: string[]
   rating: number | null
   imageUrl: string | null
-  director?: string | null
-  year?: number | null
-  genre?: string | null
-  duration?: string | null
-  movieAttributes?: string[]
+  link: string | null
   user: {
     name: string | null
+  }
+  entity: {
+    name: string
+    category: {
+      displayName: string
+    }
+    restaurant?: any
+    movie?: any
+    fashion?: any
+    household?: any
+    other?: any
   }
   _count: {
     upvotes: number
@@ -103,11 +108,11 @@ export default function Home() {
             {recommendations.map((rec) => (
               <Link key={rec.id} href={`/recommendations/${rec.id}`}>
                 <Card className="overflow-hidden transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer">
-                  {(rec.category === 'MOVIE' || rec.category === 'RESTAURANT') && rec.imageUrl && (
+                  {(rec.entity.category.displayName === 'Movie' || rec.entity.category.displayName === 'Restaurant') && rec.imageUrl && (
                     <div className="relative h-48 w-full">
                       <Image
                         src={rec.imageUrl}
-                        alt={rec.title}
+                        alt={rec.entity.name}
                         fill
                         className="object-cover"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -117,11 +122,11 @@ export default function Home() {
                   <CardHeader>
                     <div className="mb-2 flex items-start justify-between gap-2 flex-wrap">
                       <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium dark:bg-zinc-800">
-                        {rec.category}
+                        {rec.entity.category.displayName}
                       </span>
                       <div className="flex items-center gap-1 min-w-fit">
                         <div className="flex items-center gap-0.5">
-                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                          {[1, 2, 3, 4, 5].map((star) => (
                             <Star
                               key={star}
                               className={`h-3 w-3 flex-shrink-0 ${
@@ -132,34 +137,33 @@ export default function Home() {
                             />
                           ))}
                         </div>
-                        <span className="text-xs text-zinc-500 ml-1 whitespace-nowrap">{rec.rating || 0}/10</span>
+                        <span className="text-xs text-zinc-500 ml-1 whitespace-nowrap">{rec.rating || 0}/5</span>
                       </div>
                     </div>
-                    <CardTitle>{rec.title}</CardTitle>
-                    <CardDescription>{rec.description}</CardDescription>
-                    {rec.category === 'MOVIE' && (
+                    <CardTitle>{rec.entity.name}</CardTitle>
+                    {rec.tags && rec.tags.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs font-medium mb-2 text-zinc-600 dark:text-zinc-400">Why recommended:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {rec.tags.slice(0, 3).map((tag) => (
+                            <Badge key={tag} variant="secondary" className="text-xs px-2 py-0">
+                              {tag}
+                            </Badge>
+                          ))}
+                          {rec.tags.length > 3 && (
+                            <Badge variant="secondary" className="text-xs px-2 py-0">
+                              +{rec.tags.length - 3} more
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {rec.entity.movie && (
                       <div className="mt-3 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
-                        {rec.director && <p>Director: {rec.director}</p>}
-                        {rec.year && <p>Year: {rec.year}</p>}
-                        {rec.genre && <p>Genre: {rec.genre}</p>}
-                        {rec.duration && <p>Duration: {rec.duration}</p>}
-                        {rec.movieAttributes && rec.movieAttributes.length > 0 && (
-                          <div className="mt-2">
-                            <p className="text-xs font-medium mb-1">Why watch:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {rec.movieAttributes.slice(0, 3).map((attr) => (
-                                <Badge key={attr} variant="secondary" className="text-xs px-2 py-0">
-                                  {attr}
-                                </Badge>
-                              ))}
-                              {rec.movieAttributes.length > 3 && (
-                                <Badge variant="secondary" className="text-xs px-2 py-0">
-                                  +{rec.movieAttributes.length - 3} more
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                        {rec.entity.movie.director && <p>Director: {rec.entity.movie.director}</p>}
+                        {rec.entity.movie.releaseYear && <p>Year: {rec.entity.movie.releaseYear}</p>}
+                        {rec.entity.movie.genre && <p>Genre: {rec.entity.movie.genre}</p>}
+                        {rec.entity.movie.duration && <p>Duration: {rec.entity.movie.duration} mins</p>}
                       </div>
                     )}
                   </CardHeader>

@@ -20,6 +20,16 @@ export async function GET(
             image: true,
           },
         },
+        entity: {
+          include: {
+            category: true,
+            restaurant: true,
+            movie: true,
+            fashion: true,
+            household: true,
+            other: true,
+          },
+        },
         comments: {
           include: {
             user: {
@@ -86,7 +96,7 @@ export async function PUT(
     // Check if the recommendation exists and belongs to the user
     const existingRecommendation = await prisma.recommendation.findUnique({
       where: { id },
-      select: { userId: true },
+      select: { userId: true, entityId: true },
     })
 
     if (!existingRecommendation) {
@@ -99,40 +109,141 @@ export async function PUT(
 
     const body = await request.json()
 
-    // Update the recommendation
-    const updatedRecommendation = await prisma.recommendation.update({
+    // Update recommendation fields
+    await prisma.recommendation.update({
       where: { id },
       data: {
-        title: body.title,
-        description: body.description || null,
-        category: body.category,
+        tags: body.tags || [],
         link: body.link || null,
         imageUrl: body.imageUrl || null,
         rating: body.rating ? parseInt(body.rating) : null,
-        // Category-specific fields
-        cuisine: body.cuisine || null,
-        location: body.location || null,
-        priceRange: body.priceRange || null,
-        hours: body.hours || null,
-        director: body.director || null,
-        year: body.year ? parseInt(body.year) : null,
-        genre: body.genre || null,
-        duration: body.duration || null,
-        movieAttributes: body.movieAttributes || [],
-        brand: body.brand || null,
-        price: body.price || null,
-        size: body.size || null,
-        color: body.color || null,
-        productType: body.productType || null,
-        model: body.model || null,
       },
     })
 
-    return NextResponse.json(updatedRecommendation)
+    // Update category-specific data if provided
+    if (body.restaurantData) {
+      await prisma.restaurant.upsert({
+        where: { entityId: existingRecommendation.entityId },
+        update: body.restaurantData,
+        create: {
+          entityId: existingRecommendation.entityId,
+          ...body.restaurantData,
+        },
+      })
+    } else if (body.movieData) {
+      await prisma.movie.upsert({
+        where: { entityId: existingRecommendation.entityId },
+        update: body.movieData,
+        create: {
+          entityId: existingRecommendation.entityId,
+          ...body.movieData,
+        },
+      })
+    } else if (body.fashionData) {
+      await prisma.fashion.upsert({
+        where: { entityId: existingRecommendation.entityId },
+        update: body.fashionData,
+        create: {
+          entityId: existingRecommendation.entityId,
+          ...body.fashionData,
+        },
+      })
+    } else if (body.householdData) {
+      await prisma.household.upsert({
+        where: { entityId: existingRecommendation.entityId },
+        update: body.householdData,
+        create: {
+          entityId: existingRecommendation.entityId,
+          ...body.householdData,
+        },
+      })
+    } else if (body.otherData) {
+      await prisma.other.upsert({
+        where: { entityId: existingRecommendation.entityId },
+        update: body.otherData,
+        create: {
+          entityId: existingRecommendation.entityId,
+          ...body.otherData,
+        },
+      })
+    }
+
+    // Fetch and return updated recommendation with all details
+    const finalRecommendation = await prisma.recommendation.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+        entity: {
+          include: {
+            category: true,
+            restaurant: true,
+            movie: true,
+            fashion: true,
+            household: true,
+            other: true,
+          },
+        },
+        _count: {
+          select: {
+            upvotes: true,
+            comments: true,
+          },
+        },
+      },
+    })
+
+    return NextResponse.json(finalRecommendation)
   } catch (error) {
     console.error("Error updating recommendation:", error)
     return NextResponse.json(
-      { error: "Failed to update recommendation" },
+      { error: "Failed to update recommendation", details: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE /api/recommendations/[id] - Delete a recommendation
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const session = await auth()
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Check if the recommendation exists and belongs to the user
+    const existingRecommendation = await prisma.recommendation.findUnique({
+      where: { id },
+      select: { userId: true },
+    })
+
+    if (!existingRecommendation) {
+      return NextResponse.json({ error: "Recommendation not found" }, { status: 404 })
+    }
+
+    if (existingRecommendation.userId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    await prisma.recommendation.delete({
+      where: { id },
+    })
+
+    return NextResponse.json({ message: "Recommendation deleted" })
+  } catch (error) {
+    console.error("Error deleting recommendation:", error)
+    return NextResponse.json(
+      { error: "Failed to delete recommendation" },
       { status: 500 }
     )
   }

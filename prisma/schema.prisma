@@ -70,59 +70,133 @@ model VerificationToken {
   @@id([identifier, token])
 }
 
-// Categories for recommendations
-enum Category {
-  RESTAURANT
-  MOVIE
-  FASHION
-  HOUSEHOLD
-  OTHER
-}
-
-// Recommendation model
-model Recommendation {
+// Category model
+model Category {
   id          String   @id @default(cuid())
-  title       String
+  name        String   @unique
+  displayName String
   description String?
-  category    Category
-  link        String?
-  imageUrl    String?
-  rating      Int?     @default(0)
+  icon        String?
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Restaurant-specific fields
-  cuisine     String?
-  location    String?
-  priceRange  String?
-  hours       String?
+  entities Entity[]
 
-  // Movie-specific fields
-  director    String?
-  year        Int?
-  genre       String?
-  duration    String?
-  movieAttributes String[] @default([])
+  @@index([name])
+}
 
-  // Fashion-specific fields
-  brand       String?
-  price       String?
-  size        String?
-  color       String?
+// Entity model - represents a specific item being recommended
+model Entity {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  categoryId String
+  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
-  // Household-specific fields
-  productType String?
-  model       String?
-  purchaseLink String?
+  recommendations Recommendation[]
+  restaurant      Restaurant?   @relation(name: "EntityRestaurant")
+  movie           Movie?        @relation(name: "EntityMovie")
+  fashion         Fashion?      @relation(name: "EntityFashion")
+  household       Household?    @relation(name: "EntityHousehold")
+  other           Other?        @relation(name: "EntityOther")
 
-  userId   String
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([name])
+  @@index([categoryId])
+}
+
+// Recommendation model - common fields only
+model Recommendation {
+  id        String   @id @default(cuid())
+  tags      String[] @default([])  // Array of recommendation reasons
+  link      String?
+  imageUrl  String?
+  rating    Int?     @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entityId   String
+  entity     Entity    @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
   comments Comment[]
   upvotes  UpVote[]
 
   @@index([userId])
-  @@index([category])
+  @@index([entityId])
   @@index([createdAt])
+}
+
+// Restaurant model
+model Restaurant {
+  entityId      String   @unique
+  entity        Entity   @relation(name: "EntityRestaurant", fields: [entityId], references: [id], onDelete: Cascade)
+  cuisine       String?
+  location      String?
+  priceRange    String?
+  hours         String?
+  phoneNumber   String?
+  placeId       String?  // Google Places ID or similar
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([placeId])
+  @@index([location])
+}
+
+// Movie model
+model Movie {
+  entityId  String   @unique
+  entity    Entity   @relation(name: "EntityMovie", fields: [entityId], references: [id], onDelete: Cascade)
+  director  String?
+  year      Int?
+  genre     String?
+  duration  String?
+  attributes String[] @default([])
+  tmdbId    String?  // TheMovieDB ID
+  imdbId    String?  // IMDB ID
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tmdbId])
+  @@index([imdbId])
+}
+
+// Fashion model
+model Fashion {
+  entityId  String   @unique
+  entity    Entity   @relation(name: "EntityFashion", fields: [entityId], references: [id], onDelete: Cascade)
+  brand     String?
+  price     String?
+  size      String?
+  color     String?
+  season    String?
+  material  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Household model
+model Household {
+  entityId      String   @unique
+  entity        Entity   @relation(name: "EntityHousehold", fields: [entityId], references: [id], onDelete: Cascade)
+  productType   String?
+  model         String?
+  purchaseLink  String?
+  warranty      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Other model (for flexible category)
+model Other {
+  entityId      String   @unique
+  entity        Entity   @relation(name: "EntityOther", fields: [entityId], references: [id], onDelete: Cascade)
+  customFields  Json?    // Flexible JSON for custom properties
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 // Comment model
