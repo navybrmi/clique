@@ -273,7 +273,7 @@ npm run test:integration -- --watch
 The project maintains strict coverage requirements:
 
 **Component Tests:**
-- Branches: 35%
+- Branches: 34%
 - Functions: 30%
 - Lines/Statements: 40%
 
