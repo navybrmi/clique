@@ -14,7 +14,7 @@ const customJestConfig = {
     url: 'http://localhost',
   },
   forceExit: true, // Force exit after tests complete to avoid hanging
-  detectOpenHandles: false, // Disable open handles detection for cleaner output
+  detectOpenHandles: false, // Disable - open handles from React scheduler are expected
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },

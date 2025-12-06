@@ -59,15 +59,20 @@ global.Response = Response
 global.Headers = Headers
 global.FormData = FormData
 
-// Now mock fetch for tests
-global.fetch = jest.fn(() =>
-  Promise.resolve(
-    new Response(JSON.stringify({}), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  )
-)
+// Now mock fetch for tests with a more robust default
+global.fetch = jest.fn((url) => {
+  // Default mock response
+  const defaultResponse = new Response(JSON.stringify([]), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  })
+  return Promise.resolve(defaultResponse)
+})
+
+// Reset fetch mock before each test
+beforeEach(() => {
+  global.fetch.mockClear()
+})
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
