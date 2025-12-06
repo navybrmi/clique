@@ -12,6 +12,20 @@ global.TransformStream = TransformStream
 global.MessageChannel = MessageChannel
 global.MessagePort = MessagePort
 
+// Provide React.act for testing-library
+// React 19 doesn't export act by default, so we need to add it
+const React = require('react')
+if (typeof React.act === 'undefined') {
+  // Use a minimal act implementation that handles sync and async operations
+  React.act = function act(callback) {
+    const result = callback()
+    if (result && typeof result.then === 'function') {
+      return result.then(() => undefined)
+    }
+    return Promise.resolve(undefined)
+  }
+}
+
 // Now import undici for Web API polyfills
 const { fetch, Request, Response, Headers, FormData } = require('undici')
 
