@@ -61,7 +61,7 @@ export function UserMenu({ user, onSignOut }: UserMenuProps) {
           <Link href="/my-recommendations">My Recommendations</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={onSignOut} className="text-red-600">
+        <DropdownMenuItem onClick={onSignOut || (() => signOut())} className="text-red-600">
           Sign Out
         </DropdownMenuItem>
       </DropdownMenuContent>
