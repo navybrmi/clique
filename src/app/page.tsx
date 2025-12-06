@@ -40,6 +40,25 @@ type Recommendation = {
 }
 
 /**
+ * Category emoji mapping for placeholder images
+ */
+const CATEGORY_EMOJIS: Record<string, string> = {
+  'Movie': '🎬',
+  'Restaurant': '🍽️',
+  'Fashion': '👗',
+  'Household': '🏠',
+}
+
+/**
+ * Get emoji for a category, with fallback for unknown categories
+ * @param categoryName - Display name of the category
+ * @returns Emoji representing the category
+ */
+const getCategoryEmoji = (categoryName: string): string => {
+  return CATEGORY_EMOJIS[categoryName] || '⭐'
+}
+
+/**
  * Home page component - Main feed of recommendations.
  * 
  * Displays a grid of recommendation cards with:
@@ -143,11 +162,7 @@ export default function Home() {
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-center p-4">
                           <div className="text-4xl mb-2">
-                            {rec.entity.category.displayName === 'Movie' && '🎬'}
-                            {rec.entity.category.displayName === 'Restaurant' && '🍽️'}
-                            {rec.entity.category.displayName === 'Fashion' && '👗'}
-                            {rec.entity.category.displayName === 'Household' && '🏠'}
-                            {!['Movie', 'Restaurant', 'Fashion', 'Household'].includes(rec.entity.category.displayName) && '⭐'}
+                            {getCategoryEmoji(rec.entity.category.displayName)}
                           </div>
                           <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
                             {rec.entity.name}
