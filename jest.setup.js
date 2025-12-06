@@ -17,7 +17,7 @@ const { fetch, Request, Response, Headers, FormData } = require('undici')
 
 // Polyfill Web APIs
 global.fetch = fetch
-global.Request = Request  
+global.Request = Request
 global.Response = Response
 global.Headers = Headers
 global.FormData = FormData
