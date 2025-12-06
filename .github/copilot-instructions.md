@@ -71,7 +71,7 @@ Pattern: `/api/{resource}/route.ts` for collection, `/api/{resource}/[id]/route.
 
 **Dialog Forms**: `<AddRecommendationDialog>` is canonical example
 - React Hook Form + Zod validation
-- Debounced typeahead search (500ms) for movies/restaurants
+- Debounced typeahead search (300ms) for movies/restaurants
 - Auto-populate fields from API suggestions
 - Tag management with duplicates prevention
 - `onSuccess` callback pattern for parent refresh
