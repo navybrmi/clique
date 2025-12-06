@@ -109,7 +109,7 @@ export interface RecommendationWithEntity {
 
 /**
  * Comment with associated user information.
- * Used for displaying threaded discussions on recommendations.
+ * Used for displaying comments on recommendations.
  */
 export interface CommentWithUser {
   id: string
