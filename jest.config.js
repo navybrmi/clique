@@ -13,6 +13,8 @@ const customJestConfig = {
     customExportConditions: [''],
     url: 'http://localhost',
   },
+  forceExit: true, // Force exit after tests complete to avoid hanging
+  detectOpenHandles: false, // Disable open handles detection for cleaner output
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
