@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/dev.js",
-    "build": "next build",
+    "build": "npm run test:all && next build",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
@@ -14,7 +14,8 @@
     "test:coverage": "jest --coverage",
     "test:integration": "jest --config jest.integration.config.js",
     "test:integration:watch": "jest --config jest.integration.config.js --watch",
-    "test:integration:coverage": "jest --config jest.integration.config.js --coverage"
+    "test:integration:coverage": "jest --config jest.integration.config.js --coverage",
+    "test:all": "npm run test && npm run test:integration"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
