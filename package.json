@@ -64,6 +64,9 @@
     "typescript": "^5",
     "undici": "^7.16.0"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"commonjs\"} prisma/seed.ts"
   }

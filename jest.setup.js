@@ -12,37 +12,6 @@ global.TransformStream = TransformStream
 global.MessageChannel = MessageChannel
 global.MessagePort = MessagePort
 
-// Provide React.act implementation for @testing-library/react
-// We need to set this up before @testing-library/react is imported
-const React = require('react')
-const ReactDOM = require('react-dom')
-
-// Create a proper act implementation
-if (!React.act) {
-  const actImpl = (callback) => {
-    const result = callback()
-    // If the callback returns a thenable (Promise-like), return it
-    if (result !== null && typeof result === 'object' && typeof result.then === 'function') {
-      return result.then(
-        () => undefined,
-        (error) => {
-          throw error
-        }
-      )
-    }
-    // Otherwise, return an immediately resolved promise
-    return Promise.resolve(undefined)
-  }
-  
-  // Set act on both React and ReactDOM for compatibility
-  React.act = actImpl
-  if (ReactDOM.unstable_act) {
-    ReactDOM.act = ReactDOM.unstable_act
-  } else if (!ReactDOM.act) {
-    ReactDOM.act = actImpl
-  }
-}
-
 // Now import undici for Web API polyfills
 const { fetch, Request, Response, Headers, FormData } = require('undici')
 
