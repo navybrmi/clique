@@ -19,7 +19,9 @@ const TMDB_BASE_URL = "https://api.themoviedb.org/3"
  *   - posterPath: Full URL to poster image (w500)
  *   - overview: Movie description
  *   - genre: Comma-separated genre names
- *   If the query is missing/empty, TMDB_API_KEY is not configured, or the API request fails, the function returns a JSON object with an empty `results` array (no error is thrown).
+ * 
+ * @note If the query is missing/empty, TMDB_API_KEY is not configured, or the API request fails, 
+ *       the function returns a JSON object with an empty `results` array (no error is thrown).
  * 
  * @example
  * // GET /api/movies/search?query=inception
