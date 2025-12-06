@@ -63,7 +63,9 @@ interface AddRecommendationDialogProps {
   trigger?: React.ReactNode
   /** Whether the dialog is in edit mode (true) or create mode (false) */
   editMode?: boolean
+  /** ID of the recommendation to edit (used in edit mode) */
   recommendationId?: string
+  /** Initial data to populate the form when editing an existing recommendation */
   initialData?: any
 }
 
