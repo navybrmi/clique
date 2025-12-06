@@ -263,9 +263,9 @@ npm run test:integration -- --watch
 
 ### Test Structure
 
-- **Component Tests**: 21 tests covering UI components (5 skipped in CI due to environment-specific Radix UI rendering)
-- **Integration Tests**: 60 tests covering API routes and business logic
-- **Total**: 76 passing, 9 skipped
+- **Component Tests**: 21 total (16 passing, 5 skipped in CI due to environment-specific Radix UI rendering)
+- **Integration Tests**: 64 total (60 passing, 4 skipped)
+- **Total**: 85 tests (76 passing, 9 skipped)
 - **Test Environment**: Dual Jest configuration (jsdom for components, node for API routes)
 
 ### Coverage Thresholds
