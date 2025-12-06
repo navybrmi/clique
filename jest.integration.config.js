@@ -9,6 +9,8 @@ const createJestConfig = nextJest({
 const customJestConfig = {
   testEnvironment: 'node', // Use Node.js environment for API route tests
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  forceExit: true, // Force exit after tests complete to avoid hanging
+  detectOpenHandles: false, // Disable open handles detection for cleaner output
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },

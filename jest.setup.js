@@ -1,58 +1,68 @@
-import '@testing-library/jest-dom'
-import { TextEncoder, TextDecoder } from 'util'
-import { Blob } from 'buffer'
+require('@testing-library/jest-dom')
 
-// Polyfill TextEncoder/TextDecoder for Node environment
+const { TextEncoder, TextDecoder } = require('util')
+const { ReadableStream, TransformStream } = require('stream/web')
+const { MessageChannel, MessagePort } = require('worker_threads')
+
+// Set up all polyfills BEFORE importing undici
 global.TextEncoder = TextEncoder
 global.TextDecoder = TextDecoder
+global.ReadableStream = ReadableStream
+global.TransformStream = TransformStream
+global.MessageChannel = MessageChannel
+global.MessagePort = MessagePort
 
-// Polyfill Blob
-if (!global.Blob) {
-  global.Blob = Blob
+// Provide React.act for testing-library
+// React 19 doesn't export act by default in some environments
+const React = require('react')
+const ReactDOM = require('react-dom')
+
+if (typeof React.act === 'undefined') {
+  // Try to get act from react-dom/client or react internals
+  let actImpl = null
+  
+  try {
+    // React 19 moved act to react-dom/client
+    const ReactDOMClient = require('react-dom/client')
+    if (ReactDOMClient.act) {
+      actImpl = ReactDOMClient.act
+    }
+  } catch (e) {
+    // Fallback: try unstable_act from react-dom
+    if (ReactDOM.unstable_act) {
+      actImpl = ReactDOM.unstable_act
+    }
+  }
+  
+  // If we found an implementation, use it
+  if (actImpl) {
+    React.act = actImpl
+  } else {
+    // Last resort: minimal implementation
+    React.act = function act(callback) {
+      const result = callback()
+      if (result && typeof result.then === 'function') {
+        return result.then(() => undefined)
+      }
+      return Promise.resolve(undefined)
+    }
+  }
 }
 
-// Mock Response class for tests
-class MockResponse {
-  constructor(body, init = {}) {
-    this.body = body
-    this.status = init.status || 200
-    this.statusText = init.statusText || 'OK'
-    this.headers = new Map(Object.entries(init.headers || {}))
-    this.ok = this.status >= 200 && this.status < 300
-  }
+// Now import undici for Web API polyfills
+const { fetch, Request, Response, Headers, FormData } = require('undici')
 
-  async json() {
-    if (typeof this.body === 'string') {
-      return JSON.parse(this.body)
-    }
-    return this.body
-  }
+// Polyfill Web APIs
+global.fetch = fetch
+global.Request = Request
+global.Response = Response
+global.Headers = Headers
+global.FormData = FormData
 
-  async text() {
-    if (typeof this.body === 'string') {
-      return this.body
-    }
-    return JSON.stringify(this.body)
-  }
-
-  // Add static json method for NextResponse.json()
-  static json(data, init = {}) {
-    return new MockResponse(data, {
-      ...init,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(init.headers || {}),
-      },
-    })
-  }
-}
-
-global.Response = MockResponse
-
-// Mock fetch globally with a default implementation
+// Now mock fetch for tests
 global.fetch = jest.fn(() =>
   Promise.resolve(
-    new MockResponse(JSON.stringify({}), {
+    new Response(JSON.stringify({}), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     })
