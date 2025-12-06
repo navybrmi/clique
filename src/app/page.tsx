@@ -161,7 +161,7 @@ export default function Home() {
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-center p-4">
-                          <div className="text-4xl mb-2">
+                          <div className="text-4xl mb-2" aria-hidden="true">
                             {getCategoryEmoji(rec.entity.category.displayName)}
                           </div>
                           <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
