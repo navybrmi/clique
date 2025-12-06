@@ -10,6 +10,9 @@ import { ArrowUp, MessageCircle, Star } from "lucide-react"
 import { AddRecommendationDialog } from "@/components/add-recommendation-dialog"
 import { Header } from "@/components/header"
 
+/**
+ * Recommendation data structure for the home page feed
+ */
 type Recommendation = {
   id: string
   tags: string[]
@@ -36,6 +39,25 @@ type Recommendation = {
   }
 }
 
+/**
+ * Home page component - Main feed of recommendations.
+ * 
+ * Displays a grid of recommendation cards with:
+ * - Category badges
+ * - Entity images and names
+ * - User ratings
+ * - Tags
+ * - Engagement metrics (upvotes, comments)
+ * - Category-specific metadata (cuisine, genre, etc.)
+ * 
+ * Features:
+ * - Automatic data fetching on mount
+ * - Add new recommendation dialog
+ * - Loading and error states
+ * - Responsive grid layout
+ * 
+ * @returns The home page with recommendation feed
+ */
 export default function Home() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [loading, setLoading] = useState(true)

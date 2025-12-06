@@ -6,10 +6,24 @@ import { Button } from "@/components/ui/button"
 import { UserMenu } from "@/components/user-menu"
 import { ArrowLeft } from "lucide-react"
 
+/**
+ * Props for the Header component
+ */
 interface HeaderProps {
+  /** Whether to show the back button. Defaults to false. */
   showBack?: boolean
 }
 
+/**
+ * Application header component with authentication UI.
+ * 
+ * Displays the app logo, navigation, and authentication status.
+ * Shows sign-in buttons for unauthenticated users and user menu for authenticated users.
+ * Includes optional back button for nested pages.
+ * 
+ * @param props - Component props
+ * @returns A sticky header with navigation and auth controls
+ */
 export function Header({ showBack }: HeaderProps) {
   const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)

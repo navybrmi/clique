@@ -1,7 +1,24 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
-// GET /api/recommendations - Fetch all recommendations
+/**
+ * GET /api/recommendations
+ * 
+ * Retrieves all recommendations with complete entity details, user info, and engagement counts.
+ * Results are ordered by creation date (newest first).
+ * 
+ * @returns {Promise<NextResponse>} JSON array of recommendations with:
+ *   - User details (id, name, image)
+ *   - Complete entity with category-specific data
+ *   - Upvote and comment counts
+ * @throws {500} If database query fails
+ * 
+ * @example
+ * // Response includes:
+ * // - recommendation.user: { id, name, image }
+ * // - recommendation.entity: { ...entity, restaurant/movie/fashion/household/other }
+ * // - recommendation._count: { upvotes, comments }
+ */
 export async function GET() {
   try {
     const recommendations = await prisma.recommendation.findMany({
@@ -48,7 +65,42 @@ export async function GET() {
   }
 }
 
-// POST /api/recommendations - Create a new recommendation
+/**
+ * POST /api/recommendations
+ * 
+ * Creates a new recommendation with optional entity creation.
+ * 
+ * Request Body:
+ * @param {string} userId - ID of the user creating the recommendation (required)
+ * @param {string} categoryId - Category ID for the recommendation (required)
+ * @param {string} [entityId] - Existing entity ID (if reusing an entity)
+ * @param {string} [entityName] - Name for new entity (if creating)
+ * @param {string[]} [tags] - Array of recommendation tags
+ * @param {string} [link] - External link related to recommendation
+ * @param {string} [imageUrl] - Image URL for the recommendation
+ * @param {number} [rating] - User rating (0-5)
+ * @param {object} [restaurantData] - Restaurant-specific fields (if category is RESTAURANT)
+ * @param {object} [movieData] - Movie-specific fields (if category is MOVIE)
+ * @param {object} [fashionData] - Fashion-specific fields (if category is FASHION)
+ * @param {object} [householdData] - Household-specific fields (if category is HOUSEHOLD)
+ * @param {object} [otherData] - Generic category fields (if category is OTHER)
+ * 
+ * @returns {Promise<NextResponse>} Created recommendation with all relations
+ * @throws {400} If required fields are missing or invalid
+ * @throws {500} If database operation fails
+ * 
+ * @example
+ * // Creating new restaurant recommendation:
+ * // POST /api/recommendations
+ * // Body: {
+ * //   userId: "user123",
+ * //   categoryId: "cat1",
+ * //   entityName: "Joe's Pizza",
+ * //   tags: ["Great crust", "Authentic"],
+ * //   rating: 5,
+ * //   restaurantData: { cuisine: "Italian", location: "NYC" }
+ * // }
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()

@@ -3,6 +3,34 @@ import { NextRequest, NextResponse } from "next/server"
 const TMDB_API_KEY = process.env.TMDB_API_KEY
 const TMDB_BASE_URL = "https://api.themoviedb.org/3"
 
+/**
+ * GET /api/movies/[id]
+ * 
+ * Retrieves detailed information for a specific movie from TMDB.
+ * 
+ * Route Parameters:
+ * @param {string} id - TMDB movie ID
+ * 
+ * @returns {Promise<NextResponse>} JSON object with movie details:
+ *   - title: Movie title
+ *   - director: Director name (from credits)
+ *   - year: Release year
+ *   - genre: Comma-separated genres
+ *   - duration: Formatted runtime (e.g., "2h 28min")
+ *   - posterPath: Full URL to poster image (w500)
+ *   - overview: Movie description
+ *   - imdbLink: IMDB URL (if available)
+ * 
+ * @throws {500} If TMDB_API_KEY is not configured
+ * @throws {404} If movie is not found on TMDB
+ * @throws {500} If API request fails
+ * 
+ * @example
+ * // GET /api/movies/27205
+ * // Response: { title: "Inception", director: "Christopher Nolan", year: 2010, ... }
+ * 
+ * @note Results are cached for 24 hours
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

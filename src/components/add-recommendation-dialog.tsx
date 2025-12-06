@@ -17,12 +17,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Star, X, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
+/**
+ * Category data structure
+ */
 interface Category {
   id: string
   name: string
   displayName: string
 }
 
+/**
+ * Movie suggestion from TMDB API search results
+ */
 interface MovieSuggestion {
   id: number
   title: string
@@ -32,6 +38,9 @@ interface MovieSuggestion {
   genre?: string
 }
 
+/**
+ * Restaurant suggestion from Google Places API search results
+ */
 interface RestaurantSuggestion {
   id: string
   name: string
@@ -44,14 +53,40 @@ interface RestaurantSuggestion {
   phone?: string
 }
 
+/**
+ * Props for the AddRecommendationDialog component
+ */
 interface AddRecommendationDialogProps {
+  /** Callback function called after successful recommendation creation/update */
   onSuccess?: () => void
+  /** Custom trigger element. If not provided, uses default "Add Recommendation" button */
   trigger?: React.ReactNode
+  /** Whether the dialog is in edit mode (true) or create mode (false) */
   editMode?: boolean
   recommendationId?: string
   initialData?: any
 }
 
+/**
+ * Dialog component for creating and editing recommendations.
+ * 
+ * A comprehensive form for adding recommendations across multiple categories
+ * (Movies, Restaurants, Fashion, Household, Other). Features:
+ * 
+ * - Category-specific form fields
+ * - Real-time search for movies (TMDB) and restaurants (Google Places)
+ * - Auto-population from search results
+ * - Tag management with add/remove functionality
+ * - Image URL and rating support
+ * - Edit mode with pre-populated data
+ * - Loading states and error handling
+ * 
+ * The component dynamically shows/hides fields based on selected category
+ * and provides suggestions as user types for movies and restaurants.
+ * 
+ * @param props - Component props
+ * @returns A modal dialog with dynamic recommendation form
+ */
 export function AddRecommendationDialog({
   onSuccess,
   trigger,
@@ -144,6 +179,12 @@ export function AddRecommendationDialog({
     }
   }, [editMode, initialData, open])
 
+  /**
+   * Searches for movies using TMDB API with debouncing.
+   * Updates movie suggestions state with search results.
+   * 
+   * @param query - Movie title search term
+   */
   const handleMovieSearch = async (query: string) => {
     setEntityName(query)
     
@@ -174,6 +215,12 @@ export function AddRecommendationDialog({
     }, 300)
   }
 
+  /**
+   * Searches for restaurants using Google Places API with debouncing.
+   * Updates restaurant suggestions state with search results.
+   * 
+   * @param query - Restaurant name or search term
+   */
   const handleRestaurantSearch = async (query: string) => {
     setEntityName(query)
     
@@ -204,6 +251,12 @@ export function AddRecommendationDialog({
     }, 300)
   }
 
+  /**
+   * Handles selection of a movie from search suggestions.
+   * Auto-populates form fields with movie data from TMDB.
+   * 
+   * @param movie - Selected movie suggestion object
+   */
   const handleMovieSelect = (movie: MovieSuggestion) => {
     setEntityName(movie.title)
     setImageUrl(movie.posterPath || "")
@@ -217,6 +270,12 @@ export function AddRecommendationDialog({
     setMovieSuggestions([])
   }
 
+  /**
+   * Handles selection of a restaurant from search suggestions.
+   * Auto-populates form fields with restaurant data from Google Places.
+   * 
+   * @param restaurant - Selected restaurant suggestion object
+   */
   const handleRestaurantSelect = (restaurant: RestaurantSuggestion) => {
     setEntityName(restaurant.name)
     setImageUrl(restaurant.imageUrl || "")
@@ -230,6 +289,10 @@ export function AddRecommendationDialog({
     setRestaurantSuggestions([])
   }
 
+  /**
+   * Adds a new tag to the tags array.
+   * Prevents duplicate tags and trims whitespace.
+   */
   const handleAddTag = () => {
     if (currentTag.trim() && !tags.includes(currentTag.trim())) {
       setTags([...tags, currentTag.trim()])
@@ -237,10 +300,26 @@ export function AddRecommendationDialog({
     }
   }
 
+  /**
+   * Removes a tag from the tags array.
+   * 
+   * @param tag - Tag string to remove
+   */
   const handleRemoveTag = (tag: string) => {
     setTags(tags.filter((t) => t !== tag))
   }
 
+  /**
+   * Handles form submission for creating or updating a recommendation.
+   * 
+   * - Validates required fields
+   * - Sends POST (create) or PUT (edit) request to API
+   * - Resets form on success
+   * - Calls onSuccess callback
+   * - Handles errors with user alerts
+   * 
+   * @param e - Form submit event
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)

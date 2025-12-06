@@ -14,10 +14,30 @@ import {
 import { Trash2, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
+/**
+ * Props for the DeleteRecommendationButton component
+ */
 interface DeleteRecommendationButtonProps {
+  /** The recommendation object to delete. Must include id, userId, and entity.name */
   recommendation: any
 }
 
+/**
+ * Button component for deleting recommendations with confirmation dialog.
+ * 
+ * Only visible to the recommendation owner. Shows a confirmation dialog
+ * before deletion and redirects to home page after successful deletion.
+ * 
+ * Features:
+ * - Owner-only access control
+ * - Confirmation dialog with entity name
+ * - Loading state during deletion
+ * - Automatic redirect after deletion
+ * - Error handling with user feedback
+ * 
+ * @param props - Component props
+ * @returns A delete button with confirmation dialog, or null if user is not the owner
+ */
 export function DeleteRecommendationButton({ recommendation }: DeleteRecommendationButtonProps) {
   const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
