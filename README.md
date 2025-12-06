@@ -303,10 +303,10 @@ The workflow is configured in `.github/workflows/test.yml` and runs on:
 **On Pull Requests:**
 1. GitHub Actions will run tests automatically
 2. Check status appears on the PR (✅ Tests passed or ❌ Tests failed)
-3. Coverage diff is commented directly on the PR showing:
-   - Overall coverage percentage
-   - Changes compared to base branch
-   - File-by-file coverage breakdown
+3. **Two separate coverage reports** are commented directly on the PR:
+   - **Component Test Coverage**: Coverage for UI components
+   - **Integration Test Coverage**: Coverage for API routes
+   - Each shows: overall coverage percentage, changes compared to base branch, and file-by-file breakdown
 
 **Locally:**
 ```bash

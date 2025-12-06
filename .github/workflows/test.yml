@@ -37,10 +37,20 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
       
-      - name: Comment coverage on PR
+      - name: Comment component coverage on PR
         uses: romeovs/lcov-reporter-action@v0.3.1
         if: github.event_name == 'pull_request'
         with:
           lcov-file: ./coverage/lcov.info
           github-token: ${{ secrets.GITHUB_TOKEN }}
           delete-old-comments: true
+          title: "Component Test Coverage"
+      
+      - name: Comment integration coverage on PR
+        uses: romeovs/lcov-reporter-action@v0.3.1
+        if: github.event_name == 'pull_request'
+        with:
+          lcov-file: ./coverage-integration/lcov.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          delete-old-comments: false
+          title: "Integration Test Coverage"
