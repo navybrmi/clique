@@ -11,6 +11,7 @@ const customJestConfig = {
   testEnvironment: 'jest-environment-jsdom',
   testEnvironmentOptions: {
     customExportConditions: [''],
+    url: 'http://localhost',
   },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',

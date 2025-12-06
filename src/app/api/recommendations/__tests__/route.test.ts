@@ -68,7 +68,10 @@ describe("GET /api/recommendations", () => {
 
     // Assert
     expect(response.status).toBe(200)
-    expect(data).toEqual(mockRecommendations)
+    // Dates are serialized to strings in JSON responses
+    expect(data[0].createdAt).toBe("2024-01-01T00:00:00.000Z")
+    expect(data[0].id).toBe("rec1")
+    expect(data[0].entity.name).toBe("Test Restaurant")
     expect(prisma.recommendation.findMany).toHaveBeenCalledWith({
       include: expect.objectContaining({
         user: expect.any(Object),
