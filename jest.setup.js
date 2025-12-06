@@ -13,16 +13,39 @@ global.MessageChannel = MessageChannel
 global.MessagePort = MessagePort
 
 // Provide React.act for testing-library
-// React 19 doesn't export act by default, so we need to add it
+// React 19 doesn't export act by default in some environments
 const React = require('react')
+const ReactDOM = require('react-dom')
+
 if (typeof React.act === 'undefined') {
-  // Use a minimal act implementation that handles sync and async operations
-  React.act = function act(callback) {
-    const result = callback()
-    if (result && typeof result.then === 'function') {
-      return result.then(() => undefined)
+  // Try to get act from react-dom/client or react internals
+  let actImpl = null
+  
+  try {
+    // React 19 moved act to react-dom/client
+    const ReactDOMClient = require('react-dom/client')
+    if (ReactDOMClient.act) {
+      actImpl = ReactDOMClient.act
     }
-    return Promise.resolve(undefined)
+  } catch (e) {
+    // Fallback: try unstable_act from react-dom
+    if (ReactDOM.unstable_act) {
+      actImpl = ReactDOM.unstable_act
+    }
+  }
+  
+  // If we found an implementation, use it
+  if (actImpl) {
+    React.act = actImpl
+  } else {
+    // Last resort: minimal implementation
+    React.act = function act(callback) {
+      const result = callback()
+      if (result && typeof result.then === 'function') {
+        return result.then(() => undefined)
+      }
+      return Promise.resolve(undefined)
+    }
   }
 }
 
