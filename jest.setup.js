@@ -3,7 +3,6 @@ require('@testing-library/jest-dom')
 const { TextEncoder, TextDecoder } = require('util')
 const { ReadableStream, TransformStream } = require('stream/web')
 const { MessageChannel, MessagePort } = require('worker_threads')
-const React = require('react')
 
 // Set up all polyfills BEFORE importing undici
 global.TextEncoder = TextEncoder
@@ -12,11 +11,6 @@ global.ReadableStream = ReadableStream
 global.TransformStream = TransformStream
 global.MessageChannel = MessageChannel
 global.MessagePort = MessagePort
-
-// Polyfill React.act for @testing-library/react
-if (!React.act) {
-  React.act = require('react-dom/test-utils').act
-}
 
 // Now import undici for Web API polyfills
 const { fetch, Request, Response, Headers, FormData } = require('undici')
