@@ -38,6 +38,7 @@ echo ""
 LAST_CHECK_STATE=""
 LAST_REVIEW_STATE=""
 LAST_COMMENT_COUNT=0
+LAST_UNRESOLVED_COUNT=0
 
 while true; do
   clear
@@ -145,11 +146,38 @@ while true; do
   else
     echo "  Total comments: $COMMENT_COUNT"
     
-    # Get review threads
-    REVIEW_THREADS=$(gh api repos/{owner}/{repo}/pulls/$PR_NUMBER/comments 2>&1)
+    # Get review comments with proper resolution status
+    REVIEW_COMMENTS=$(gh api graphql -f query='
+      query($owner: String!, $repo: String!, $number: Int!) {
+        repository(owner: $owner, name: $repo) {
+          pullRequest(number: $number) {
+            reviewThreads(first: 100) {
+              nodes {
+                isResolved
+                isCollapsed
+                comments(first: 1) {
+                  nodes {
+                    path
+                    body
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ' -f owner=navybrmi -f repo=clique -F number=$PR_NUMBER 2>&1)
+    
     if [ $? -eq 0 ]; then
-      UNRESOLVED=$(echo "$REVIEW_THREADS" | jq '[.[] | select(.in_reply_to_id == null)] | length')
-      echo "  Review threads: $UNRESOLVED"
+      TOTAL_THREADS=$(echo "$REVIEW_COMMENTS" | jq '.data.repository.pullRequest.reviewThreads.nodes | length')
+      UNRESOLVED=$(echo "$REVIEW_COMMENTS" | jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length')
+      RESOLVED=$(echo "$REVIEW_COMMENTS" | jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == true)] | length')
+      
+      if [ "$TOTAL_THREADS" -gt 0 ]; then
+        echo "  Review threads: $TOTAL_THREADS total"
+        echo "    ⚠️  Unresolved: $UNRESOLVED"
+        echo "    ✅ Resolved: $RESOLVED"
+      fi
     fi
   fi
   
@@ -182,11 +210,26 @@ while true; do
       echo "🔔 NEW COMMENT(S): +$NEW_COMMENTS"
       afplay /System/Library/Sounds/Purr.aiff 2>/dev/null || true
     fi
+    
+    # Track unresolved comment changes
+    if [ -n "$UNRESOLVED" ] && [ "$UNRESOLVED" -ne "$LAST_UNRESOLVED_COUNT" ]; then
+      echo ""
+      if [ "$UNRESOLVED" -lt "$LAST_UNRESOLVED_COUNT" ]; then
+        RESOLVED_COUNT=$((LAST_UNRESOLVED_COUNT - UNRESOLVED))
+        echo "🔔 REVIEW COMMENTS RESOLVED: -$RESOLVED_COUNT (now $UNRESOLVED unresolved)"
+        afplay /System/Library/Sounds/Glass.aiff 2>/dev/null || true
+      else
+        NEW_UNRESOLVED=$((UNRESOLVED - LAST_UNRESOLVED_COUNT))
+        echo "🔔 NEW UNRESOLVED COMMENTS: +$NEW_UNRESOLVED (now $UNRESOLVED unresolved)"
+        afplay /System/Library/Sounds/Funk.aiff 2>/dev/null || true
+      fi
+    fi
   fi
   
   LAST_CHECK_STATE=$CURRENT_CHECK_STATE
   LAST_REVIEW_STATE=$REVIEW_DECISION
   LAST_COMMENT_COUNT=$COMMENT_COUNT
+  LAST_UNRESOLVED_COUNT=${UNRESOLVED:-0}
   
   echo ""
   echo "Next check in ${CHECK_INTERVAL}s... (Ctrl+C to stop)"
