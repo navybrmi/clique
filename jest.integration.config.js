@@ -32,6 +32,7 @@ const customJestConfig = {
   ],
   coverageDirectory: 'coverage-integration',
   coverageReporters: ['text', 'lcov', 'json-summary'],
+  reporters: ['default', 'jest-junit'],
   coverageThreshold: {
     global: {
       statements: 80,
