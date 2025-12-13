@@ -118,6 +118,22 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
 
+## Run with Docker
+
+Preferred (interactive):
+
+```bash
+npm run docker:dev
+```
+
+Or directly:
+
+```bash
+docker compose up --build
+```
+
+See `DOCKER_RUN.md` for details.
+
 ### Quick Start Demo
 
 The seed data includes:
