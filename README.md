@@ -1,5 +1,10 @@
 # Clique 🎯
 
+[![Tests](https://github.com/navybrmi/clique/actions/workflows/test.yml/badge.svg)](https://github.com/navybrmi/clique/actions/workflows/test.yml)
+[![CodeQL](https://github.com/navybrmi/clique/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/navybrmi/clique/actions/workflows/codeql-analysis.yml)
+[![Vercel](https://img.shields.io/badge/Vercel-Deployed-success?logo=vercel)](https://vercel.com/navybrmis-projects/clique)
+[![codecov](https://codecov.io/gh/navybrmi/clique/branch/main/graph/badge.svg)](https://codecov.io/gh/navybrmi/clique)
+
 A social web application for sharing recommendations among friends. Discover and share your favorite restaurants, movies, fashion items, household products, and more.
 
 ## Tech Stack
