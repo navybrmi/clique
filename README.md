@@ -125,10 +125,34 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 ## Run with Docker
 
+
+### Fast Docker Development (Recommended)
+
 Preferred (interactive):
 
 ```bash
 npm run docker:dev
+```
+
+This uses BuildKit, persistent volumes, and hot reload for rapid local development.
+
+Or directly:
+
+```bash
+DOCKER_BUILDKIT=1 docker compose -f docker-compose.dev.yml up --build
+```
+
+To stop:
+```bash
+docker compose -f docker-compose.dev.yml down
+```
+
+### Production-like Docker Build
+
+To run a production-style build and test in Docker:
+
+```bash
+npm run docker:prod
 ```
 
 Or directly:
