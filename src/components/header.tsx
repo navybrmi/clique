@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { UserMenu } from "@/components/user-menu"
 import { ArrowLeft } from "lucide-react"
+import { signOut } from "next-auth/react"
 
 /**
  * Props for the Header component
@@ -39,8 +40,7 @@ export function Header({ showBack }: HeaderProps) {
   }, [])
 
   const handleSignOut = async () => {
-    await fetch('/api/auth/signout', { method: 'POST' })
-    window.location.href = '/'
+    await signOut({ callbackUrl: '/' })
   }
 
   return (
