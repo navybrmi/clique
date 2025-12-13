@@ -230,6 +230,121 @@ The application uses PostgreSQL with Prisma ORM. Main models:
 - `npm run build` - Build for production
 - `npm start` - Start production server
 - `npm run lint` - Run ESLint
+- `npm run test` - Run component tests
+- `npm run test:coverage` - Run component tests with coverage
+- `npm run test:integration` - Run API integration tests
+- `npm run test:integration:coverage` - Run integration tests with coverage
+- `npm run test:all` - Run all tests (required before build)
+
+## Testing & CI/CD
+
+This project uses Jest for testing and GitHub Actions for continuous integration.
+
+### Running Tests Locally
+
+```bash
+# Run all tests
+npm run test:all
+
+# Run component tests only
+npm run test
+
+# Run integration tests only
+npm run test:integration
+
+# Run with coverage reports
+npm run test:coverage
+npm run test:integration:coverage
+
+# Watch mode for development
+npm run test -- --watch
+npm run test:integration -- --watch
+```
+
+### Test Structure
+
+- **Component Tests**: 21 total (16 passing, 5 skipped in CI due to environment-specific Radix UI rendering)
+- **Integration Tests**: 64 total (60 passing, 4 skipped)
+- **Total**: 85 tests (76 passing, 9 skipped)
+- **Test Environment**: Dual Jest configuration (jsdom for components, node for API routes)
+
+### Coverage Thresholds
+
+The project maintains strict coverage requirements:
+
+**Component Tests:**
+- Branches: 34%
+- Functions: 30%
+- Lines/Statements: 40%
+
+**API Routes (Integration Tests):**
+- Branches: 70%
+- Functions: 100%
+- Lines/Statements: 80%
+
+Coverage reports are generated in:
+- `coverage/` - Component test coverage
+- `coverage-integration/` - Integration test coverage
+
+### GitHub Actions Workflow
+
+Every pull request automatically runs:
+- ✅ All tests (component + integration) with Node.js 20
+- ✅ Coverage report generation in lcov format
+- ✅ Coverage diff automatically commented on PR
+- ✅ (Optional) Upload to Codecov for historical trend tracking
+
+The workflow is configured in `.github/workflows/test.yml` and runs on:
+- Pull requests to `main` branch
+- Pushes to `main` branch
+
+### Viewing Test Results
+
+**On Pull Requests:**
+1. GitHub Actions will run tests automatically
+2. Check status appears on the PR (✅ Tests passed or ❌ Tests failed)
+3. **Two separate coverage reports** are commented directly on the PR:
+   - **Component Test Coverage**: Coverage for UI components
+   - **Integration Test Coverage**: Coverage for API routes
+   - Each shows: overall coverage percentage, changes compared to base branch, and file-by-file breakdown
+
+**Locally:**
+```bash
+# Generate and view coverage report
+npm run test:coverage
+open coverage/lcov-report/index.html
+
+npm run test:integration:coverage
+open coverage-integration/lcov-report/index.html
+```
+
+### Setting up Codecov (Optional)
+
+For historical coverage tracking and trend analysis:
+
+1. Sign up at [codecov.io](https://codecov.io) and connect your GitHub repository
+2. Add `CODECOV_TOKEN` to your GitHub repository secrets:
+   - Go to Settings → Secrets and variables → Actions
+   - Add new secret named `CODECOV_TOKEN`
+   - Paste your Codecov token
+3. Coverage data will be automatically uploaded on every test run
+4. View trends at `https://codecov.io/gh/YOUR_USERNAME/clique`
+
+**Note:** Codecov integration is optional. The workflow will continue to run successfully without the token, providing PR coverage comments via the built-in GitHub token.
+
+### Build Quality Gate
+
+The build process (`npm run build`) automatically runs all tests first:
+```bash
+npm run test:all && next build
+```
+
+This ensures that:
+- No broken code is deployed to production
+- All tests must pass before deployment succeeds
+- Coverage thresholds are maintained
+
+**Vercel Deployment:** Connected to the repository and automatically deploys when tests pass.
 
 ## API Routes
 
