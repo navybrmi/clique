@@ -28,6 +28,7 @@ const customJestConfig = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'json-summary'],
+  reporters: ['default', 'jest-junit'],
   coverageThreshold: {
     global: {
       branches: 10,
