@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+remote_name="${1:-}"
+remote_url="${2:-}"
+
+# Allow opting out explicitly (and `git push --no-verify` also bypasses hooks)
+if [[ "${SKIP_VERIFY_BUILD:-}" == "1" ]]; then
+  echo "pre-push: SKIP_VERIFY_BUILD=1 set; skipping verify-build"
+  exit 0
+fi
+
+# Only enforce for GitHub remotes (by name or URL)
+if [[ "$remote_name" != "origin" && "$remote_url" != *"github.com"* ]]; then
+  echo "pre-push: non-GitHub remote ($remote_name); skipping verify-build"
+  exit 0
+fi
+
+# If Docker isn't available, fail fast with a clear message.
+if ! command -v docker >/dev/null 2>&1; then
+  echo "pre-push: docker not found. Install Docker Desktop or push with --no-verify." >&2
+  exit 1
+fi
+
+echo "pre-push: running 'npm run verify-build' (Docker-based Vercel simulation)"
+
+npm run verify-build

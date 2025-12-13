@@ -1,0 +1,32 @@
+# Dockerfile for testing build locally before pushing to Vercel
+# This simulates Vercel's build environment
+
+FROM node:20-slim
+
+# Install OpenSSL for Prisma
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files and prisma schema first
+COPY package*.json ./
+COPY prisma ./prisma
+
+# Install dependencies (clean install like Vercel does)
+RUN npm ci
+
+# Copy all source files
+COPY . .
+
+# Run Prisma generate (happens in postinstall but explicit here)
+RUN npx prisma generate
+
+# Run the build command (same as Vercel)
+RUN npm run build
+
+# Verify the build was successful
+RUN test -d .next
+
+# Default command to show success
+CMD ["echo", "✅ Build successful! This would deploy to Vercel."]
