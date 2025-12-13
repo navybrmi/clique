@@ -51,9 +51,3 @@ yarn-error.log*
 *.swp
 *.swo
 *~
-
-# Docker
-Dockerfile
-Dockerfile.*
-docker-compose*.yml
-.dockerignore
