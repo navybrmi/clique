@@ -145,7 +145,7 @@ export function AddRecommendationDialog({
     const fetchCategories = async () => {
       try {
         const res = await fetch("/api/categories")
-        if (res && res.ok) {
+        if (res.ok) {
           const data = await res.json()
           setCategories(data)
         }
