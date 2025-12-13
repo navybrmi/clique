@@ -1,13 +1,25 @@
 import React from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { Header } from '../header'
+
+// Mock UserMenu to provide a testable interface
+jest.mock('../user-menu', () => ({
+  UserMenu: ({ user, onSignOut }: any) => {
+    return (
+      <button data-testid="mock-user-menu" onClick={onSignOut}>
+        {user.name}
+      </button>
+    )
+  },
+}))
 
 // Mock useSession
 jest.mock('next-auth/react', () => ({
   useSession: jest.fn(),
+  signOut: jest.fn(),
 }))
 
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 
 describe('Header', () => {
   beforeEach(() => {
@@ -120,6 +132,66 @@ describe('Header', () => {
     
     await waitFor(() => {
       expect(screen.getByText('Sign In')).toBeInTheDocument()
+    })
+  })
+
+  it('should handle session fetch error gracefully', async () => {
+    ;(useSession as jest.Mock).mockReturnValue({
+      data: null,
+      status: 'unauthenticated',
+    })
+
+    // Mock fetch to reject with error
+    global.fetch = jest.fn(() => Promise.reject(new Error('Network error'))) as jest.Mock
+
+    render(<Header />)
+    
+    // Should still render the header and show sign in buttons despite fetch error
+    await waitFor(() => {
+      expect(screen.getByText('Sign In')).toBeInTheDocument()
+      expect(screen.getByText('Get Started')).toBeInTheDocument()
+    })
+  })
+
+  it('should call signOut with correct callback when handleSignOut is invoked', async () => {
+    const mockUser = {
+      name: 'Test User',
+      email: 'test@example.com',
+      image: 'https://example.com/avatar.jpg',
+    }
+
+    ;(useSession as jest.Mock).mockReturnValue({
+      data: {
+        user: mockUser,
+      },
+      status: 'authenticated',
+    })
+
+    global.fetch = jest.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ user: mockUser }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+    ) as jest.Mock
+
+    const mockSignOut = signOut as jest.MockedFunction<typeof signOut>
+    mockSignOut.mockResolvedValue(undefined as any)
+
+    render(<Header />)
+    
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-user-menu')).toBeInTheDocument()
+    })
+
+    // Click the mocked UserMenu button which will call onSignOut (handleSignOut)
+    const userMenuButton = screen.getByTestId('mock-user-menu')
+    fireEvent.click(userMenuButton)
+
+    // Verify signOut was called with correct callback URL
+    await waitFor(() => {
+      expect(mockSignOut).toHaveBeenCalledWith({ callbackUrl: '/' })
     })
   })
 })

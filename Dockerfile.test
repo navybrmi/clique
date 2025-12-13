@@ -22,8 +22,14 @@ COPY . .
 # Run Prisma generate (happens in postinstall but explicit here)
 RUN npx prisma generate
 
+# Run tests with coverage checks (must pass before build)
+RUN npm run test:coverage
+
+# Run integration tests
+RUN npm run test:integration
+
 # Run the build command (same as Vercel)
-RUN npm run build
+RUN npm run build:docker
 
 # Verify the build was successful
 RUN test -d .next
