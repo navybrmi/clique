@@ -2,11 +2,9 @@ import React from 'react'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { Header } from '../header'
 
-// Mock UserMenu to capture the onSignOut prop
-let capturedOnSignOut: (() => void) | undefined
+// Mock UserMenu to provide a testable interface
 jest.mock('../user-menu', () => ({
   UserMenu: ({ user, onSignOut }: any) => {
-    capturedOnSignOut = onSignOut
     return (
       <button data-testid="mock-user-menu" onClick={onSignOut}>
         {user.name}
@@ -26,7 +24,6 @@ import { useSession, signOut } from 'next-auth/react'
 describe('Header', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    capturedOnSignOut = undefined
     // Mock fetch to return empty session
     global.fetch = jest.fn(() =>
       Promise.resolve(
