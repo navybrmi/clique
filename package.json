@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "node scripts/dev.js",
     "dev:docker": "next dev -H 0.0.0.0 -p 3000",
-    "docker:dev": "npm run test:all && node scripts/docker-dev.mjs",
+    "docker:prod": "npm run test:all && node scripts/docker-dev.mjs",
     "build": "npm run test:all && next build",
     "build:docker": "next build",
     "start": "next start",
@@ -21,7 +21,8 @@
     "test:all": "npm run test && npm run test:integration",
     "verify-build": "./scripts/test-build.sh",
     "hooks:install": "git config core.hooksPath .githooks",
-    "hooks:status": "git config --get core.hooksPath || echo '(not set)'"
+    "hooks:status": "git config --get core.hooksPath || echo '(not set)'",
+    "docker:dev": "DOCKER_COMPOSE_FILE=docker-compose.dev.yml node scripts/docker-dev.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",

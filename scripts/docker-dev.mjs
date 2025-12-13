@@ -79,13 +79,63 @@ function getComposeArgs(baseArgs) {
   return ['-f', COMPOSE_FILE, ...baseArgs];
 }
 
-async function main() {
-  console.log('\n🐳 Starting Clique with Docker...\n');
 
+async function isDbContainerRunning() {
+  // Returns true if the db container is running
   try {
-    await run('docker', ['compose', ...getComposeArgs(['up', '--build', '-d'])]);
+    const { spawnSync } = await import('node:child_process');
+    const result = spawnSync('docker', ['compose', ...(COMPOSE_FILE ? ['-f', COMPOSE_FILE] : []), 'ps', '--status=running', '--services'], { encoding: 'utf8' });
+    if (result.status === 0 && result.stdout.split(/\r?\n/).includes('db')) {
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
+async function waitForDb({ host = 'localhost', port = 5432, user = 'postgres', password = 'postgres', db = 'clique', timeoutMs = 60000 } = {}) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    try {
+      await run('docker', ['exec', 'clique-db-1', 'pg_isready', '-U', user, '-d', db]);
+      return;
+    } catch {
+      // Not ready yet
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  throw new Error('Timed out waiting for Postgres database to become ready');
+}
+
+async function main() {
+  console.log('\n🐳 Starting Clique app container (db must be running separately)...\n');
+
+
+  // Ensure db container is running
+  if (!(await isDbContainerRunning())) {
+    console.log('ℹ️  Database container not running. Starting db...');
+    try {
+      await run('docker', ['compose', ...getComposeArgs(['up', '-d', 'db'])]);
+    } catch (err) {
+      console.error('\n❌ Failed to start db container. Is Docker running?\n');
+      console.error(String(err?.message || err));
+      process.exit(1);
+    }
+  }
+
+  // Wait for db to be ready
+  try {
+    await waitForDb();
+    console.log('✅ Database is running and ready!\n');
   } catch (err) {
-    console.error('\n❌ Failed to start Docker Compose. Is Docker running?\n');
+    console.error('\n❌ Database is not ready.');
+    process.exit(1);
+  }
+
+  // Start only the app service
+  try {
+    await run('docker', ['compose', ...getComposeArgs(['up', '--build', '-d', 'app'])]);
+  } catch (err) {
+    console.error('\n❌ Failed to start app container. Is Docker running?\n');
     console.error(String(err?.message || err));
     process.exit(1);
   }
@@ -95,22 +145,22 @@ async function main() {
   } catch (err) {
     console.error(`\n❌ Docker is up, but the app did not become ready at ${URL}.\n`);
     console.error(String(err?.message || err));
-    console.log('\nStopping containers...\n');
-    await run('docker', ['compose', ...getComposeArgs(['down'])]).catch(() => {});
+    console.log('\nStopping app container...\n');
+    await run('docker', ['compose', ...getComposeArgs(['down', 'app'])]).catch(() => {});
     process.exit(1);
   }
 
   openBrowser(URL);
 
   console.log(`\n✅ Clique is running!\n   ${URL}\n`);
-  console.log('💡 Press "q" to stop and shut down Docker Compose\n');
+  console.log('💡 Press "q" to stop and shut down the app container (db will keep running)\n');
 
   const shutdown = async () => {
-    console.log('\n\n👋 Shutting down Docker Compose...\n');
+    console.log('\n\n👋 Shutting down app container...\n');
     try {
-      await run('docker', ['compose', ...getComposeArgs(['down'])]);
+      await run('docker', ['compose', ...getComposeArgs(['down', 'app'])]);
     } catch (err) {
-      console.error('\n⚠️  docker compose down failed:\n');
+      console.error('\n⚠️  docker compose down app failed:\n');
       console.error(String(err?.message || err));
       process.exit(1);
     }
@@ -135,6 +185,6 @@ async function main() {
 
 main().catch(async (err) => {
   console.error(String(err?.message || err));
-  await run('docker', ['compose', ...getComposeArgs(['down'])]).catch(() => {});
+  await run('docker', ['compose', ...getComposeArgs(['down', 'app'])]).catch(() => {});
   process.exit(1);
 });

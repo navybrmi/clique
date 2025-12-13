@@ -1,0 +1,38 @@
+
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: clique-dev
+    command: npm run dev:docker
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ./:/app
+      - node_modules:/app/node_modules
+      - next_cache:/app/.next
+      - prisma_cache:/app/node_modules/.prisma
+    # Optionally, add your DB service here
+
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: clique
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  node_modules:
+  next_cache:
+  prisma_cache:
+  pgdata:
