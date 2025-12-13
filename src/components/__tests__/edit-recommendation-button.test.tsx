@@ -31,6 +31,7 @@ describe('EditRecommendationButton', () => {
 
   it('should not render when user is not logged in', async () => {
     ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
       json: async () => ({ user: null }),
     })
 
@@ -43,6 +44,7 @@ describe('EditRecommendationButton', () => {
 
   it('should not render when user is not the owner', async () => {
     ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
       json: async () => ({ user: { id: 'different-user-id' } }),
     })
 
@@ -55,6 +57,7 @@ describe('EditRecommendationButton', () => {
 
   it('should render edit button when user is the owner', async () => {
     ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
       json: async () => ({ user: { id: 'user-123' } }),
     })
 
@@ -67,7 +70,7 @@ describe('EditRecommendationButton', () => {
 
   it('should render with loading state initially', async () => {
     ;(global.fetch as jest.Mock).mockImplementation(
-      () => new Promise(resolve => setTimeout(() => resolve({ json: async () => ({ user: { id: 'user-123' } }) }), 100))
+      () => new Promise(resolve => setTimeout(() => resolve({ ok: true, json: async () => ({ user: { id: 'user-123' } }) }), 100))
     )
 
     const { container } = render(<EditRecommendationButton recommendation={mockRecommendation} />)
@@ -81,6 +84,7 @@ describe('EditRecommendationButton', () => {
 
   it('should call refresh on successful edit', async () => {
     ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
       json: async () => ({ user: { id: 'user-123' } }),
     })
 
