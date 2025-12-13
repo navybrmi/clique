@@ -164,7 +164,7 @@ describe('Header', () => {
     const mockSignOut = signOut as jest.MockedFunction<typeof signOut>
     mockSignOut.mockResolvedValue(undefined as any)
 
-    const { container } = render(<Header />)
+    render(<Header />)
     
     // Wait for component to render with user menu
     await waitFor(() => {
