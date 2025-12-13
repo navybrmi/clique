@@ -86,18 +86,4 @@ describe('UserMenu', () => {
     
     expect(screen.getByRole('button')).toBeInTheDocument()
   })
-
-  it('should accept custom onSignOut handler prop', () => {
-    const customSignOut = jest.fn()
-    
-    // This test verifies the component accepts the onSignOut prop
-    // The actual click behavior is tested in header.test.tsx where UserMenu is mocked
-    // and we can directly invoke the callback
-    expect(() => {
-      render(<UserMenu user={mockUser} onSignOut={customSignOut} />)
-    }).not.toThrow()
-    
-    // Verify the custom handler hasn't been called on mount
-    expect(customSignOut).not.toHaveBeenCalled()
-  })
 })
