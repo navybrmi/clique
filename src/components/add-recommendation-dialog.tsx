@@ -494,7 +494,7 @@ export function AddRecommendationDialog({
               <Input
                 id="entityName"
                 placeholder={selectedCategory?.name === "MOVIE" ? "Search movies..." : selectedCategory?.name === "RESTAURANT" ? "Search restaurants..." : `e.g., Inception, Joe's Pizza`}
-                value={entityName}
+                value={entityName !== undefined ? String(entityName) : ""}
                 onChange={(e) => {
                   if (selectedCategory?.name === "MOVIE") {
                     handleMovieSearch(e.target.value)
@@ -583,7 +583,7 @@ export function AddRecommendationDialog({
               <Input
                 id="tags"
                 placeholder="e.g., Great cinematography"
-                value={currentTag}
+                value={currentTag !== undefined ? String(currentTag) : ""}
                 onChange={(e) => setCurrentTag(e.target.value)}
                 onKeyPress={(e) => {
                   if (e.key === "Enter") {
@@ -640,7 +640,7 @@ export function AddRecommendationDialog({
                 id="link"
                 type="url"
                 placeholder="https://..."
-                value={link}
+                value={link !== undefined ? String(link) : ""}
                 onChange={(e) => setLink(e.target.value)}
               />
             </div>
@@ -650,7 +650,7 @@ export function AddRecommendationDialog({
                 id="imageUrl"
                 type="url"
                 placeholder="https://..."
-                value={imageUrl}
+                value={imageUrl !== undefined ? String(imageUrl) : ""}
                 onChange={(e) => setImageUrl(e.target.value)}
               />
             </div>
@@ -663,28 +663,28 @@ export function AddRecommendationDialog({
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   placeholder="Cuisine"
-                  value={restaurantData.cuisine}
+                  value={restaurantData.cuisine !== undefined ? String(restaurantData.cuisine) : ""}
                   onChange={(e) =>
                     setRestaurantData({ ...restaurantData, cuisine: e.target.value })
                   }
                 />
                 <Input
                   placeholder="Location"
-                  value={restaurantData.location}
+                  value={restaurantData.location !== undefined ? String(restaurantData.location) : ""}
                   onChange={(e) =>
                     setRestaurantData({ ...restaurantData, location: e.target.value })
                   }
                 />
                 <Input
                   placeholder="Price Range"
-                  value={restaurantData.priceRange}
+                  value={restaurantData.priceRange !== undefined ? String(restaurantData.priceRange) : ""}
                   onChange={(e) =>
                     setRestaurantData({ ...restaurantData, priceRange: e.target.value })
                   }
                 />
                 <Input
                   placeholder="Hours"
-                  value={restaurantData.hours}
+                  value={restaurantData.hours !== undefined ? String(restaurantData.hours) : ""}
                   onChange={(e) =>
                     setRestaurantData({ ...restaurantData, hours: e.target.value })
                   }
@@ -699,23 +699,23 @@ export function AddRecommendationDialog({
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   placeholder="Director"
-                  value={movieData.director}
+                  value={movieData.director !== undefined ? String(movieData.director) : ""}
                   onChange={(e) => setMovieData({ ...movieData, director: e.target.value })}
                 />
                 <Input
                   placeholder="Year"
                   type="number"
-                  value={movieData.year}
+                  value={movieData.year !== undefined ? String(movieData.year) : ""}
                   onChange={(e) => setMovieData({ ...movieData, year: e.target.value })}
                 />
                 <Input
                   placeholder="Genre"
-                  value={movieData.genre}
+                  value={movieData.genre !== undefined ? String(movieData.genre) : ""}
                   onChange={(e) => setMovieData({ ...movieData, genre: e.target.value })}
                 />
                 <Input
                   placeholder="Duration"
-                  value={movieData.duration}
+                  value={movieData.duration !== undefined ? String(movieData.duration) : ""}
                   onChange={(e) => setMovieData({ ...movieData, duration: e.target.value })}
                 />
               </div>
@@ -728,22 +728,22 @@ export function AddRecommendationDialog({
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   placeholder="Brand"
-                  value={fashionData.brand}
+                  value={fashionData.brand !== undefined ? String(fashionData.brand) : ""}
                   onChange={(e) => setFashionData({ ...fashionData, brand: e.target.value })}
                 />
                 <Input
                   placeholder="Price"
-                  value={fashionData.price}
+                  value={fashionData.price !== undefined ? String(fashionData.price) : ""}
                   onChange={(e) => setFashionData({ ...fashionData, price: e.target.value })}
                 />
                 <Input
                   placeholder="Size"
-                  value={fashionData.size}
+                  value={fashionData.size !== undefined ? String(fashionData.size) : ""}
                   onChange={(e) => setFashionData({ ...fashionData, size: e.target.value })}
                 />
                 <Input
                   placeholder="Color"
-                  value={fashionData.color}
+                  value={fashionData.color !== undefined ? String(fashionData.color) : ""}
                   onChange={(e) => setFashionData({ ...fashionData, color: e.target.value })}
                 />
               </div>
@@ -756,14 +756,14 @@ export function AddRecommendationDialog({
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   placeholder="Product Type"
-                  value={householdData.productType}
+                  value={householdData.productType !== undefined ? String(householdData.productType) : ""}
                   onChange={(e) =>
                     setHouseholdData({ ...householdData, productType: e.target.value })
                   }
                 />
                 <Input
                   placeholder="Model"
-                  value={householdData.model}
+                  value={householdData.model !== undefined ? String(householdData.model) : ""}
                   onChange={(e) =>
                     setHouseholdData({ ...householdData, model: e.target.value })
                   }

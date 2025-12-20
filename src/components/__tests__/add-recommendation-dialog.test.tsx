@@ -246,27 +246,13 @@ describe("AddRecommendationDialog", () => {
     // Use getAllByText to avoid ambiguity
     const createBtns = screen.getAllByText(/^create$/i)
     const submitBtn = createBtns.find(btn => btn.tagName === 'BUTTON')!
-    // Debug: log before clicking submit
-    // eslint-disable-next-line no-console
-    console.log('DEBUG: About to click submit button', submitBtn)
     fireEvent.click(submitBtn)
-    // Debug: log dialog state after click
-    // eslint-disable-next-line no-console
-    console.log('DEBUG: Dialog content after submit:', document.body.innerHTML)
     // Wait for dialog to close (onSuccess called)
     try {
       await waitFor(() => {
-        // eslint-disable-next-line no-console
-        console.log('DEBUG: onSuccess call count:', onSuccess.mock.calls.length)
         expect(onSuccess).toHaveBeenCalled()
       }, { timeout: 2000 })
     } catch (e) {
-      // eslint-disable-next-line no-console
-      console.log('DEBUG: onSuccess was never called. Dialog content:', document.body.innerHTML)
-      // Log any visible error messages
-      const errors = Array.from(document.body.querySelectorAll('[role="alert"], .text-destructive, .text-red-500')).map(n => n.textContent)
-      // eslint-disable-next-line no-console
-      console.log('DEBUG: Visible error messages:', errors)
       throw e
     }
   })
@@ -320,7 +306,7 @@ describe("AddRecommendationDialog", () => {
     await waitFor(() => expect(window.alert).toHaveBeenCalledWith(expect.stringMatching(/api error/i)))
   })
 
-  it.skip("should populate fields in edit mode", async () => {
+  it("should populate fields in edit mode", async () => {
     const initialData = {
       entity: { name: "Edit Movie", categoryId: "1", movie: { director: "Dir", year: "2020", genre: "Drama", duration: "2h" } },
       tags: ["tag1"],
@@ -341,7 +327,8 @@ describe("AddRecommendationDialog", () => {
     // Wait for movie-specific fields by placeholder
     await waitFor(() => {
       expect(screen.getByPlaceholderText(/director/i)).toHaveValue("Dir")
-      expect(screen.getByPlaceholderText(/year/i)).toHaveValue("2020")
+       const yearValue = screen.getByPlaceholderText(/year/i).value;
+       expect(yearValue === "2020" || yearValue === 2020).toBe(true);
       expect(screen.getByPlaceholderText(/genre/i)).toHaveValue("Drama")
       expect(screen.getByPlaceholderText(/duration/i)).toHaveValue("2h")
       expect(screen.getByText(/tag1/i)).toBeInTheDocument()
