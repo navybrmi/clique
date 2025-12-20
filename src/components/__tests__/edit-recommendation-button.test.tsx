@@ -55,7 +55,7 @@ describe('EditRecommendationButton', () => {
     })
   })
 
-  it.skip('should render edit button when user is the owner', async () => {
+  it('should render edit button when user is the owner', async () => {
     ;(global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ user: { id: 'user-123' } }),
@@ -68,7 +68,7 @@ describe('EditRecommendationButton', () => {
     })
   })
 
-  it.skip('should render with loading state initially', async () => {
+  it('should render with loading state initially', async () => {
     ;(global.fetch as jest.Mock).mockImplementation(
       () => new Promise(resolve => setTimeout(() => resolve({ ok: true, json: async () => ({ user: { id: 'user-123' } }) }), 100))
     )
@@ -82,7 +82,7 @@ describe('EditRecommendationButton', () => {
     }, { timeout: 200 })
   })
 
-  it.skip('should call refresh on successful edit', async () => {
+  it('should call refresh on successful edit', async () => {
     ;(global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ user: { id: 'user-123' } }),

@@ -67,6 +67,8 @@ interface AddRecommendationDialogProps {
   recommendationId?: string
   /** Initial data to populate the form when editing an existing recommendation */
   initialData?: any
+  /** Initial category id for testing or controlled usage */
+  initialCategoryId?: string
 }
 
 /**
@@ -95,11 +97,26 @@ export function AddRecommendationDialog({
   editMode = false,
   recommendationId,
   initialData,
+  initialCategoryId,
 }: AddRecommendationDialogProps) {
   const [open, setOpen] = useState(false)
+    // Reset form state to initial values
+    const resetForm = () => {
+      setSelectedCategoryId("")
+      setEntityName("")
+      setTags([])
+      setCurrentTag("")
+      setLink("")
+      setImageUrl("")
+      setRating("")
+      setMovieData({ director: "", year: "", genre: "", duration: "" })
+      setRestaurantData({ cuisine: "", location: "", priceRange: "", hours: "" })
+      setFashionData({ brand: "", price: "", size: "", color: "" })
+      setHouseholdData({ productType: "", model: "", purchaseLink: "" })
+    }
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
-  const [selectedCategoryId, setSelectedCategoryId] = useState("")
+  const [selectedCategoryId, setSelectedCategoryId] = useState(initialCategoryId || "")
   const [entityName, setEntityName] = useState("")
   const [tags, setTags] = useState<string[]>([])
   const [currentTag, setCurrentTag] = useState("")
@@ -158,25 +175,29 @@ export function AddRecommendationDialog({
 
   // Load initial data in edit mode
   useEffect(() => {
-    if (editMode && initialData) {
-      setEntityName(initialData.entity?.name || "")
-      setSelectedCategoryId(initialData.entity?.categoryId || "")
-      setTags(initialData.tags || [])
-      setLink(initialData.link || "")
-      setImageUrl(initialData.imageUrl || "")
-      setRating(initialData.rating?.toString() || "")
-
-      if (initialData.entity?.restaurant) {
-        setRestaurantData(initialData.entity.restaurant)
-      }
-      if (initialData.entity?.movie) {
-        setMovieData(initialData.entity.movie)
-      }
-      if (initialData.entity?.fashion) {
-        setFashionData(initialData.entity.fashion)
-      }
-      if (initialData.entity?.household) {
-        setHouseholdData(initialData.entity.household)
+    if (open) {
+      if (editMode && initialData) {
+        setEntityName(initialData.entity?.name || "")
+        setSelectedCategoryId(initialData.entity?.categoryId || initialCategoryId || "")
+        setTags(initialData.tags || [])
+        setLink(initialData.link || "")
+        setImageUrl(initialData.imageUrl || "")
+        setRating(initialData.rating?.toString() || "")
+        if (initialData.entity?.restaurant) {
+          setRestaurantData(initialData.entity.restaurant)
+        }
+        if (initialData.entity?.movie) {
+          setMovieData(initialData.entity.movie)
+        }
+        if (initialData.entity?.fashion) {
+          setFashionData(initialData.entity.fashion)
+        }
+        if (initialData.entity?.household) {
+          setHouseholdData(initialData.entity.household)
+        }
+      } else {
+        resetForm()
+        if (initialCategoryId) setSelectedCategoryId(initialCategoryId)
       }
     }
   }, [editMode, initialData, open])
@@ -262,14 +283,34 @@ export function AddRecommendationDialog({
   const handleMovieSelect = (movie: MovieSuggestion) => {
     setEntityName(movie.title)
     setImageUrl(movie.posterPath || "")
-    setMovieData({
-      year: movie.year?.toString() || "",
-      genre: movie.genre || "",
-      director: "", // TMDB doesn't provide director in search results
-      duration: "",
-    })
-    setShowSuggestions(false)
-    setMovieSuggestions([])
+    // Fetch full movie details to populate all fields
+    fetch(`/api/movies/${movie.id}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Failed to fetch movie details")
+        const details = await res.json()
+        setMovieData({
+          year: details.year?.toString() || "",
+          genre: details.genre || "",
+          director: details.director || "",
+          duration: details.duration || "",
+        })
+        setImageUrl(details.posterPath || movie.posterPath || "")
+        setLink(details.imdbLink || "")
+      })
+      .catch(() => {
+        // fallback to what we have from search
+        setMovieData({
+          year: movie.year?.toString() || "",
+          genre: movie.genre || "",
+          director: "",
+          duration: "",
+        })
+        setLink("")
+      })
+      .finally(() => {
+        setShowSuggestions(false)
+        setMovieSuggestions([])
+      })
   }
 
   /**
@@ -453,14 +494,13 @@ export function AddRecommendationDialog({
               <Input
                 id="entityName"
                 placeholder={selectedCategory?.name === "MOVIE" ? "Search movies..." : selectedCategory?.name === "RESTAURANT" ? "Search restaurants..." : `e.g., Inception, Joe's Pizza`}
-                value={entityName}
+                value={entityName !== undefined ? String(entityName) : ""}
                 onChange={(e) => {
+                  setEntityName(e.target.value)
                   if (selectedCategory?.name === "MOVIE") {
                     handleMovieSearch(e.target.value)
                   } else if (selectedCategory?.name === "RESTAURANT") {
                     handleRestaurantSearch(e.target.value)
-                  } else {
-                    setEntityName(e.target.value)
                   }
                 }}
                 required
@@ -542,7 +582,7 @@ export function AddRecommendationDialog({
               <Input
                 id="tags"
                 placeholder="e.g., Great cinematography"
-                value={currentTag}
+                value={currentTag !== undefined ? String(currentTag) : ""}
                 onChange={(e) => setCurrentTag(e.target.value)}
                 onKeyPress={(e) => {
                   if (e.key === "Enter") {
@@ -575,14 +615,15 @@ export function AddRecommendationDialog({
 
           {/* Rating */}
           <div className="space-y-2">
-            <Label htmlFor="rating">Rating (0-5)</Label>
-            <div className="flex gap-1">
-              {[1, 2, 3, 4, 5].map((num) => (
+            <Label htmlFor="rating">Rating (0-10)</Label>
+            <div className="flex gap-1 flex-wrap">
+              {[1,2,3,4,5,6,7,8,9,10].map((num) => (
                 <button
                   key={num}
                   type="button"
                   onClick={() => setRating(num.toString())}
                   className={`p-1 ${rating === num.toString() ? "text-yellow-400" : "text-gray-300"}`}
+                  aria-label={`Rate ${num} star${num > 1 ? 's' : ''}`}
                 >
                   <Star className="h-6 w-6 fill-current" />
                 </button>
@@ -598,7 +639,7 @@ export function AddRecommendationDialog({
                 id="link"
                 type="url"
                 placeholder="https://..."
-                value={link}
+                value={link !== undefined ? String(link) : ""}
                 onChange={(e) => setLink(e.target.value)}
               />
             </div>
@@ -608,7 +649,7 @@ export function AddRecommendationDialog({
                 id="imageUrl"
                 type="url"
                 placeholder="https://..."
-                value={imageUrl}
+                value={imageUrl !== undefined ? String(imageUrl) : ""}
                 onChange={(e) => setImageUrl(e.target.value)}
               />
             </div>
@@ -621,28 +662,28 @@ export function AddRecommendationDialog({
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   placeholder="Cuisine"
-                  value={restaurantData.cuisine}
+                  value={restaurantData.cuisine !== undefined ? String(restaurantData.cuisine) : ""}
                   onChange={(e) =>
                     setRestaurantData({ ...restaurantData, cuisine: e.target.value })
                   }
                 />
                 <Input
                   placeholder="Location"
-                  value={restaurantData.location}
+                  value={restaurantData.location !== undefined ? String(restaurantData.location) : ""}
                   onChange={(e) =>
                     setRestaurantData({ ...restaurantData, location: e.target.value })
                   }
                 />
                 <Input
                   placeholder="Price Range"
-                  value={restaurantData.priceRange}
+                  value={restaurantData.priceRange !== undefined ? String(restaurantData.priceRange) : ""}
                   onChange={(e) =>
                     setRestaurantData({ ...restaurantData, priceRange: e.target.value })
                   }
                 />
                 <Input
                   placeholder="Hours"
-                  value={restaurantData.hours}
+                  value={restaurantData.hours !== undefined ? String(restaurantData.hours) : ""}
                   onChange={(e) =>
                     setRestaurantData({ ...restaurantData, hours: e.target.value })
                   }
@@ -657,23 +698,23 @@ export function AddRecommendationDialog({
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   placeholder="Director"
-                  value={movieData.director}
+                  value={movieData.director !== undefined ? String(movieData.director) : ""}
                   onChange={(e) => setMovieData({ ...movieData, director: e.target.value })}
                 />
                 <Input
                   placeholder="Year"
                   type="number"
-                  value={movieData.year}
+                  value={movieData.year !== undefined ? String(movieData.year) : ""}
                   onChange={(e) => setMovieData({ ...movieData, year: e.target.value })}
                 />
                 <Input
                   placeholder="Genre"
-                  value={movieData.genre}
+                  value={movieData.genre !== undefined ? String(movieData.genre) : ""}
                   onChange={(e) => setMovieData({ ...movieData, genre: e.target.value })}
                 />
                 <Input
                   placeholder="Duration"
-                  value={movieData.duration}
+                  value={movieData.duration !== undefined ? String(movieData.duration) : ""}
                   onChange={(e) => setMovieData({ ...movieData, duration: e.target.value })}
                 />
               </div>
@@ -686,22 +727,22 @@ export function AddRecommendationDialog({
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   placeholder="Brand"
-                  value={fashionData.brand}
+                  value={fashionData.brand !== undefined ? String(fashionData.brand) : ""}
                   onChange={(e) => setFashionData({ ...fashionData, brand: e.target.value })}
                 />
                 <Input
                   placeholder="Price"
-                  value={fashionData.price}
+                  value={fashionData.price !== undefined ? String(fashionData.price) : ""}
                   onChange={(e) => setFashionData({ ...fashionData, price: e.target.value })}
                 />
                 <Input
                   placeholder="Size"
-                  value={fashionData.size}
+                  value={fashionData.size !== undefined ? String(fashionData.size) : ""}
                   onChange={(e) => setFashionData({ ...fashionData, size: e.target.value })}
                 />
                 <Input
                   placeholder="Color"
-                  value={fashionData.color}
+                  value={fashionData.color !== undefined ? String(fashionData.color) : ""}
                   onChange={(e) => setFashionData({ ...fashionData, color: e.target.value })}
                 />
               </div>
@@ -714,16 +755,23 @@ export function AddRecommendationDialog({
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   placeholder="Product Type"
-                  value={householdData.productType}
+                  value={householdData.productType !== undefined ? String(householdData.productType) : ""}
                   onChange={(e) =>
                     setHouseholdData({ ...householdData, productType: e.target.value })
                   }
                 />
                 <Input
                   placeholder="Model"
-                  value={householdData.model}
+                  value={householdData.model !== undefined ? String(householdData.model) : ""}
                   onChange={(e) =>
                     setHouseholdData({ ...householdData, model: e.target.value })
+                  }
+                />
+                <Input
+                  placeholder="Purchase Link"
+                  value={householdData.purchaseLink !== undefined ? String(householdData.purchaseLink) : ""}
+                  onChange={(e) =>
+                    setHouseholdData({ ...householdData, purchaseLink: e.target.value })
                   }
                 />
               </div>

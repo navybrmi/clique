@@ -90,7 +90,7 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
                 <Badge className="text-sm">{recommendation.entity.category.displayName}</Badge>
                 <div className="flex items-center gap-1">
                   <div className="flex items-center gap-0.5">
-                    {[1, 2, 3, 4, 5].map((star) => (
+                    {[1,2,3,4,5,6,7,8,9,10].map((star) => (
                       <Star
                         key={star}
                         className={`h-4 w-4 ${
@@ -101,7 +101,7 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
                       />
                     ))}
                   </div>
-                  <span className="text-sm font-semibold ml-1">{recommendation.rating || 0}/5</span>
+                  <span className="text-sm font-semibold ml-1">{recommendation.rating || 0}/10</span>
                 </div>
               </div>
               <h1 className="text-4xl font-bold tracking-tight">{recommendation.entity.name}</h1>

@@ -110,7 +110,7 @@ describe('DeleteRecommendationButton', () => {
     })
   })
 
-  it.skip('should call delete API and redirect on confirmation', async () => {
+  it('should call delete API and redirect on confirmation', async () => {
     const user = userEvent.setup()
     const fetchMock = jest.fn()
       .mockResolvedValueOnce(
@@ -164,7 +164,7 @@ describe('DeleteRecommendationButton', () => {
     })
   })
 
-  it.skip('should show error message when deletion fails', async () => {
+  it('should show error message when deletion fails', async () => {
     const user = userEvent.setup()
     const mockAlert = jest.spyOn(window, 'alert').mockImplementation(() => {})
     
@@ -190,20 +190,19 @@ describe('DeleteRecommendationButton', () => {
       expect(screen.getByText('Delete')).toBeInTheDocument()
     })
 
+
+    // Open the dialog
     await user.click(screen.getByText('Delete'))
 
-    await waitFor(() => {
-      expect(screen.getByText('Delete Recommendation')).toBeInTheDocument()
+    // Wait for the destructive Delete button to be enabled
+    const destructiveButton = await waitFor(() => {
+      const btns = screen.getAllByRole('button', { name: /delete/i })
+      return btns.find(
+        btn => btn.className.includes('destructive') && !btn.disabled && getComputedStyle(btn).pointerEvents !== 'none'
+      )
     })
 
-    const confirmButtons = screen.getAllByText('Delete')
-    const confirmButton = confirmButtons.find(el => 
-      el.closest('button')?.className.includes('destructive')
-    )
-    
-    if (confirmButton) {
-      await user.click(confirmButton)
-    }
+    await user.click(destructiveButton)
 
     await waitFor(() => {
       expect(mockAlert).toHaveBeenCalledWith('Delete failed')
@@ -212,7 +211,7 @@ describe('DeleteRecommendationButton', () => {
     mockAlert.mockRestore()
   })
 
-  it.skip('should handle network errors gracefully', async () => {
+  it('should handle network errors gracefully', async () => {
     const user = userEvent.setup()
     const mockAlert = jest.spyOn(window, 'alert').mockImplementation(() => {})
     
@@ -239,14 +238,16 @@ describe('DeleteRecommendationButton', () => {
       expect(screen.getByText('Delete Recommendation')).toBeInTheDocument()
     })
 
-    const confirmButtons = screen.getAllByText('Delete')
-    const confirmButton = confirmButtons.find(el => 
-      el.closest('button')?.className.includes('destructive')
-    )
-    
-    if (confirmButton) {
-      await user.click(confirmButton)
-    }
+
+    // Wait for the destructive Delete button to be enabled
+    const destructiveButton = await waitFor(() => {
+      const btns = screen.getAllByRole('button', { name: /delete/i })
+      return btns.find(
+        btn => btn.className.includes('destructive') && !btn.disabled && getComputedStyle(btn).pointerEvents !== 'none'
+      )
+    })
+
+    await user.click(destructiveButton)
 
     await waitFor(() => {
       expect(mockAlert).toHaveBeenCalledWith('Failed to delete recommendation')
