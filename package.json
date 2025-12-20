@@ -12,7 +12,7 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "db:seed": "ts-node --compiler-options {\\\"module\\\":\\\"commonjs\\\"} prisma/seed.ts",
-    "test": "jest",
+    "test": "jest --verbose",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:integration": "jest --config jest.integration.config.js",

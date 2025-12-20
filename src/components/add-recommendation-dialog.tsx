@@ -67,6 +67,8 @@ interface AddRecommendationDialogProps {
   recommendationId?: string
   /** Initial data to populate the form when editing an existing recommendation */
   initialData?: any
+  /** Initial category id for testing or controlled usage */
+  initialCategoryId?: string
 }
 
 /**
@@ -95,11 +97,26 @@ export function AddRecommendationDialog({
   editMode = false,
   recommendationId,
   initialData,
+  initialCategoryId,
 }: AddRecommendationDialogProps) {
   const [open, setOpen] = useState(false)
+    // Reset form state to initial values
+    const resetForm = () => {
+      setSelectedCategoryId("")
+      setEntityName("")
+      setTags([])
+      setCurrentTag("")
+      setLink("")
+      setImageUrl("")
+      setRating("")
+      setMovieData({ director: "", year: "", genre: "", duration: "" })
+      setRestaurantData({ cuisine: "", location: "", priceRange: "", hours: "" })
+      setFashionData({ brand: "", price: "", size: "", color: "" })
+      setHouseholdData({ productType: "", model: "", purchaseLink: "" })
+    }
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
-  const [selectedCategoryId, setSelectedCategoryId] = useState("")
+  const [selectedCategoryId, setSelectedCategoryId] = useState(initialCategoryId || "")
   const [entityName, setEntityName] = useState("")
   const [tags, setTags] = useState<string[]>([])
   const [currentTag, setCurrentTag] = useState("")
@@ -158,25 +175,29 @@ export function AddRecommendationDialog({
 
   // Load initial data in edit mode
   useEffect(() => {
-    if (editMode && initialData) {
-      setEntityName(initialData.entity?.name || "")
-      setSelectedCategoryId(initialData.entity?.categoryId || "")
-      setTags(initialData.tags || [])
-      setLink(initialData.link || "")
-      setImageUrl(initialData.imageUrl || "")
-      setRating(initialData.rating?.toString() || "")
-
-      if (initialData.entity?.restaurant) {
-        setRestaurantData(initialData.entity.restaurant)
-      }
-      if (initialData.entity?.movie) {
-        setMovieData(initialData.entity.movie)
-      }
-      if (initialData.entity?.fashion) {
-        setFashionData(initialData.entity.fashion)
-      }
-      if (initialData.entity?.household) {
-        setHouseholdData(initialData.entity.household)
+    if (open) {
+      if (editMode && initialData) {
+        setEntityName(initialData.entity?.name || "")
+        setSelectedCategoryId(initialData.entity?.categoryId || initialCategoryId || "")
+        setTags(initialData.tags || [])
+        setLink(initialData.link || "")
+        setImageUrl(initialData.imageUrl || "")
+        setRating(initialData.rating?.toString() || "")
+        if (initialData.entity?.restaurant) {
+          setRestaurantData(initialData.entity.restaurant)
+        }
+        if (initialData.entity?.movie) {
+          setMovieData(initialData.entity.movie)
+        }
+        if (initialData.entity?.fashion) {
+          setFashionData(initialData.entity.fashion)
+        }
+        if (initialData.entity?.household) {
+          setHouseholdData(initialData.entity.household)
+        }
+      } else {
+        resetForm()
+        if (initialCategoryId) setSelectedCategoryId(initialCategoryId)
       }
     }
   }, [editMode, initialData, open])
@@ -262,14 +283,34 @@ export function AddRecommendationDialog({
   const handleMovieSelect = (movie: MovieSuggestion) => {
     setEntityName(movie.title)
     setImageUrl(movie.posterPath || "")
-    setMovieData({
-      year: movie.year?.toString() || "",
-      genre: movie.genre || "",
-      director: "", // TMDB doesn't provide director in search results
-      duration: "",
-    })
-    setShowSuggestions(false)
-    setMovieSuggestions([])
+    // Fetch full movie details to populate all fields
+    fetch(`/api/movies/${movie.id}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Failed to fetch movie details")
+        const details = await res.json()
+        setMovieData({
+          year: details.year?.toString() || "",
+          genre: details.genre || "",
+          director: details.director || "",
+          duration: details.duration || "",
+        })
+        setImageUrl(details.posterPath || movie.posterPath || "")
+        setLink(details.imdbLink || "")
+      })
+      .catch(() => {
+        // fallback to what we have from search
+        setMovieData({
+          year: movie.year?.toString() || "",
+          genre: movie.genre || "",
+          director: "",
+          duration: "",
+        })
+        setLink("")
+      })
+      .finally(() => {
+        setShowSuggestions(false)
+        setMovieSuggestions([])
+      })
   }
 
   /**
@@ -575,14 +616,15 @@ export function AddRecommendationDialog({
 
           {/* Rating */}
           <div className="space-y-2">
-            <Label htmlFor="rating">Rating (0-5)</Label>
-            <div className="flex gap-1">
-              {[1, 2, 3, 4, 5].map((num) => (
+            <Label htmlFor="rating">Rating (0-10)</Label>
+            <div className="flex gap-1 flex-wrap">
+              {[1,2,3,4,5,6,7,8,9,10].map((num) => (
                 <button
                   key={num}
                   type="button"
                   onClick={() => setRating(num.toString())}
                   className={`p-1 ${rating === num.toString() ? "text-yellow-400" : "text-gray-300"}`}
+                  aria-label={`Rate ${num} star${num > 1 ? 's' : ''}`}
                 >
                   <Star className="h-6 w-6 fill-current" />
                 </button>

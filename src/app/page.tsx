@@ -140,9 +140,6 @@ export default function Home() {
         ) : recommendations.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-lg text-zinc-500">No recommendations yet. Be the first to add one!</p>
-            <div className="mt-4">
-              <AddRecommendationDialog onSuccess={fetchRecommendations} />
-            </div>
           </div>
         ) : (
           <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -178,7 +175,7 @@ export default function Home() {
                       </span>
                       <div className="flex items-center gap-1 min-w-fit">
                         <div className="flex items-center gap-0.5">
-                          {[1, 2, 3, 4, 5].map((star) => (
+                          {[1,2,3,4,5,6,7,8,9,10].map((star) => (
                             <Star
                               key={star}
                               className={`h-3 w-3 flex-shrink-0 ${
@@ -189,7 +186,7 @@ export default function Home() {
                             />
                           ))}
                         </div>
-                        <span className="text-xs text-zinc-500 ml-1 whitespace-nowrap">{rec.rating || 0}/5</span>
+                        <span className="text-xs text-zinc-500 ml-1 whitespace-nowrap">{rec.rating || 0}/10</span>
                       </div>
                     </div>
                     <CardTitle>{rec.entity.name}</CardTitle>
