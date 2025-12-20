@@ -1,20 +1,52 @@
+// Mock Radix Portal to render children inline for tests
+jest.mock('@radix-ui/react-portal', () => ({
+  __esModule: true,
+  Portal: ({ children }: { children: React.ReactNode }) => children,
+}))
+// Polyfill for Radix UI + JSDOM pointer events
+if (!Element.prototype.hasPointerCapture) {
+  Element.prototype.hasPointerCapture = () => false;
+}
+import userEvent from "@testing-library/user-event"
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react"
 // Polyfill scrollIntoView for Radix UI Select (JSDOM does not implement it)
 beforeAll(() => {
   window.HTMLElement.prototype.scrollIntoView = function () { return undefined }
 })
 import { AddRecommendationDialog } from "../add-recommendation-dialog"
+// Mock NextAuth session to simulate a signed-in user
+jest.mock("next-auth/react", () => ({
+  __esModule: true,
+  useSession: () => ({
+    data: {
+      user: { id: "test-user-id", name: "Test User", email: "test@example.com" },
+    },
+    status: "authenticated",
+  }),
+  signIn: jest.fn(),
+  signOut: jest.fn(),
+}))
 import React from "react"
 
 // Mock fetch for categories and movies
-beforeAll(() => {
-  global.fetch = jest.fn((url) => {
+beforeEach(() => {
+  global.fetch = jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : (input instanceof Request ? input.url : ''));
+    if (url.includes("/api/auth/session")) {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ user: { id: "test-user-id", name: "Test User", email: "test@example.com" } }),
+      });
+    }
     if (url.includes("/api/categories")) {
       return Promise.resolve({
         ok: true,
         json: () => Promise.resolve([
           { id: "1", name: "MOVIE", displayName: "Movie" },
           { id: "2", name: "RESTAURANT", displayName: "Restaurant" },
+          { id: "3", name: "FASHION", displayName: "Fashion" },
+          { id: "4", name: "HOUSEHOLD", displayName: "Household" },
+          { id: "5", name: "OTHER", displayName: "Other" },
         ]),
       })
     }
@@ -48,7 +80,13 @@ beforeAll(() => {
         }),
       })
     }
-    return Promise.resolve({ ok: true, json: () => Promise.resolve({ results: [] }) })
+    if (url.includes("/api/recommendations") && (init?.method === 'POST' || (init && 'method' in init && (init as any).method === 'POST'))) {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ id: "rec-1" }),
+      })
+    }
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ results: [] }), headers: new Headers(), status: 200, statusText: 'OK', redirected: false, type: 'basic', url: '', clone: () => this, body: null, bodyUsed: false, arrayBuffer: async () => new ArrayBuffer(0), blob: async () => new Blob(), formData: async () => new FormData(), text: async () => '', json: async () => ({ results: [] }) })
   })
 })
 
@@ -86,37 +124,33 @@ describe("AddRecommendationDialog", () => {
 
     // No need to set the category again, it's already set by initialCategoryId
 
-    // The label for the name input is 'Item Name *' in the DOM
-    expect(screen.getByLabelText(/item name/i)).toHaveValue("")
+    // The label for the name input is dynamic (e.g., 'Movie Name *', 'Restaurant Name *', etc.)
+    expect(screen.getByLabelText(/name/i)).toHaveValue("")
     expect(screen.getByLabelText(/link/i)).toHaveValue("")
   })
 
-  it.skip("should allow switching categories and render category-specific fields", async () => {
+  it("should allow switching categories and render category-specific fields", async () => {
     render(<AddRecommendationDialog onSuccess={jest.fn()} />)
     fireEvent.click(screen.getByText(/add recommendation/i))
     await screen.findByLabelText(/category/i)
-    // Open category select using combobox role
-    const combobox = screen.getByRole('combobox')
-    fireEvent.click(combobox)
-    // Wait for and select Restaurant
-    await waitFor(() => {
-      const options = within(document.body).queryAllByText(/Restaurant/i)
-      const match = options.find(node => node.tagName === 'OPTION' || node.tagName === 'SPAN')
-      expect(match).toBeTruthy()
-    }, { timeout: 2000 })
-    const restaurantOption = within(document.body).queryAllByText(/Restaurant/i).find(node => node.tagName === 'OPTION' || node.tagName === 'SPAN')
-    fireEvent.click(restaurantOption)
-    expect(await screen.findByPlaceholderText(/Cuisine/i)).toBeInTheDocument()
+    const categoryTrigger = screen.getByLabelText(/category/i)
+    await userEvent.click(categoryTrigger)
+    // Wait for options and select 'Restaurant'
+    let options = await within(document.body).findAllByRole('option', {}, { timeout: 2000 })
+    const restaurantOption = options.find(opt => /Restaurant/i.test(opt.textContent || ""))
+    expect(restaurantOption).toBeTruthy()
+    await userEvent.click(restaurantOption as Element)
+    expect(screen.getByPlaceholderText(/cuisine/i)).toBeInTheDocument()
     // Switch to Movie
-    fireEvent.click(combobox)
-    await waitFor(() => {
-      const options = within(document.body).queryAllByText(/Movie/i)
-      const divOption = options.find(node => node.tagName === 'DIV')
-      expect(divOption).toBeTruthy()
-    }, { timeout: 2000 })
-    const movieOption = within(document.body).queryAllByText(/Movie/i).find(node => node.tagName === 'DIV')
-    fireEvent.click(movieOption)
-    expect(await screen.findByPlaceholderText(/Director/i)).toBeInTheDocument()
+    await userEvent.click(categoryTrigger)
+    options = await within(document.body).findAllByRole('option', {}, { timeout: 2000 })
+    const movieOption = options.find(opt => /Movie/i.test(opt.textContent || ""))
+    expect(movieOption).toBeTruthy()
+    await userEvent.click(movieOption as Element)
+    expect(screen.getByPlaceholderText(/director/i)).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/year/i)).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/genre/i)).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/duration/i)).toBeInTheDocument()
   })
 
   it("should add and remove tags", async () => {
@@ -171,7 +205,7 @@ describe("AddRecommendationDialog", () => {
     expect(screen.getByDisplayValue(/inception/i)).toBeInTheDocument()
   })
 
-  it.skip("should submit the form successfully", async () => {
+  it("should submit the form successfully", async () => {
     // Mock fetch for POST
     (global.fetch as jest.Mock).mockImplementationOnce((url, opts) => {
       if (url.includes("/api/categories")) {
@@ -212,9 +246,29 @@ describe("AddRecommendationDialog", () => {
     // Use getAllByText to avoid ambiguity
     const createBtns = screen.getAllByText(/^create$/i)
     const submitBtn = createBtns.find(btn => btn.tagName === 'BUTTON')!
+    // Debug: log before clicking submit
+    // eslint-disable-next-line no-console
+    console.log('DEBUG: About to click submit button', submitBtn)
     fireEvent.click(submitBtn)
+    // Debug: log dialog state after click
+    // eslint-disable-next-line no-console
+    console.log('DEBUG: Dialog content after submit:', document.body.innerHTML)
     // Wait for dialog to close (onSuccess called)
-    await waitFor(() => expect(onSuccess).toHaveBeenCalled(), { timeout: 2000 })
+    try {
+      await waitFor(() => {
+        // eslint-disable-next-line no-console
+        console.log('DEBUG: onSuccess call count:', onSuccess.mock.calls.length)
+        expect(onSuccess).toHaveBeenCalled()
+      }, { timeout: 2000 })
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.log('DEBUG: onSuccess was never called. Dialog content:', document.body.innerHTML)
+      // Log any visible error messages
+      const errors = Array.from(document.body.querySelectorAll('[role="alert"], .text-destructive, .text-red-500')).map(n => n.textContent)
+      // eslint-disable-next-line no-console
+      console.log('DEBUG: Visible error messages:', errors)
+      throw e
+    }
   })
 
   it("should show alert if not signed in", async () => {
