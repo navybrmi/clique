@@ -178,7 +178,7 @@ describe("AddRecommendationDialog", () => {
     // No error, rating selected
   })
 
-  it.skip("should handle typeahead and select a movie suggestion", async () => {
+  it("should handle typeahead and select a movie suggestion", async () => {
     render(<AddRecommendationDialog onSuccess={jest.fn()} />)
     fireEvent.click(screen.getByText(/add recommendation/i))
     await screen.findByLabelText(/category/i)
@@ -202,7 +202,8 @@ describe("AddRecommendationDialog", () => {
       return btns[0]
     }, { timeout: 2000 })
     fireEvent.click(suggestion)
-    expect(screen.getByDisplayValue(/inception/i)).toBeInTheDocument()
+    // Check that the Name input is populated with the movie title
+    expect(screen.getByLabelText(/name/i)).toHaveValue("Inception")
   })
 
   it("should submit the form successfully", async () => {
