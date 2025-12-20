@@ -496,12 +496,11 @@ export function AddRecommendationDialog({
                 placeholder={selectedCategory?.name === "MOVIE" ? "Search movies..." : selectedCategory?.name === "RESTAURANT" ? "Search restaurants..." : `e.g., Inception, Joe's Pizza`}
                 value={entityName !== undefined ? String(entityName) : ""}
                 onChange={(e) => {
+                  setEntityName(e.target.value)
                   if (selectedCategory?.name === "MOVIE") {
                     handleMovieSearch(e.target.value)
                   } else if (selectedCategory?.name === "RESTAURANT") {
                     handleRestaurantSearch(e.target.value)
-                  } else {
-                    setEntityName(e.target.value)
                   }
                 }}
                 required
@@ -766,6 +765,13 @@ export function AddRecommendationDialog({
                   value={householdData.model !== undefined ? String(householdData.model) : ""}
                   onChange={(e) =>
                     setHouseholdData({ ...householdData, model: e.target.value })
+                  }
+                />
+                <Input
+                  placeholder="Purchase Link"
+                  value={householdData.purchaseLink !== undefined ? String(householdData.purchaseLink) : ""}
+                  onChange={(e) =>
+                    setHouseholdData({ ...householdData, purchaseLink: e.target.value })
                   }
                 />
               </div>
