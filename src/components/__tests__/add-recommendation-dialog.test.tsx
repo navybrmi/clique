@@ -315,7 +315,7 @@ describe("AddRecommendationDialog", () => {
     await waitFor(() => {
       expect((screen.getByPlaceholderText(/director/i) as HTMLInputElement).value).toBe("Dir")
       const yearValue = (screen.getByPlaceholderText(/year/i) as HTMLInputElement).value;
-      expect(yearValue === "2020" || yearValue === 2020).toBe(true);
+      expect(yearValue).toBe("2020");
       expect((screen.getByPlaceholderText(/genre/i) as HTMLInputElement).value).toBe("Drama")
       expect((screen.getByPlaceholderText(/duration/i) as HTMLInputElement).value).toBe("2h")
       expect(screen.getByText(/tag1/i)).toBeInTheDocument()
@@ -364,7 +364,7 @@ describe("AddRecommendationDialog", () => {
       // Submit the form directly using querySelector
       const form = document.querySelector('form')
       expect(form).toBeTruthy()
-      fireEvent.submit(form)
+      if (form) fireEvent.submit(form)
     await waitFor(() => expect(window.alert).toHaveBeenCalledWith(expect.stringContaining("Entity name and category are required")))
   })
 

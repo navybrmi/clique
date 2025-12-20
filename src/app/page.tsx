@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowUp, MessageCircle, Star } from "lucide-react"
 import { AddRecommendationDialog } from "@/components/add-recommendation-dialog"
+import { X } from "lucide-react"
 import { Header } from "@/components/header"
 
 /**
@@ -80,6 +81,10 @@ const getCategoryEmoji = (categoryName: string): string => {
 export default function Home() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [loading, setLoading] = useState(true)
+  const [showLoginAlert, setShowLoginAlert] = useState(false)
+  // Handler for AddRecommendationDialog to notify parent when login is required
+  const handleBlockedOpen = () => setShowLoginAlert(true)
+  const handleDismissLoginAlert = () => setShowLoginAlert(false)
 
   const fetchRecommendations = () => {
     setLoading(true)
@@ -124,11 +129,35 @@ export default function Home() {
           <p className="mx-auto max-w-2xl text-xl text-zinc-600 dark:text-zinc-400">
             Discover and share recommendations for restaurants, movies, fashion, household items, and more with your friends.
           </p>
-          <div className="mt-8 flex justify-center gap-4">
-            <AddRecommendationDialog onSuccess={fetchRecommendations} />
-            <Button size="lg" variant="outline">
-              Browse Categories
-            </Button>
+          <div className="mt-8 flex flex-col items-center">
+            <div className="flex gap-4">
+              <AddRecommendationDialog
+                onSuccess={fetchRecommendations}
+                showLoginAlert={showLoginAlert}
+                onDismissLoginAlert={handleDismissLoginAlert}
+                onBlockedOpen={handleBlockedOpen}
+              />
+              <Button size="lg" variant="outline">
+                Browse Categories
+              </Button>
+            </div>
+            {/* Login error message below button group, centered, absolute positioning to avoid layout shift */}
+            {showLoginAlert && (
+              <div
+                className="flex items-center justify-center rounded border border-red-300 bg-red-50 px-4 py-3 text-red-800 shadow-lg mt-4"
+                style={{ minWidth: 280, maxWidth: 400 }}
+              >
+                <span className="mx-auto">You must be signed in to add a recommendation.</span>
+                <button
+                  type="button"
+                  aria-label="Dismiss login alert"
+                  onClick={handleDismissLoginAlert}
+                  className="ml-4 p-1 rounded hover:bg-red-100"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

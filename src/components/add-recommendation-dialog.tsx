@@ -74,7 +74,7 @@ interface AddRecommendationDialogProps {
 /**
  * Dialog component for creating and editing recommendations.
  * 
- * A comprehensive form for adding recommendations across multiple categories
+  )
  * (Movies, Restaurants, Fashion, Household, Other). Features:
  * 
  * - Category-specific form fields
@@ -98,8 +98,45 @@ export function AddRecommendationDialog({
   recommendationId,
   initialData,
   initialCategoryId,
-}: AddRecommendationDialogProps) {
+  showLoginAlert,
+  onDismissLoginAlert,
+  onBlockedOpen,
+}: AddRecommendationDialogProps & {
+  showLoginAlert?: boolean
+  onDismissLoginAlert?: () => void
+  onBlockedOpen?: () => void
+}) {
+  // Track if we are waiting for session check to avoid race with dialog open
+  const [checkingAuth, setCheckingAuth] = useState(false)
   const [open, setOpen] = useState(false)
+  // Track if user tried to open dialog while not logged in
+  const blockedOpenRef = useRef(false)
+      // Helper to check if user is logged in
+      const checkAuth = async () => {
+        try {
+          const res = await fetch("/api/auth/session")
+          if (!res.ok) return false
+          const session = await res.json()
+          return !!session?.user?.id
+        } catch {
+          return false
+        }
+      }
+
+      // Handler for trigger click
+  const handleTriggerClick = async (e?: React.MouseEvent) => {
+    if (checkingAuth) return
+    setCheckingAuth(true)
+    const isLoggedIn = await checkAuth()
+    setCheckingAuth(false)
+    if (!isLoggedIn) {
+      blockedOpenRef.current = true
+      if (onBlockedOpen) onBlockedOpen()
+      setOpen(false)
+      return
+    }
+    setOpen(true)
+  }
     // Reset form state to initial values
     const resetForm = () => {
       setSelectedCategoryId("")
@@ -448,77 +485,110 @@ export function AddRecommendationDialog({
   const selectedCategory = categories.find((c) => c.id === selectedCategoryId)
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ? (
-          trigger
-        ) : (
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            {editMode ? "Edit Recommendation" : "Add Recommendation"}
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>{editMode ? "Edit Recommendation" : "Add New Recommendation"}</DialogTitle>
-          <DialogDescription>
-            {editMode ? "Update your recommendation details" : "Create a new recommendation"}
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Category */}
-          <div className="space-y-2">
-            <Label htmlFor="category">Category *</Label>
-            <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
-              <SelectTrigger id="category">
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.displayName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Entity Name with Search */}
-          <div className="space-y-2 relative">
-            <Label htmlFor="entityName">
-              {selectedCategory?.displayName || "Item"} Name *
-            </Label>
-            <div className="relative">
-              <Input
-                id="entityName"
-                placeholder={selectedCategory?.name === "MOVIE" ? "Search movies..." : selectedCategory?.name === "RESTAURANT" ? "Search restaurants..." : `e.g., Inception, Joe's Pizza`}
-                value={entityName !== undefined ? String(entityName) : ""}
-                onChange={(e) => {
-                  setEntityName(e.target.value)
-                  if (selectedCategory?.name === "MOVIE") {
-                    handleMovieSearch(e.target.value)
-                  } else if (selectedCategory?.name === "RESTAURANT") {
-                    handleRestaurantSearch(e.target.value)
+    <div style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
+      <Dialog
+        open={open}
+        onOpenChange={async (nextOpen) => {
+          // If blockedOpenRef is set, always force dialog closed and never open
+          if (blockedOpenRef.current) {
+            blockedOpenRef.current = false
+            setOpen(false)
+            return
+          }
+          // If trying to open, check auth again (covers edge/race cases)
+          if (nextOpen) {
+            const isLoggedIn = await checkAuth()
+            if (!isLoggedIn) {
+              blockedOpenRef.current = false
+              if (onBlockedOpen) onBlockedOpen()
+              setOpen(false)
+              return
+            }
+          }
+          setOpen(nextOpen)
+        }}
+      >
+        <DialogTrigger asChild>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+            {trigger ? (
+              // If custom trigger, clone and add onClick
+              // @ts-ignore
+              React.cloneElement(trigger as any, {
+                onClick: (e: React.MouseEvent) => {
+                  if (typeof (trigger as any).props?.onClick === 'function') {
+                    (trigger as any).props.onClick(e)
                   }
-                }}
-                required
-                autoComplete="off"
-              />
-              {(searchingMovies || searchingRestaurants) && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                </div>
-              )}
+                  handleTriggerClick(e)
+                },
+              })
+            ) : (
+              <Button onClick={handleTriggerClick} disabled={checkingAuth}>
+                <Plus className="mr-2 h-4 w-4" />
+                {editMode ? "Edit Recommendation" : "Add Recommendation"}
+              </Button>
+            )}
+          </div>
+        </DialogTrigger>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>{editMode ? "Edit Recommendation" : "Add New Recommendation"}</DialogTitle>
+            <DialogDescription>
+              {editMode ? "Update your recommendation details" : "Create a new recommendation"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Category */}
+            <div className="space-y-2">
+              <Label htmlFor="category">Category *</Label>
+              <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+                <SelectTrigger id="category">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.displayName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Movie Suggestions */}
-            {selectedCategory?.name === "MOVIE" && showSuggestions && movieSuggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 z-50 mt-1 border rounded-md bg-white shadow-lg max-h-48 overflow-y-auto">
-                {movieSuggestions.map((movie) => (
-                  <button
-                    key={movie.id}
+            {/* Entity Name with Search */}
+            <div className="space-y-2 relative">
+              <Label htmlFor="entityName">
+                {selectedCategory?.displayName || "Item"} Name *
+              </Label>
+              <div className="relative">
+                <Input
+                  id="entityName"
+                  placeholder={selectedCategory?.name === "MOVIE" ? "Search movies..." : selectedCategory?.name === "RESTAURANT" ? "Search restaurants..." : `e.g., Inception, Joe's Pizza`}
+                  value={entityName !== undefined ? String(entityName) : ""}
+                  onChange={(e) => {
+                    setEntityName(e.target.value)
+                    if (selectedCategory?.name === "MOVIE") {
+                      handleMovieSearch(e.target.value)
+                    } else if (selectedCategory?.name === "RESTAURANT") {
+                      handleRestaurantSearch(e.target.value)
+                    }
+                  }}
+                  required
+                  autoComplete="off"
+                />
+                {(searchingMovies || searchingRestaurants) && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </div>
+                )}
+              </div>
+
+              {/* Movie Suggestions */}
+              {selectedCategory?.name === "MOVIE" && showSuggestions && movieSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 z-50 mt-1 border rounded-md bg-white shadow-lg max-h-48 overflow-y-auto">
+                  {movieSuggestions.map((movie) => (
+                    <button
+                      key={movie.id}
                     type="button"
                     onClick={() => handleMovieSelect(movie)}
                     className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-start gap-3 border-b last:border-b-0"
@@ -788,6 +858,7 @@ export function AddRecommendationDialog({
           </DialogFooter>
         </form>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+    </div>
   )
 }
