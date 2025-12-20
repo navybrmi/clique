@@ -129,7 +129,7 @@ export default function Home() {
           <p className="mx-auto max-w-2xl text-xl text-zinc-600 dark:text-zinc-400">
             Discover and share recommendations for restaurants, movies, fashion, household items, and more with your friends.
           </p>
-          <div className="mt-8 flex flex-col items-center">
+          <div className="mt-8 flex flex-col items-center relative" style={{ minHeight: 80 }}>
             <div className="flex gap-4">
               <AddRecommendationDialog
                 onSuccess={fetchRecommendations}
@@ -141,11 +141,20 @@ export default function Home() {
                 Browse Categories
               </Button>
             </div>
-            {/* Login error message below button group, centered, absolute positioning to avoid layout shift */}
+            {/* Login error message overlays below button group, does not push down cards */}
             {showLoginAlert && (
               <div
-                className="flex items-center justify-center rounded border border-red-300 bg-red-50 px-4 py-3 text-red-800 shadow-lg mt-4"
-                style={{ minWidth: 280, maxWidth: 400 }}
+                className="flex items-center justify-center rounded border border-red-300 bg-red-50 px-4 py-3 text-red-800 shadow-lg"
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: '100%',
+                  transform: 'translateX(-50%)',
+                  minWidth: 280,
+                  maxWidth: 400,
+                  marginTop: 8,
+                  zIndex: 20,
+                }}
               >
                 <span className="mx-auto">You must be signed in to add a recommendation.</span>
                 <button

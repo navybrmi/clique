@@ -1,4 +1,7 @@
+
 "use client"
+
+import React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
@@ -687,17 +690,20 @@ export function AddRecommendationDialog({
           <div className="space-y-2">
             <Label htmlFor="rating">Rating (0-10)</Label>
             <div className="flex gap-1 flex-wrap">
-              {[1,2,3,4,5,6,7,8,9,10].map((num) => (
-                <button
-                  key={num}
-                  type="button"
-                  onClick={() => setRating(num.toString())}
-                  className={`p-1 ${rating === num.toString() ? "text-yellow-400" : "text-gray-300"}`}
-                  aria-label={`Rate ${num} star${num > 1 ? 's' : ''}`}
-                >
-                  <Star className="h-6 w-6 fill-current" />
-                </button>
-              ))}
+              {[1,2,3,4,5,6,7,8,9,10].map((num) => {
+                const selected = parseInt(rating || "0", 10) >= num;
+                return (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setRating(num.toString())}
+                    className={`p-1 ${selected ? "text-yellow-400" : "text-gray-300"}`}
+                    aria-label={`Rate ${num} star${num > 1 ? 's' : ''}`}
+                  >
+                    <Star className="h-6 w-6 fill-current" />
+                  </button>
+                );
+              })}
             </div>
           </div>
 
