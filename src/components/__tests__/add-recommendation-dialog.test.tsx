@@ -245,6 +245,25 @@ describe("AddRecommendationDialog", () => {
   })
 
   it("should show alert if not signed in", async () => {
+    // Wrapper to simulate parent logic
+    function Wrapper() {
+      const [showLoginAlert, setShowLoginAlert] = React.useState(false)
+      return (
+        <>
+          <AddRecommendationDialog
+            onSuccess={jest.fn()}
+            initialCategoryId="1"
+            showLoginAlert={showLoginAlert}
+            onBlockedOpen={() => setShowLoginAlert(true)}
+          />
+          {showLoginAlert && (
+            <div>
+              You must be signed in to add a recommendation.
+            </div>
+          )}
+        </>
+      )
+    }
     window.alert = jest.fn()
     ;(global.fetch as jest.Mock).mockImplementation((url) => {
       if (url.includes("/api/categories")) {
@@ -258,13 +277,9 @@ describe("AddRecommendationDialog", () => {
       }
       return Promise.resolve({ ok: true, json: () => Promise.resolve({ results: [] }) })
     })
-    render(<AddRecommendationDialog onSuccess={jest.fn()} initialCategoryId="1" />)
+    render(<Wrapper />)
     fireEvent.click(screen.getByText(/add recommendation/i))
-    await screen.findByLabelText(/category/i)
-    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: "Test Movie" } })
-    const createBtns = screen.getAllByText(/^create$/i)
-    fireEvent.click(createBtns.find(btn => btn.tagName === 'BUTTON')!)
-    await waitFor(() => expect(window.alert).toHaveBeenCalledWith(expect.stringMatching(/sign in/i)))
+    await waitFor(() => expect(screen.getByText(/must be signed in to add a recommendation/i)).toBeInTheDocument())
   })
 
   it("should show alert on API error", async () => {
@@ -315,7 +330,7 @@ describe("AddRecommendationDialog", () => {
     await waitFor(() => {
       expect((screen.getByPlaceholderText(/director/i) as HTMLInputElement).value).toBe("Dir")
       const yearValue = (screen.getByPlaceholderText(/year/i) as HTMLInputElement).value;
-      expect(yearValue === "2020" || yearValue === 2020).toBe(true);
+      expect(yearValue).toBe("2020");
       expect((screen.getByPlaceholderText(/genre/i) as HTMLInputElement).value).toBe("Drama")
       expect((screen.getByPlaceholderText(/duration/i) as HTMLInputElement).value).toBe("2h")
       expect(screen.getByText(/tag1/i)).toBeInTheDocument()
@@ -364,7 +379,7 @@ describe("AddRecommendationDialog", () => {
       // Submit the form directly using querySelector
       const form = document.querySelector('form')
       expect(form).toBeTruthy()
-      fireEvent.submit(form)
+      if (form) fireEvent.submit(form)
     await waitFor(() => expect(window.alert).toHaveBeenCalledWith(expect.stringContaining("Entity name and category are required")))
   })
 
