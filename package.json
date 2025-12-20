@@ -6,7 +6,7 @@
     "dev": "node scripts/dev.js",
     "dev:docker": "next dev -H 0.0.0.0 -p 3000",
     "docker:prod": "npm run test:all && node scripts/docker-dev.mjs",
-    "build": "npm run test:all && next build",
+    "build": "next build",
     "build:docker": "next build",
     "start": "next start",
     "lint": "eslint",
