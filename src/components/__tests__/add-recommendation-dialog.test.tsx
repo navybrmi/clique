@@ -245,6 +245,25 @@ describe("AddRecommendationDialog", () => {
   })
 
   it("should show alert if not signed in", async () => {
+    // Wrapper to simulate parent logic
+    function Wrapper() {
+      const [showLoginAlert, setShowLoginAlert] = React.useState(false)
+      return (
+        <>
+          <AddRecommendationDialog
+            onSuccess={jest.fn()}
+            initialCategoryId="1"
+            showLoginAlert={showLoginAlert}
+            onBlockedOpen={() => setShowLoginAlert(true)}
+          />
+          {showLoginAlert && (
+            <div>
+              You must be signed in to add a recommendation.
+            </div>
+          )}
+        </>
+      )
+    }
     window.alert = jest.fn()
     ;(global.fetch as jest.Mock).mockImplementation((url) => {
       if (url.includes("/api/categories")) {
@@ -258,13 +277,9 @@ describe("AddRecommendationDialog", () => {
       }
       return Promise.resolve({ ok: true, json: () => Promise.resolve({ results: [] }) })
     })
-    render(<AddRecommendationDialog onSuccess={jest.fn()} initialCategoryId="1" />)
+    render(<Wrapper />)
     fireEvent.click(screen.getByText(/add recommendation/i))
-    await screen.findByLabelText(/category/i)
-    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: "Test Movie" } })
-    const createBtns = screen.getAllByText(/^create$/i)
-    fireEvent.click(createBtns.find(btn => btn.tagName === 'BUTTON')!)
-    await waitFor(() => expect(window.alert).toHaveBeenCalledWith(expect.stringMatching(/sign in/i)))
+    await waitFor(() => expect(screen.getByText(/must be signed in to add a recommendation/i)).toBeInTheDocument())
   })
 
   it("should show alert on API error", async () => {
