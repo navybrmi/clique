@@ -197,6 +197,9 @@ export function AddRecommendationDialog({
     purchaseLink: "",
   })
 
+  // Suggested tags state (combination of hardcoded and promoted community tags)
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([])
+
   // Fetch categories on mount
   useEffect(() => {
     const fetchCategories = async () => {
@@ -241,6 +244,38 @@ export function AddRecommendationDialog({
       }
     }
   }, [editMode, initialData, open])
+
+  // Fetch suggested tags when category changes
+  useEffect(() => {
+    const fetchSuggestedTags = async () => {
+      if (!selectedCategoryId) {
+        setSuggestedTags([])
+        return
+      }
+
+      const selectedCategory = categories.find((c) => c.id === selectedCategoryId)
+      if (!selectedCategory || selectedCategory.name !== "MOVIE") {
+        // Only show tags for MOVIE category for now
+        setSuggestedTags([])
+        return
+      }
+
+      try {
+        const res = await fetch(
+          `/api/tags?categoryName=${encodeURIComponent(selectedCategory.name)}`
+        )
+        if (res.ok) {
+          const data = await res.json()
+          setSuggestedTags(data.tags || [])
+        }
+      } catch (error) {
+        console.error("Error fetching suggested tags:", error)
+        setSuggestedTags([])
+      }
+    }
+
+    fetchSuggestedTags()
+  }, [selectedCategoryId, categories])
 
   /**
    * Searches for movies using TMDB API with debouncing.
@@ -649,8 +684,48 @@ export function AddRecommendationDialog({
           </div>
 
           {/* Tags */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label htmlFor="tags">Why This Recommendation? (Tags)</Label>
+            
+            {/* Suggested Tags - Only show for MOVIE category */}
+            {suggestedTags.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-500">Suggested tags:</p>
+                <div className="flex flex-wrap gap-2">
+                  {suggestedTags.map((suggestedTag) => {
+                    const isSelected = tags.some(
+                      (t) => t.toLowerCase() === suggestedTag.toLowerCase()
+                    );
+                    return (
+                      <button
+                        key={suggestedTag}
+                        type="button"
+                        onClick={() => {
+                          if (!isSelected) {
+                            setTags([...tags, suggestedTag]);
+                          } else {
+                            setTags(
+                              tags.filter(
+                                (t) => t.toLowerCase() !== suggestedTag.toLowerCase()
+                              )
+                            );
+                          }
+                        }}
+                        className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                          isSelected
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                        }`}
+                      >
+                        {suggestedTag}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Custom Tag Input */}
             <div className="flex gap-2">
               <Input
                 id="tags"
@@ -668,6 +743,8 @@ export function AddRecommendationDialog({
                 Add
               </Button>
             </div>
+
+            {/* Selected Tags Display */}
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-2 pt-2">
                 {tags.map((tag) => (
