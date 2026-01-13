@@ -4,7 +4,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { isHardcodedMovieTag, normalizeTag } from "@/lib/movie-tags";
+import { isHardcodedMovieTag, normalizeTagForComparison } from "@/lib/movie-tags";
 
 const TAG_PROMOTION_THRESHOLD = 20;
 
@@ -12,61 +12,59 @@ const TAG_PROMOTION_THRESHOLD = 20;
  * Track tag usage and handle promotion
  * If a tag is not hardcoded and reaches the promotion threshold, it becomes promoted
  *
- * @param tag - The tag text to track
+ * @param tag - The tag text to track (will be stored in original case)
  * @param categoryId - The category ID this tag belongs to
- * @returns The updated or created CommunityTag record
+ * @returns Promise<CommunityTag | null> - The updated or created CommunityTag record, or null for hardcoded tags
  * @throws Error if database operation fails
  */
-export async function trackTagUsage(tag: string, categoryId: string) {
-  const normalizedTag = normalizeTag(tag);
+export async function trackTagUsage(
+  tag: string,
+  categoryId: string
+): Promise<any | null> {
+  const trimmedTag = tag.trim();
 
   // Don't track hardcoded tags (they're always available)
-  if (isHardcodedMovieTag(normalizedTag)) {
+  if (isHardcodedMovieTag(trimmedTag)) {
     return null;
   }
 
   try {
-    // Find existing community tag
-    let communityTag = await prisma.communityTag.findUnique({
+    // Atomically create or update community tag to avoid race conditions
+    let communityTag = await prisma.communityTag.upsert({
       where: {
         tag_categoryId: {
-          tag: normalizedTag,
+          tag: trimmedTag,
           categoryId,
         },
       },
+      update: {
+        usageCount: {
+          increment: 1,
+        },
+      },
+      create: {
+        tag: trimmedTag,
+        categoryId,
+        usageCount: 1,
+        isPromoted: false,
+      },
     });
 
-    if (communityTag) {
-      // Increment usage count
+    // Check if should be promoted after usage count update
+    if (
+      communityTag.usageCount >= TAG_PROMOTION_THRESHOLD &&
+      !communityTag.isPromoted
+    ) {
       communityTag = await prisma.communityTag.update({
         where: { id: communityTag.id },
-        data: { usageCount: { increment: 1 } },
+        data: { isPromoted: true },
       });
 
-      // Check if should be promoted
-      if (
-        communityTag.usageCount >= TAG_PROMOTION_THRESHOLD &&
-        !communityTag.isPromoted
-      ) {
-        communityTag = await prisma.communityTag.update({
-          where: { id: communityTag.id },
-          data: { isPromoted: true },
-        });
-
-        console.log(
-          `✨ Tag promoted to precanned: "${normalizedTag}" (usage: ${communityTag.usageCount})`
-        );
-      }
-    } else {
-      // Create new community tag
-      communityTag = await prisma.communityTag.create({
-        data: {
-          tag: normalizedTag,
-          categoryId,
-          usageCount: 1,
-          isPromoted: false,
-        },
-      });
+      console.log(
+        '✨ Tag promoted to precanned:',
+        trimmedTag,
+        `(usage: ${communityTag.usageCount})`
+      );
     }
 
     return communityTag;
@@ -87,6 +85,102 @@ export async function trackMultipleTags(tags: string[], categoryId: string) {
   const results = await Promise.all(
     tags.map((tag) => trackTagUsage(tag, categoryId).catch((err) => {
       console.error(`Failed to track tag "${tag}":`, err);
+      return null;
+    }))
+  );
+
+  return results.filter((r) => r !== null);
+}
+
+/**
+ * Decrement tag usage count when a tag is removed from a recommendation
+ * If usage count reaches 0, the tag is deleted
+ * If usage count drops below threshold, the tag is demoted
+ *
+ * @param tag - The tag text to decrement (will be matched case-insensitively)
+ * @param categoryId - The category ID this tag belongs to
+ * @returns Promise<CommunityTag | null> - The updated CommunityTag record, or null if not found or hardcoded
+ * @throws Error if database operation fails
+ */
+export async function decrementTagUsage(
+  tag: string,
+  categoryId: string
+): Promise<any | null> {
+  const trimmedTag = tag.trim();
+
+  // Don't track hardcoded tags (they're always available)
+  if (isHardcodedMovieTag(trimmedTag)) {
+    return null;
+  }
+
+  try {
+    // Find the community tag (case-insensitive match)
+    const existingTag = await prisma.communityTag.findUnique({
+      where: {
+        tag_categoryId: {
+          tag: trimmedTag,
+          categoryId,
+        },
+      },
+    });
+
+    if (!existingTag) {
+      return null;
+    }
+
+    const newUsageCount = existingTag.usageCount - 1;
+
+    // If usage count reaches 0, delete the tag
+    if (newUsageCount <= 0) {
+      await prisma.communityTag.delete({
+        where: { id: existingTag.id },
+      });
+      return null;
+    }
+
+    // Update usage count and check if should be demoted
+    let updatedTag = await prisma.communityTag.update({
+      where: { id: existingTag.id },
+      data: {
+        usageCount: newUsageCount,
+      },
+    });
+
+    // Demote if usage count drops below threshold
+    if (
+      newUsageCount < TAG_PROMOTION_THRESHOLD &&
+      existingTag.isPromoted
+    ) {
+      updatedTag = await prisma.communityTag.update({
+        where: { id: existingTag.id },
+        data: { isPromoted: false },
+      });
+
+      console.log(
+        '⬇️ Tag demoted from precanned:',
+        trimmedTag,
+        `(usage: ${newUsageCount})`
+      );
+    }
+
+    return updatedTag;
+  } catch (error) {
+    console.error("Error decrementing tag usage:", error);
+    throw error;
+  }
+}
+
+/**
+ * Decrement usage count for multiple tags
+ * Useful when deleting or updating recommendations
+ *
+ * @param tags - Array of tags to decrement
+ * @param categoryId - The category ID
+ */
+export async function decrementMultipleTags(tags: string[], categoryId: string) {
+  const results = await Promise.all(
+    tags.map((tag) => decrementTagUsage(tag, categoryId).catch((err) => {
+      console.error(`Failed to decrement tag "${tag}":`, err);
       return null;
     }))
   );

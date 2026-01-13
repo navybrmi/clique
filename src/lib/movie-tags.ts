@@ -36,23 +36,23 @@ export function getHardcodedMovieTags(): string[] {
 }
 
 /**
- * Check if a tag is a hardcoded tag
+ * Check if a tag is a hardcoded tag (case-insensitive)
  * @param tag - The tag to check
  * @returns True if tag is in the hardcoded suggestions
  */
 export function isHardcodedMovieTag(tag: string): boolean {
-  const normalizedTag = tag.toLowerCase().trim();
+  const normalized = normalizeTagForComparison(tag);
   return getHardcodedMovieTags().some(
-    (t) => t.toLowerCase().trim() === normalizedTag
+    (t) => normalizeTagForComparison(t) === normalized
   );
 }
 
 /**
- * Normalize a tag for comparison
- * Converts to lowercase and trims whitespace
+ * Normalize a tag for comparison only
+ * Converts to lowercase and trims whitespace for case-insensitive comparison
  * @param tag - The tag to normalize
- * @returns Normalized tag
+ * @returns Normalized tag (lowercase, trimmed)
  */
-export function normalizeTag(tag: string): string {
+export function normalizeTagForComparison(tag: string): string {
   return tag.toLowerCase().trim();
 }

@@ -275,7 +275,7 @@ export function AddRecommendationDialog({
     }
 
     fetchSuggestedTags()
-  }, [selectedCategoryId, categories])
+  }, [selectedCategoryId, categories, open])
 
   /**
    * Searches for movies using TMDB API with debouncing.

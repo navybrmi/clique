@@ -208,12 +208,16 @@ describe("PUT /api/recommendations/[id]", () => {
     const existingRec = {
       userId: "user1",
       entityId: "entity1",
+      tags: ["old-tag"],
+      entity: {
+        categoryId: "cat1",
+      },
     }
 
     const updatedRec = {
       id: "rec1",
       userId: "user1",
-      tags: "updated,tags",
+      tags: ["updated", "tags"],
       rating: 5,
     }
 
@@ -225,7 +229,7 @@ describe("PUT /api/recommendations/[id]", () => {
     const request = new NextRequest("http://localhost/api/recommendations/rec1", {
       method: "PUT",
       body: JSON.stringify({
-        tags: "updated,tags",
+        tags: ["updated", "tags"],
         rating: 5,
         link: "https://example.com",
       }),
@@ -240,7 +244,7 @@ describe("PUT /api/recommendations/[id]", () => {
     expect(prisma.recommendation.update).toHaveBeenCalledWith({
       where: { id: "rec1" },
       data: expect.objectContaining({
-        tags: "updated,tags",
+        tags: ["updated", "tags"],
         rating: 5,
         link: "https://example.com",
       }),
@@ -254,6 +258,10 @@ describe("PUT /api/recommendations/[id]", () => {
     const existingRec = {
       userId: "user1",
       entityId: "entity1",
+      tags: [],
+      entity: {
+        categoryId: "cat1",
+      },
     }
 
     ;(prisma.recommendation.findUnique as jest.Mock)
@@ -265,7 +273,7 @@ describe("PUT /api/recommendations/[id]", () => {
     const request = new NextRequest("http://localhost/api/recommendations/rec1", {
       method: "PUT",
       body: JSON.stringify({
-        tags: "updated",
+        tags: [],
         restaurantData: {
           cuisine: "Italian",
           location: "123 Main St",
@@ -346,6 +354,9 @@ describe("DELETE /api/recommendations/[id]", () => {
   it("should return 404 when recommendation not found", async () => {
     // Arrange
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    
+    // Clear previous mocks and set up for this test
+    ;(prisma.recommendation.findUnique as jest.Mock).mockReset()
     ;(prisma.recommendation.findUnique as jest.Mock).mockResolvedValue(null)
 
     const request = new NextRequest("http://localhost/api/recommendations/nonexistent", {

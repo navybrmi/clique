@@ -203,7 +203,7 @@ model Other {
 // CommunityTag model - tracks user-created tags that may be promoted to precanned
 model CommunityTag {
   id         String   @id @default(cuid())
-  tag        String   // The actual tag text (e.g., "Great cinematography")
+  tag        String   // The actual tag text, stored in original case (e.g., "Great cinematography")
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   usageCount Int      @default(1)  // Track how many recommendations use this tag
