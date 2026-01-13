@@ -45,7 +45,7 @@ export async function trackTagUsage(tag: string, categoryId: string) {
 
       // Check if should be promoted
       if (
-        communityTag.usageCount === TAG_PROMOTION_THRESHOLD &&
+        communityTag.usageCount >= TAG_PROMOTION_THRESHOLD &&
         !communityTag.isPromoted
       ) {
         communityTag = await prisma.communityTag.update({
