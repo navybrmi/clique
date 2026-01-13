@@ -81,7 +81,8 @@ model Category {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  entities Entity[]
+  entities       Entity[]
+  communityTags  CommunityTag[]
 
   @@index([name])
 }
@@ -197,6 +198,22 @@ model Other {
   customFields  Json?    // Flexible JSON for custom properties
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+// CommunityTag model - tracks user-created tags that may be promoted to precanned
+model CommunityTag {
+  id         String   @id @default(cuid())
+  tag        String   // The actual tag text, stored in original case (e.g., "Great cinematography")
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  usageCount Int      @default(1)  // Track how many recommendations use this tag
+  isPromoted Boolean  @default(false)  // True when it graduates to precanned
+  createdAt  DateTime @default(now())
+
+  @@unique([tag, categoryId])
+  @@index([categoryId])
+  @@index([usageCount])
+  @@index([isPromoted])
 }
 
 // Comment model

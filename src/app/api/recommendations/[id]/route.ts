@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
+import { trackMultipleTags, decrementMultipleTags } from "@/lib/tag-service"
 
 /**
  * GET /api/recommendations/[id]
@@ -145,7 +146,16 @@ export async function PUT(
     // Check if the recommendation exists and belongs to the user
     const existingRecommendation = await prisma.recommendation.findUnique({
       where: { id },
-      select: { userId: true, entityId: true },
+      select: { 
+        userId: true, 
+        entityId: true,
+        tags: true,
+        entity: {
+          select: {
+            categoryId: true,
+          },
+        },
+      },
     })
 
     if (!existingRecommendation) {
@@ -157,6 +167,23 @@ export async function PUT(
     }
 
     const body = await request.json()
+
+    // Track tag changes for community tag promotion/demotion
+    const oldTags = existingRecommendation.tags || []
+    const newTags = body.tags || []
+    const categoryId = existingRecommendation.entity.categoryId
+
+    // Calculate which tags were added and removed
+    const addedTags = newTags.filter((tag: string) => !oldTags.includes(tag))
+    const removedTags = oldTags.filter((tag: string) => !newTags.includes(tag))
+
+    // Track tag usage changes
+    if (addedTags.length > 0) {
+      await trackMultipleTags(addedTags, categoryId)
+    }
+    if (removedTags.length > 0) {
+      await decrementMultipleTags(removedTags, categoryId)
+    }
 
     // Update recommendation fields
     await prisma.recommendation.update({
