@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { trackMultipleTags } from "@/lib/tag-service"
 
 /**
  * GET /api/recommendations
@@ -237,6 +238,16 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    // Track tag usage for community tag promotion
+    if (tags && tags.length > 0) {
+      try {
+        await trackMultipleTags(tags, categoryId)
+      } catch (error) {
+        // Log but don't fail the recommendation creation if tag tracking fails
+        console.error("Error tracking tags:", error)
+      }
+    }
 
     return NextResponse.json(recommendation, { status: 201 })
   } catch (error) {
