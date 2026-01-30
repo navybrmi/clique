@@ -4,7 +4,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { isHardcodedMovieTag, normalizeTagForComparison } from "@/lib/movie-tags";
+import { isHardcodedMovieTag } from "@/lib/movie-tags";
 
 const TAG_PROMOTION_THRESHOLD = 20;
 
@@ -80,11 +80,12 @@ export async function trackTagUsage(
  *
  * @param tags - Array of tags to track
  * @param categoryId - The category ID
+ * @returns Promise resolving to array of successfully tracked CommunityTag objects (failed tags filtered out)
  */
 export async function trackMultipleTags(tags: string[], categoryId: string) {
   const results = await Promise.all(
     tags.map((tag) => trackTagUsage(tag, categoryId).catch((err) => {
-      console.error(`Failed to track tag "${tag}":`, err);
+      console.error("Failed to track tag:", tag, err);
       return null;
     }))
   );

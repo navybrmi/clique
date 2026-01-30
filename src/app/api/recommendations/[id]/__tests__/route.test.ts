@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { GET, PUT, DELETE } from "../route"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
+import { trackMultipleTags, decrementMultipleTags } from "@/lib/tag-service"
 
 // Mock Prisma
 jest.mock("@/lib/prisma", () => ({
@@ -32,6 +33,12 @@ jest.mock("@/lib/prisma", () => ({
 // Mock auth
 jest.mock("@/lib/auth", () => ({
   auth: jest.fn(),
+}))
+
+// Mock tag service functions
+jest.mock("@/lib/tag-service", () => ({
+  trackMultipleTags: jest.fn(),
+  decrementMultipleTags: jest.fn(),
 }))
 
 describe("GET /api/recommendations/[id]", () => {
@@ -138,8 +145,9 @@ describe("GET /api/recommendations/[id]", () => {
 })
 
 describe("PUT /api/recommendations/[id]", () => {
-  afterEach(() => {
-    jest.clearAllMocks()
+  beforeEach(() => {
+    // Reset all mocks before each test to prevent test pollution
+    jest.resetAllMocks()
   })
 
   it("should return 401 when not authenticated", async () => {
@@ -297,12 +305,208 @@ describe("PUT /api/recommendations/[id]", () => {
     })
   })
 
+  it("should track added tags when updating recommendation", async () => {
+    // Arrange
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(trackMultipleTags as jest.Mock).mockResolvedValue([])
+    ;(decrementMultipleTags as jest.Mock).mockResolvedValue([])
+    
+    const existingRec = {
+      userId: "user1",
+      entityId: "entity1",
+      tags: ["old-tag"],
+      entity: {
+        categoryId: "cat1",
+      },
+    }
+
+    ;(prisma.recommendation.findUnique as jest.Mock)
+      .mockResolvedValueOnce(existingRec)
+      .mockResolvedValueOnce({ id: "rec1", tags: ["old-tag", "new-tag"] })
+    ;(prisma.recommendation.update as jest.Mock).mockResolvedValue({})
+
+    const request = new NextRequest("http://localhost/api/recommendations/rec1", {
+      method: "PUT",
+      body: JSON.stringify({
+        tags: ["old-tag", "new-tag"],
+        rating: 5,
+      }),
+    })
+
+    // Act
+    const response = await PUT(request, { params: Promise.resolve({ id: "rec1" }) })
+
+    // Assert
+    expect(response.status).toBe(200)
+    expect(trackMultipleTags).toHaveBeenCalledWith(["new-tag"], "cat1")
+    expect(decrementMultipleTags).not.toHaveBeenCalled()
+  })
+
+  it("should decrement removed tags when updating recommendation", async () => {
+    // Arrange
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(trackMultipleTags as jest.Mock).mockResolvedValue([])
+    ;(decrementMultipleTags as jest.Mock).mockResolvedValue([])
+    
+    const existingRec = {
+      userId: "user1",
+      entityId: "entity1",
+      tags: ["old-tag", "removed-tag"],
+      entity: {
+        categoryId: "cat1",
+      },
+    }
+
+    ;(prisma.recommendation.findUnique as jest.Mock)
+      .mockResolvedValueOnce(existingRec)
+      .mockResolvedValueOnce({ id: "rec1", tags: ["old-tag"] })
+    ;(prisma.recommendation.update as jest.Mock).mockResolvedValue({})
+
+    const request = new NextRequest("http://localhost/api/recommendations/rec1", {
+      method: "PUT",
+      body: JSON.stringify({
+        tags: ["old-tag"],
+        rating: 5,
+      }),
+    })
+
+    // Act
+    const response = await PUT(request, { params: Promise.resolve({ id: "rec1" }) })
+
+    // Assert
+    expect(response.status).toBe(200)
+    expect(decrementMultipleTags).toHaveBeenCalledWith(["removed-tag"], "cat1")
+    expect(trackMultipleTags).not.toHaveBeenCalled()
+  })
+
+  it("should track added tags and decrement removed tags in same update", async () => {
+    // Arrange
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(trackMultipleTags as jest.Mock).mockResolvedValue([])
+    ;(decrementMultipleTags as jest.Mock).mockResolvedValue([])
+    
+    const existingRec = {
+      userId: "user1",
+      entityId: "entity1",
+      tags: ["keep-tag", "remove-tag"],
+      entity: {
+        categoryId: "cat1",
+      },
+    }
+
+    ;(prisma.recommendation.findUnique as jest.Mock)
+      .mockResolvedValueOnce(existingRec)
+      .mockResolvedValueOnce({ id: "rec1", tags: ["keep-tag", "new-tag"] })
+    ;(prisma.recommendation.update as jest.Mock).mockResolvedValue({})
+
+    const request = new NextRequest("http://localhost/api/recommendations/rec1", {
+      method: "PUT",
+      body: JSON.stringify({
+        tags: ["keep-tag", "new-tag"],
+        rating: 5,
+      }),
+    })
+
+    // Act
+    const response = await PUT(request, { params: Promise.resolve({ id: "rec1" }) })
+
+    // Assert
+    expect(response.status).toBe(200)
+    expect(trackMultipleTags).toHaveBeenCalledWith(["new-tag"], "cat1")
+    expect(decrementMultipleTags).toHaveBeenCalledWith(["remove-tag"], "cat1")
+  })
+
+  it("should handle empty tags array updates", async () => {
+    // Arrange
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(trackMultipleTags as jest.Mock).mockResolvedValue([])
+    ;(decrementMultipleTags as jest.Mock).mockResolvedValue([])
+    
+    const existingRec = {
+      userId: "user1",
+      entityId: "entity1",
+      tags: ["old-tag"],
+      entity: {
+        categoryId: "cat1",
+      },
+    }
+
+    ;(prisma.recommendation.findUnique as jest.Mock)
+      .mockResolvedValueOnce(existingRec)
+      .mockResolvedValueOnce({ id: "rec1", tags: [] })
+    ;(prisma.recommendation.update as jest.Mock).mockResolvedValue({})
+
+    const request = new NextRequest("http://localhost/api/recommendations/rec1", {
+      method: "PUT",
+      body: JSON.stringify({
+        tags: [],
+        rating: 5,
+      }),
+    })
+
+    // Act
+    const response = await PUT(request, { params: Promise.resolve({ id: "rec1" }) })
+
+    // Assert
+    expect(response.status).toBe(200)
+    expect(trackMultipleTags).not.toHaveBeenCalled()
+    expect(decrementMultipleTags).toHaveBeenCalledWith(["old-tag"], "cat1")
+  })
+
+  it("should handle tag tracking errors gracefully", async () => {
+    // Arrange
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(trackMultipleTags as jest.Mock).mockRejectedValue(new Error("Tag tracking failed"))
+    ;(decrementMultipleTags as jest.Mock).mockResolvedValue([])
+    
+    const existingRec = {
+      userId: "user1",
+      entityId: "entity1",
+      tags: ["old-tag"],
+      entity: {
+        categoryId: "cat1",
+      },
+    }
+
+    ;(prisma.recommendation.findUnique as jest.Mock)
+      .mockResolvedValueOnce(existingRec)
+      .mockResolvedValueOnce({ id: "rec1" })
+    ;(prisma.recommendation.update as jest.Mock).mockResolvedValue({})
+
+    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation()
+
+    const request = new NextRequest("http://localhost/api/recommendations/rec1", {
+      method: "PUT",
+      body: JSON.stringify({
+        tags: ["old-tag", "new-tag"],
+        rating: 5,
+      }),
+    })
+
+    // Act
+    const response = await PUT(request, { params: Promise.resolve({ id: "rec1" }) })
+    const data = await response.json()
+
+    // Assert
+    expect(response.status).toBe(500)
+    expect(data).toHaveProperty("error", "Failed to update recommendation")
+    expect(consoleErrorSpy).toHaveBeenCalled()
+
+    consoleErrorSpy.mockRestore()
+  })
+
   it("should handle database errors during update", async () => {
     // Arrange
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(trackMultipleTags as jest.Mock).mockResolvedValue([])
+    ;(decrementMultipleTags as jest.Mock).mockResolvedValue([])
     ;(prisma.recommendation.findUnique as jest.Mock).mockResolvedValue({
       userId: "user1",
       entityId: "entity1",
+      tags: [],
+      entity: {
+        categoryId: "cat1",
+      },
     })
     
     const dbError = new Error("Database error")
