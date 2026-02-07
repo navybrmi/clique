@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 
-const TMDB_API_KEY = process.env.TMDB_API_KEY
 const TMDB_BASE_URL = "https://api.themoviedb.org/3"
 
 /**
@@ -12,22 +11,26 @@ const TMDB_BASE_URL = "https://api.themoviedb.org/3"
  * Query Parameters:
  * @param {string} query - Movie title or search term (required)
  * 
- * @returns {Promise<NextResponse>} JSON object with a `results` array containing:
- *   - id: TMDB movie ID
- *   - title: Movie title
- *   - year: Release year
- *   - posterPath: Full URL to poster image (w500)
- *   - overview: Movie description
- *   - genre: Comma-separated genre names
+ * @returns {Promise<NextResponse>} JSON object with:
+ *   - On success (200): `results` array containing:
+ *     - id: TMDB movie ID
+ *     - title: Movie title
+ *     - year: Release year
+ *     - posterPath: Full URL to poster image (w500)
+ *     - overview: Movie description
+ *     - genre: Comma-separated genre names
+ *   - On error (500+): `results` array (empty) + `error` string with details
  * 
- * @note If the query is missing/empty, TMDB_API_KEY is not configured, or the API request fails, 
- *       the function returns a JSON object with an empty `results` array (no error is thrown).
+ * @note If the query is missing/empty, returns 200 with empty `results` array.
+ * @note If TMDB_API_KEY is not configured, returns 500 with error message.
+ * @note If TMDB API request fails, returns error status from TMDB with error message.
  * 
  * @example
  * // GET /api/movies/search?query=inception
- * // Response: { results: [{ id: 27205, title: "Inception", year: 2010, ... }] }
+ * // Success: { results: [{ id: 27205, title: "Inception", year: 2010, ... }] }
+ * // Error: { results: [], error: "API key not configured" }
  * 
- * @note Results are cached for 1 hour. Genre list is cached for 24 hours.
+ * @note Search results are cached for 1 hour. Genre list is cached for 24 hours.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -38,6 +41,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ results: [] })
     }
 
+    const TMDB_API_KEY = process.env.TMDB_API_KEY
     if (!TMDB_API_KEY) {
       console.error("[TMDB] TMDB_API_KEY is not configured")
       return NextResponse.json({ results: [], error: "API key not configured" }, { status: 500 })
@@ -46,8 +50,7 @@ export async function GET(request: NextRequest) {
     const searchUrl = `${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1&include_adult=false`
     
     const response = await fetch(searchUrl, { 
-      // Disable caching for search queries to ensure fresh results
-      cache: 'no-store'
+      next: { revalidate: 3600 } // Cache for 1 hour
     })
 
     if (!response.ok) {
@@ -63,10 +66,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ results: [] })
     }
     
-    // Get genre information with no-store cache
+    // Get genre information with 24-hour cache
     const genresUrl = `${TMDB_BASE_URL}/genre/movie/list?api_key=${TMDB_API_KEY}&language=en-US`
     const genresResponse = await fetch(genresUrl, {
-      cache: 'no-store'
+      next: { revalidate: 86400 } // Cache for 24 hours
     })
     
     let genreMap = new Map<number, string>()

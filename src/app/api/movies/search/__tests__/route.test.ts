@@ -45,23 +45,32 @@ describe("GET /api/movies/search", () => {
   })
 
   it("should return empty results when API key is not configured", async () => {
-    // Arrange - the API key is actually set in test environment
-    // This test verifies the behavior when it's missing
+    // Arrange - temporarily remove API key and reload module
+    const originalApiKey = process.env.TMDB_API_KEY
+    delete process.env.TMDB_API_KEY
+    
+    // Reset modules to force re-import with missing env var
+    jest.resetModules()
+    const { GET: GetWithoutKey } = await import("../route")
+    
     const request = new NextRequest("http://localhost/api/movies/search?query=inception")
 
     // Suppress console.error
     const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation()
 
     // Act
-    const response = await GET(request)
+    const response = await GetWithoutKey(request)
     const data = await response.json()
 
-    // Assert - API key is set in CI/test environment, so this test  
-    // verifies successful response with empty results (no API key error)
-    expect(response.status).toBe(200)
-    expect(data).toEqual({ results: [] })
+    // Assert - should return 500 with error when API key is missing
+    expect(response.status).toBe(500)
+    expect(data).toEqual({ results: [], error: "API key not configured" })
+    expect(consoleErrorSpy).toHaveBeenCalledWith("[TMDB] TMDB_API_KEY is not configured")
 
     consoleErrorSpy.mockRestore()
+    
+    // Restore original API key
+    process.env.TMDB_API_KEY = originalApiKey
   })
 
   it("should search movies and return formatted results", async () => {
@@ -146,10 +155,17 @@ describe("GET /api/movies/search", () => {
     expect(response.status).toBe(500)
     expect(data.results).toEqual([])
     expect(data.error).toContain("TMDB API error")
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      `[TMDB] Search API error for query "test":`,
+    expect(consoleErrorSpy).toHaveBeenNthCalledWith(
+      1,
+      '[TMDB] Search API error for query "%s": %d %s',
+      "test",
       500,
       "Internal Server Error"
+    )
+    expect(consoleErrorSpy).toHaveBeenNthCalledWith(
+      2,
+      "[TMDB] Error details:",
+      "Server error"
     )
 
     consoleErrorSpy.mockRestore()
@@ -256,7 +272,7 @@ describe("GET /api/movies/search", () => {
     // Assert
     expect(response.status).toBe(500)
     expect(data.results).toEqual([])
-    expect(data.error).toContain("Network error")
+    expect(data.error).toBe("Unexpected error searching movies")
     expect(consoleErrorSpy).toHaveBeenCalledWith("[TMDB] Error searching movies:", expect.any(Error))
 
     consoleErrorSpy.mockRestore()
