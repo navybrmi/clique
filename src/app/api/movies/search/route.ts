@@ -39,29 +39,43 @@ export async function GET(request: NextRequest) {
     }
 
     if (!TMDB_API_KEY) {
-      console.error("TMDB_API_KEY is not configured")
-      return NextResponse.json({ results: [] })
+      console.error("[TMDB] TMDB_API_KEY is not configured")
+      return NextResponse.json({ results: [], error: "API key not configured" }, { status: 500 })
     }
 
-    const response = await fetch(
-      `${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1&include_adult=false`,
-      { next: { revalidate: 3600 } } // Cache for 1 hour
-    )
+    const searchUrl = `${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1&include_adult=false`
+    
+    const response = await fetch(searchUrl, { 
+      // Disable caching for search queries to ensure fresh results
+      cache: 'no-store'
+    })
 
     if (!response.ok) {
-      console.error("TMDB API error:", response.statusText)
-      return NextResponse.json({ results: [] })
+      console.error(`[TMDB] Search API error for query "${query}":`, response.status, response.statusText)
+      const errorText = await response.text()
+      console.error("[TMDB] Error details:", errorText)
+      return NextResponse.json({ results: [], error: `TMDB API error: ${response.statusText}` }, { status: response.status })
     }
 
     const data = await response.json()
     
-    // Get genre information
-    const genresResponse = await fetch(
-      `${TMDB_BASE_URL}/genre/movie/list?api_key=${TMDB_API_KEY}&language=en-US`,
-      { next: { revalidate: 86400 } } // Cache for 24 hours
-    )
-    const genresData = await genresResponse.json()
-    const genreMap = new Map(genresData.genres?.map((g: any) => [g.id, g.name]) || [])
+    if (!data.results || data.results.length === 0) {
+      return NextResponse.json({ results: [] })
+    }
+    
+    // Get genre information with no-store cache
+    const genresUrl = `${TMDB_BASE_URL}/genre/movie/list?api_key=${TMDB_API_KEY}&language=en-US`
+    const genresResponse = await fetch(genresUrl, {
+      cache: 'no-store'
+    })
+    
+    let genreMap = new Map<number, string>()
+    if (genresResponse.ok) {
+      const genresData = await genresResponse.json()
+      genreMap = new Map(genresData.genres?.map((g: any) => [g.id, g.name]) || [])
+    } else {
+      console.warn("[TMDB] Failed to fetch genres:", genresResponse.statusText)
+    }
     
     // Return top 5 results with relevant information
     const movies = data.results.slice(0, 5).map((movie: any) => ({
@@ -75,7 +89,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ results: movies })
   } catch (error) {
-    console.error("Error searching movies:", error)
-    return NextResponse.json({ results: [] })
+    console.error("[TMDB] Error searching movies:", error)
+    return NextResponse.json({ results: [], error: String(error) }, { status: 500 })
   }
 }
