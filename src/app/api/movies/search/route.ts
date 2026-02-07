@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!response.ok) {
-      console.error(`[TMDB] Search API error for query "${query}":`, response.status, response.statusText)
+      console.error('[TMDB] Search API error for query "%s": %d %s', query, response.status, response.statusText)
       const errorText = await response.text()
       console.error("[TMDB] Error details:", errorText)
       return NextResponse.json({ results: [], error: `TMDB API error: ${response.statusText}` }, { status: response.status })
