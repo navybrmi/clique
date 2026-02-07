@@ -300,13 +300,20 @@ export function AddRecommendationDialog({
     debounceTimer.current = setTimeout(async () => {
       try {
         const res = await fetch(`/api/movies/search?query=${encodeURIComponent(query)}`)
-        if (res.ok) {
-          const data = await res.json()
-          setMovieSuggestions(data.results || [])
+        const data = await res.json()
+        
+        if (res.ok && data.results && data.results.length > 0) {
+          setMovieSuggestions(data.results)
           setShowSuggestions(true)
+        } else {
+          setMovieSuggestions([])
+          if (data.error) {
+            console.error("Movie search error:", data.error)
+          }
         }
       } catch (error) {
         console.error("Error searching movies:", error)
+        setMovieSuggestions([])
       } finally {
         setSearchingMovies(false)
       }
@@ -336,13 +343,20 @@ export function AddRecommendationDialog({
     debounceTimer.current = setTimeout(async () => {
       try {
         const res = await fetch(`/api/restaurants/search?query=${encodeURIComponent(query)}`)
-        if (res.ok) {
-          const data = await res.json()
-          setRestaurantSuggestions(data.results || [])
+        const data = await res.json()
+        
+        if (res.ok && data.results && data.results.length > 0) {
+          setRestaurantSuggestions(data.results)
           setShowSuggestions(true)
+        } else {
+          setRestaurantSuggestions([])
+          if (data.error) {
+            console.error("Restaurant search error:", data.error)
+          }
         }
       } catch (error) {
         console.error("Error searching restaurants:", error)
+        setRestaurantSuggestions([])
       } finally {
         setSearchingRestaurants(false)
       }
@@ -510,6 +524,7 @@ export function AddRecommendationDialog({
         }
       } else {
         const error = await res.json()
+        console.error("API Error Response:", { status: res.status, error })
         alert(`Error: ${error.error}`)
       }
     } catch (error) {
