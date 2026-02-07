@@ -10,6 +10,8 @@ import Image from "next/image"
 import { Header } from "@/components/header"
 import { EditRecommendationButton } from "@/components/edit-recommendation-button"
 import { DeleteRecommendationButton } from "@/components/delete-recommendation-button"
+import { CommentsSection } from "@/components/comments-section"
+import { ActionsSidebar } from "@/components/actions-sidebar"
 
 export default async function RecommendationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -307,56 +309,22 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
             )}
 
             {/* Comments Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Comments ({recommendation._count.comments})</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {recommendation.comments.length > 0 ? (
-                  recommendation.comments.map((comment: any) => (
-                    <div key={comment.id} className="flex gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={comment.user.image || undefined} />
-                        <AvatarFallback>{comment.user.name?.[0] || '?'}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{comment.user.name || 'Anonymous'}</p>
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400">{comment.content}</p>
-                        <p className="text-xs text-zinc-400 mt-1">{new Date(comment.createdAt).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-zinc-500 text-center py-4">No comments yet</p>
-                )}
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-zinc-500 text-center">Sign in to add a comment</p>
-                </div>
-              </CardContent>
-            </Card>
+            <CommentsSection
+              recommendationId={recommendation.id}
+              initialComments={recommendation.comments}
+              initialCount={recommendation._count.comments}
+            />
 
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Action Card */}
+            <ActionsSidebar recommendation={recommendation} />
             <Card>
               <CardContent className="pt-6 space-y-3">
                 <EditRecommendationButton recommendation={recommendation} />
                 <DeleteRecommendationButton recommendation={recommendation} />
-                <div className="flex items-start justify-around pt-2">
-                  <Button variant="ghost" size="icon" className="flex flex-col h-auto py-2">
-                    <ArrowUp className="h-5 w-5" />
-                    <span className="text-xs mt-1">{recommendation._count.upvotes}</span>
-                  </Button>
-                  <Button variant="ghost" size="icon" className="flex flex-col h-auto py-2">
-                    <MessageCircle className="h-5 w-5" />
-                    <span className="text-xs mt-1">{recommendation._count.comments}</span>
-                  </Button>
-                  <Button variant="ghost" size="icon" className="py-2">
-                    <Share2 className="h-5 w-5" />
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           </div>
