@@ -90,6 +90,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results: movies })
   } catch (error) {
     console.error("[TMDB] Error searching movies:", error)
-    return NextResponse.json({ results: [], error: String(error) }, { status: 500 })
+    return NextResponse.json({ results: [], error: "Unexpected error searching movies" }, { status: 500 })
   }
 }
