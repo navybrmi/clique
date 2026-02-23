@@ -5,6 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { isHardcodedMovieTag } from "@/lib/movie-tags";
+import { isHardcodedRestaurantTag } from "@/lib/restaurant-tags";
 
 const TAG_PROMOTION_THRESHOLD = 20;
 
@@ -24,7 +25,7 @@ export async function trackTagUsage(
   const trimmedTag = tag.trim();
 
   // Don't track hardcoded tags (they're always available)
-  if (isHardcodedMovieTag(trimmedTag)) {
+  if (isHardcodedMovieTag(trimmedTag) || isHardcodedRestaurantTag(trimmedTag)) {
     return null;
   }
 
@@ -110,7 +111,7 @@ export async function decrementTagUsage(
   const trimmedTag = tag.trim();
 
   // Don't track hardcoded tags (they're always available)
-  if (isHardcodedMovieTag(trimmedTag)) {
+  if (isHardcodedMovieTag(trimmedTag) || isHardcodedRestaurantTag(trimmedTag)) {
     return null;
   }
 

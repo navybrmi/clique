@@ -72,6 +72,20 @@ beforeEach(() => {
     if (url.includes("/api/recommendations") && (init?.method === 'POST' || (init && 'method' in init && (init as RequestInit).method === 'POST'))) {
       return Promise.resolve(new Response(JSON.stringify({ id: "rec-1" })) as unknown as Response);
     }
+    if (url.includes("/api/tags") && url.includes("RESTAURANT")) {
+      return Promise.resolve(new Response(JSON.stringify({
+        categoryName: "RESTAURANT",
+        tags: ["Great ambiance", "Excellent service", "Hidden gem"],
+        count: 3,
+      })) as unknown as Response);
+    }
+    if (url.includes("/api/tags") && url.includes("MOVIE")) {
+      return Promise.resolve(new Response(JSON.stringify({
+        categoryName: "MOVIE",
+        tags: ["Great cinematography", "Compelling story"],
+        count: 2,
+      })) as unknown as Response);
+    }
     return Promise.resolve(new Response(JSON.stringify({ results: [] })) as unknown as Response);
   })
 })
@@ -480,6 +494,40 @@ describe("AddRecommendationDialog", () => {
     expect(screen.getByPlaceholderText(/year/i)).not.toBeDisabled()
     expect(screen.getByPlaceholderText(/genre/i)).not.toBeDisabled()
     expect(screen.getByPlaceholderText(/duration/i)).not.toBeDisabled()
+  })
+
+  it("should show restaurant-specific placeholder when Restaurant category is selected", async () => {
+    render(<AddRecommendationDialog onSuccess={jest.fn()} />)
+    fireEvent.click(screen.getByText(/add recommendation/i))
+    await screen.findByLabelText(/category/i)
+    // Select Restaurant category
+    const combobox = screen.getByRole('combobox')
+    await userEvent.click(combobox)
+    const options = await within(document.body).findAllByRole('option', {}, { timeout: 2000 })
+    const restaurantOption = options.find(opt => /Restaurant/i.test(opt.textContent || ""))
+    expect(restaurantOption).toBeTruthy()
+    await userEvent.click(restaurantOption as Element)
+    // Check placeholder changed to restaurant-specific text
+    expect(screen.getByPlaceholderText(/great ambiance/i)).toBeInTheDocument()
+  })
+
+  it("should fetch and display suggested tags for Restaurant category", async () => {
+    render(<AddRecommendationDialog onSuccess={jest.fn()} />)
+    fireEvent.click(screen.getByText(/add recommendation/i))
+    await screen.findByLabelText(/category/i)
+    // Select Restaurant category
+    const combobox = screen.getByRole('combobox')
+    await userEvent.click(combobox)
+    const options = await within(document.body).findAllByRole('option', {}, { timeout: 2000 })
+    const restaurantOption = options.find(opt => /Restaurant/i.test(opt.textContent || ""))
+    expect(restaurantOption).toBeTruthy()
+    await userEvent.click(restaurantOption as Element)
+    // Wait for tags to be fetched and rendered
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/tags?categoryName=RESTAURANT")
+      )
+    })
   })
 
   it("should handle dialog footer buttons", async () => {

@@ -35,6 +35,16 @@ jest.mock("@/lib/movie-tags", () => ({
   normalizeTagForComparison: (tag: string) => tag.toLowerCase().trim(),
 }))
 
+// Mock restaurant tags
+jest.mock("@/lib/restaurant-tags", () => ({
+  getHardcodedRestaurantTags: jest.fn(() => [
+    "Great ambiance",
+    "Excellent service",
+    "Authentic cuisine",
+    "Hidden gem",
+  ]),
+}))
+
 import { getPromotedTagsForCategory } from "@/lib/tag-service"
 
 describe("GET /api/tags", () => {
@@ -115,21 +125,42 @@ describe("GET /api/tags", () => {
     expect(data.tags).toContain("Mind-Bending")
   })
 
-  it("should return empty array for non-MOVIE categories", async () => {
+  it("should return hardcoded + promoted tags for RESTAURANT category", async () => {
     const mockCategory = {
       id: "cat-restaurant-123",
       name: "RESTAURANT",
     }
 
+    const mockPromotedTags = ["Rooftop dining"]
+
     ;(prisma.category.findUnique as jest.Mock).mockResolvedValue(mockCategory)
+    ;(getPromotedTagsForCategory as jest.Mock).mockResolvedValue(mockPromotedTags)
 
     const request = new NextRequest("http://localhost:3000/api/tags?categoryName=RESTAURANT")
     const response = await GET(request)
     const data = await response.json()
 
     expect(response.status).toBe(200)
+    expect(data.tags).toContain("Great ambiance")
+    expect(data.tags).toContain("Excellent service")
+    expect(data.tags).toContain("Rooftop dining")
+    expect(data.tags.length).toBe(5) // 4 hardcoded + 1 promoted
+  })
+
+  it("should return empty array for categories without hardcoded tags", async () => {
+    const mockCategory = {
+      id: "cat-fashion-123",
+      name: "FASHION",
+    }
+
+    ;(prisma.category.findUnique as jest.Mock).mockResolvedValue(mockCategory)
+
+    const request = new NextRequest("http://localhost:3000/api/tags?categoryName=FASHION")
+    const response = await GET(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
     expect(data.tags).toEqual([])
-    expect(prisma.communityTag.findMany).not.toHaveBeenCalled()
   })
 
   it("should return 400 when categoryName is missing", async () => {

@@ -31,7 +31,13 @@ jest.mock("@/lib/movie-tags", () => ({
   normalizeTagForComparison: (tag: string) => tag.toLowerCase().trim(),
 }))
 
+// Mock restaurant tags
+jest.mock("@/lib/restaurant-tags", () => ({
+  isHardcodedRestaurantTag: jest.fn(),
+}))
+
 import { isHardcodedMovieTag } from "@/lib/movie-tags"
+import { isHardcodedRestaurantTag } from "@/lib/restaurant-tags"
 
 describe("Tag Service", () => {
   const mockCategoryId = "cat-123"
@@ -39,6 +45,7 @@ describe("Tag Service", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     ;(isHardcodedMovieTag as jest.Mock).mockReturnValue(false)
+    ;(isHardcodedRestaurantTag as jest.Mock).mockReturnValue(false)
   })
 
   describe("trackTagUsage", () => {
@@ -167,10 +174,19 @@ describe("Tag Service", () => {
       expect(prisma.communityTag.update).not.toHaveBeenCalled()
     })
 
-    it("should not track hardcoded tags", async () => {
+    it("should not track hardcoded movie tags", async () => {
       ;(isHardcodedMovieTag as jest.Mock).mockReturnValue(true)
 
       const result = await trackTagUsage("action-packed", mockCategoryId)
+
+      expect(result).toBeNull()
+      expect(prisma.communityTag.upsert).not.toHaveBeenCalled()
+    })
+
+    it("should not track hardcoded restaurant tags", async () => {
+      ;(isHardcodedRestaurantTag as jest.Mock).mockReturnValue(true)
+
+      const result = await trackTagUsage("Great ambiance", mockCategoryId)
 
       expect(result).toBeNull()
       expect(prisma.communityTag.upsert).not.toHaveBeenCalled()
@@ -389,10 +405,19 @@ describe("Tag Service", () => {
       consoleLogSpy.mockRestore()
     })
 
-    it("should not track hardcoded tags", async () => {
+    it("should not track hardcoded movie tags", async () => {
       ;(isHardcodedMovieTag as jest.Mock).mockReturnValue(true)
 
       const result = await decrementTagUsage("action-packed", mockCategoryId)
+
+      expect(result).toBeNull()
+      expect(prisma.communityTag.findUnique).not.toHaveBeenCalled()
+    })
+
+    it("should not track hardcoded restaurant tags", async () => {
+      ;(isHardcodedRestaurantTag as jest.Mock).mockReturnValue(true)
+
+      const result = await decrementTagUsage("Great ambiance", mockCategoryId)
 
       expect(result).toBeNull()
       expect(prisma.communityTag.findUnique).not.toHaveBeenCalled()
