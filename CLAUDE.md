@@ -8,13 +8,13 @@ Clique is a social recommendation platform built with Next.js 16 (App Router), R
 
 ## Workflow
 
-Always create a new git branch before making any code changes. Do not commit directly to main.
+Always create a new git branch before making any changes to files in this repository (including CLAUDE.md itself). Do not commit directly to main.
 
 All code changes must include corresponding unit tests with >90% coverage for new/modified code. If achieving coverage for specific code chunks is problematic, ask the user for permission to skip coverage for those chunks — use this as a last resort only.
 
-When the user says "Looks good", commit all pending changes with an appropriate commit message, push to the remote branch, and ask if a PR needs to be created. If the user confirms "Yes", create a PR against main with a detailed description.
+When all changes are ready and tests are passing, commit with an appropriate commit message, push to the remote branch, and ask the user if a PR needs to be created. Create a PR only upon confirmation, with a detailed description against main.
 
-When the user confirms a PR is merged, switch back to main and run `git pull` to fetch the merged changes.
+After a PR is created, ask the user if the PR is merged. When the user confirms, switch back to main and run `git pull` to fetch the merged changes.
 
 ## Common Commands
 
