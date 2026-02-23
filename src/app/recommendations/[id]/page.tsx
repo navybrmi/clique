@@ -78,9 +78,16 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
               <div className="relative aspect-video w-full overflow-hidden rounded-lg">
                 <Image
                   src={recommendation.imageUrl}
+                  alt=""
+                  fill
+                  className="object-cover blur-2xl scale-110 opacity-60"
+                  aria-hidden="true"
+                />
+                <Image
+                  src={recommendation.imageUrl}
                   alt={recommendation.entity.name}
                   fill
-                  className="object-cover"
+                  className="object-contain z-10"
                   priority
                 />
               </div>
