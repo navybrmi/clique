@@ -14,7 +14,19 @@ All code changes must include corresponding unit tests with >90% coverage for ne
 
 When all changes are ready and tests are passing, commit with an appropriate commit message, push to the remote branch, and ask the user if a PR needs to be created. Create a PR only upon confirmation, with a detailed description against main.
 
-After a PR is created, poll the PR status using `gh pr checks --watch` to monitor validation and check results, and use `gh pr view` to verify all review comments/conversations are resolved. Once all checks pass and all PR conversations are resolved, ask the user if the PR can be merged. If the user confirms, merge the PR using `gh pr merge`. After merging, switch back to main and run `git pull` to fetch the merged changes.
+After a PR is created, poll the PR status using `gh pr checks --watch` to monitor validation and check results, and use `gh pr view` to verify all review comments/conversations are resolved.
+
+If there are unresolved or new review comments on the PR:
+1. Fetch and read all unresolved/new comments.
+2. List each comment to the user with a clear explanation of what the reviewer is requesting.
+3. Ask the user for permission to address the comments.
+4. If approved, address the comments one by one:
+   a. Make the requested code change.
+   b. Reply to the comment on the PR explaining how it was addressed.
+   c. Resolve the comment.
+5. After all comments are addressed, commit and push the changes, then return to monitoring the PR status (repeat from the top of this section).
+
+Once all checks pass and all PR conversations are resolved, ask the user if the PR can be merged. If the user confirms, merge the PR using `gh pr merge`. After merging, switch back to main and run `git pull` to fetch the merged changes.
 
 ## Common Commands
 
