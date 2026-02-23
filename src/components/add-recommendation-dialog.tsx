@@ -254,8 +254,7 @@ export function AddRecommendationDialog({
       }
 
       const selectedCategory = categories.find((c) => c.id === selectedCategoryId)
-      if (!selectedCategory || selectedCategory.name !== "MOVIE") {
-        // Only show tags for MOVIE category for now
+      if (!selectedCategory || !["MOVIE", "RESTAURANT"].includes(selectedCategory.name)) {
         setSuggestedTags([])
         return
       }
@@ -748,7 +747,7 @@ export function AddRecommendationDialog({
             <div className="flex gap-2">
               <Input
                 id="tags"
-                placeholder="e.g., Great cinematography"
+                placeholder={categories.find((c) => c.id === selectedCategoryId)?.name === "RESTAURANT" ? "e.g., Great ambiance" : "e.g., Great cinematography"}
                 value={currentTag !== undefined ? String(currentTag) : ""}
                 onChange={(e) => setCurrentTag(e.target.value)}
                 onKeyPress={(e) => {

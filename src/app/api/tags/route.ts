@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getHardcodedMovieTags, normalizeTagForComparison } from "@/lib/movie-tags";
+import { getHardcodedRestaurantTags } from "@/lib/restaurant-tags";
 import { getPromotedTagsForCategory } from "@/lib/tag-service";
 import { prisma } from "@/lib/prisma";
 
@@ -51,22 +52,29 @@ export async function GET(request: NextRequest) {
       // Only hardcoded tags
       if (categoryName === "MOVIE") {
         tags = getHardcodedMovieTags();
+      } else if (categoryName === "RESTAURANT") {
+        tags = getHardcodedRestaurantTags();
       }
-      // Can add other categories here later
     } else {
       // Return combined: hardcoded + promoted with case-insensitive deduplication
+      let hardcodedTags: string[] = [];
       if (categoryName === "MOVIE") {
-        const hardcodedTags = getHardcodedMovieTags();
+        hardcodedTags = getHardcodedMovieTags();
+      } else if (categoryName === "RESTAURANT") {
+        hardcodedTags = getHardcodedRestaurantTags();
+      }
+
+      if (hardcodedTags.length > 0) {
         const promotedTags = await getPromotedTagsForCategory(category.id);
-        
+
         // Deduplicate using case-insensitive comparison
         const tagMap = new Map<string, string>();
-        
+
         // Add hardcoded tags first (preserve their casing)
         hardcodedTags.forEach(tag => {
           tagMap.set(normalizeTagForComparison(tag), tag);
         });
-        
+
         // Add promoted tags only if not already present (case-insensitive check)
         promotedTags.forEach(tag => {
           const normalized = normalizeTagForComparison(tag);
@@ -74,10 +82,9 @@ export async function GET(request: NextRequest) {
             tagMap.set(normalized, tag);
           }
         });
-        
+
         tags = Array.from(tagMap.values());
       }
-      // Can add other categories here later
     }
 
     return NextResponse.json({

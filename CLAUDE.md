@@ -14,6 +14,8 @@ All code changes must include corresponding unit tests with >90% coverage for ne
 
 When the user says "Looks good", commit all pending changes with an appropriate commit message, push to the remote branch, and ask if a PR needs to be created. If the user confirms "Yes", create a PR against main with a detailed description.
 
+When the user confirms a PR is merged, switch back to main and run `git pull` to fetch the merged changes.
+
 ## Common Commands
 
 ```bash
