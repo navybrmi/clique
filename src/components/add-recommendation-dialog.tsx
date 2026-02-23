@@ -536,6 +536,7 @@ export function AddRecommendationDialog({
   }
 
   const selectedCategory = categories.find((c) => c.id === selectedCategoryId)
+  const isCategorySelected = !!selectedCategoryId
 
   return (
     <div style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
@@ -608,6 +609,7 @@ export function AddRecommendationDialog({
               </Select>
             </div>
 
+            <div className={!isCategorySelected ? "opacity-60" : ""}>
             {/* Entity Name with Search */}
             <div className="space-y-2 relative">
               <Label htmlFor="entityName">
@@ -628,6 +630,7 @@ export function AddRecommendationDialog({
                   }}
                   required
                   autoComplete="off"
+                  disabled={!isCategorySelected}
                 />
                 {(searchingMovies || searchingRestaurants) && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -715,6 +718,7 @@ export function AddRecommendationDialog({
                       <button
                         key={suggestedTag}
                         type="button"
+                        disabled={!isCategorySelected}
                         onClick={() => {
                           if (!isSelected) {
                             setTags([...tags, suggestedTag]);
@@ -730,7 +734,7 @@ export function AddRecommendationDialog({
                           isSelected
                             ? "bg-blue-500 text-white"
                             : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                        }`}
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         {suggestedTag}
                       </button>
@@ -753,8 +757,9 @@ export function AddRecommendationDialog({
                     handleAddTag()
                   }
                 }}
+                disabled={!isCategorySelected}
               />
-              <Button type="button" onClick={handleAddTag} variant="outline">
+              <Button type="button" onClick={handleAddTag} variant="outline" disabled={!isCategorySelected}>
                 Add
               </Button>
             </div>
@@ -788,8 +793,9 @@ export function AddRecommendationDialog({
                   <button
                     key={num}
                     type="button"
+                    disabled={!isCategorySelected}
                     onClick={() => setRating(num.toString())}
-                    className={`p-1 ${selected ? "text-yellow-400" : "text-gray-300"}`}
+                    className={`p-1 ${selected ? "text-yellow-400" : "text-gray-300"} disabled:opacity-50 disabled:cursor-not-allowed`}
                     aria-label={`Rate ${num} star${num > 1 ? 's' : ''}`}
                   >
                     <Star className="h-6 w-6 fill-current" />
@@ -809,6 +815,7 @@ export function AddRecommendationDialog({
                 placeholder="https://..."
                 value={link !== undefined ? String(link) : ""}
                 onChange={(e) => setLink(e.target.value)}
+                disabled={!isCategorySelected}
               />
             </div>
             <div className="space-y-2">
@@ -819,6 +826,7 @@ export function AddRecommendationDialog({
                 placeholder="https://..."
                 value={imageUrl !== undefined ? String(imageUrl) : ""}
                 onChange={(e) => setImageUrl(e.target.value)}
+                disabled={!isCategorySelected}
               />
             </div>
           </div>
@@ -834,6 +842,7 @@ export function AddRecommendationDialog({
                   onChange={(e) =>
                     setRestaurantData({ ...restaurantData, cuisine: e.target.value })
                   }
+                  disabled={!isCategorySelected}
                 />
                 <Input
                   placeholder="Location"
@@ -841,6 +850,7 @@ export function AddRecommendationDialog({
                   onChange={(e) =>
                     setRestaurantData({ ...restaurantData, location: e.target.value })
                   }
+                  disabled={!isCategorySelected}
                 />
                 <Input
                   placeholder="Price Range"
@@ -848,6 +858,7 @@ export function AddRecommendationDialog({
                   onChange={(e) =>
                     setRestaurantData({ ...restaurantData, priceRange: e.target.value })
                   }
+                  disabled={!isCategorySelected}
                 />
                 <Input
                   placeholder="Hours"
@@ -855,6 +866,7 @@ export function AddRecommendationDialog({
                   onChange={(e) =>
                     setRestaurantData({ ...restaurantData, hours: e.target.value })
                   }
+                  disabled={!isCategorySelected}
                 />
               </div>
             </div>
@@ -868,22 +880,26 @@ export function AddRecommendationDialog({
                   placeholder="Director"
                   value={movieData.director !== undefined ? String(movieData.director) : ""}
                   onChange={(e) => setMovieData({ ...movieData, director: e.target.value })}
+                  disabled={!isCategorySelected}
                 />
                 <Input
                   placeholder="Year"
                   type="number"
                   value={movieData.year !== undefined ? String(movieData.year) : ""}
                   onChange={(e) => setMovieData({ ...movieData, year: e.target.value })}
+                  disabled={!isCategorySelected}
                 />
                 <Input
                   placeholder="Genre"
                   value={movieData.genre !== undefined ? String(movieData.genre) : ""}
                   onChange={(e) => setMovieData({ ...movieData, genre: e.target.value })}
+                  disabled={!isCategorySelected}
                 />
                 <Input
                   placeholder="Duration"
                   value={movieData.duration !== undefined ? String(movieData.duration) : ""}
                   onChange={(e) => setMovieData({ ...movieData, duration: e.target.value })}
+                  disabled={!isCategorySelected}
                 />
               </div>
             </div>
@@ -897,21 +913,25 @@ export function AddRecommendationDialog({
                   placeholder="Brand"
                   value={fashionData.brand !== undefined ? String(fashionData.brand) : ""}
                   onChange={(e) => setFashionData({ ...fashionData, brand: e.target.value })}
+                  disabled={!isCategorySelected}
                 />
                 <Input
                   placeholder="Price"
                   value={fashionData.price !== undefined ? String(fashionData.price) : ""}
                   onChange={(e) => setFashionData({ ...fashionData, price: e.target.value })}
+                  disabled={!isCategorySelected}
                 />
                 <Input
                   placeholder="Size"
                   value={fashionData.size !== undefined ? String(fashionData.size) : ""}
                   onChange={(e) => setFashionData({ ...fashionData, size: e.target.value })}
+                  disabled={!isCategorySelected}
                 />
                 <Input
                   placeholder="Color"
                   value={fashionData.color !== undefined ? String(fashionData.color) : ""}
                   onChange={(e) => setFashionData({ ...fashionData, color: e.target.value })}
+                  disabled={!isCategorySelected}
                 />
               </div>
             </div>
@@ -927,6 +947,7 @@ export function AddRecommendationDialog({
                   onChange={(e) =>
                     setHouseholdData({ ...householdData, productType: e.target.value })
                   }
+                  disabled={!isCategorySelected}
                 />
                 <Input
                   placeholder="Model"
@@ -934,6 +955,7 @@ export function AddRecommendationDialog({
                   onChange={(e) =>
                     setHouseholdData({ ...householdData, model: e.target.value })
                   }
+                  disabled={!isCategorySelected}
                 />
                 <Input
                   placeholder="Purchase Link"
@@ -941,10 +963,13 @@ export function AddRecommendationDialog({
                   onChange={(e) =>
                     setHouseholdData({ ...householdData, purchaseLink: e.target.value })
                   }
+                  disabled={!isCategorySelected}
                 />
               </div>
             </div>
           )}
+
+          </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
