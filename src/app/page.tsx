@@ -184,15 +184,25 @@ export default function Home() {
             {recommendations.map((rec) => (
               <Link key={rec.id} href={`/recommendations/${rec.id}`}>
                 <Card className="overflow-hidden transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer">
-                  <div className="relative h-48 w-full bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900">
+                  <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900">
                     {rec.imageUrl ? (
-                      <Image
-                        src={rec.imageUrl}
-                        alt={rec.entity.name}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
+                      <>
+                        <Image
+                          src={rec.imageUrl}
+                          alt=""
+                          fill
+                          className="object-cover blur-2xl scale-110 opacity-60"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          aria-hidden="true"
+                        />
+                        <Image
+                          src={rec.imageUrl}
+                          alt={rec.entity.name}
+                          fill
+                          className="object-contain z-10"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        />
+                      </>
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-center p-4">
