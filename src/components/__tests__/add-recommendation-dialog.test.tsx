@@ -412,6 +412,76 @@ describe("AddRecommendationDialog", () => {
     expect(screen.getByPlaceholderText(/purchase link/i)).toBeInTheDocument()
   })
 
+  it("should disable all fields except category when no category is selected", async () => {
+    render(<AddRecommendationDialog onSuccess={jest.fn()} />)
+    fireEvent.click(screen.getByText(/add recommendation/i))
+    await screen.findByLabelText(/category/i)
+
+    // Category dropdown should be enabled
+    const categoryTrigger = screen.getByRole('combobox')
+    expect(categoryTrigger).not.toBeDisabled()
+
+    // Entity name input should be disabled
+    const nameInput = screen.getByLabelText(/name/i)
+    expect(nameInput).toBeDisabled()
+
+    // Tag input and Add button should be disabled
+    const tagInput = screen.getByPlaceholderText(/great cinematography/i)
+    expect(tagInput).toBeDisabled()
+    const addBtn = screen.getByText(/^add$/i)
+    expect(addBtn).toBeDisabled()
+
+    // Rating star buttons should be disabled
+    const starBtn = screen.getByLabelText(/rate 1 star$/i)
+    expect(starBtn).toBeDisabled()
+
+    // Link and Image URL inputs should be disabled
+    const linkInput = screen.getByLabelText(/link/i)
+    expect(linkInput).toBeDisabled()
+    const imageUrlInput = screen.getByLabelText(/image url/i)
+    expect(imageUrlInput).toBeDisabled()
+  })
+
+  it("should enable all fields after selecting a category", async () => {
+    render(<AddRecommendationDialog onSuccess={jest.fn()} />)
+    fireEvent.click(screen.getByText(/add recommendation/i))
+    await screen.findByLabelText(/category/i)
+
+    // Select Movie category
+    const categoryTrigger = screen.getByRole('combobox')
+    await userEvent.click(categoryTrigger)
+    const options = await within(document.body).findAllByRole('option', {}, { timeout: 2000 })
+    const movieOption = options.find(opt => /Movie/i.test(opt.textContent || ""))
+    expect(movieOption).toBeTruthy()
+    await userEvent.click(movieOption as Element)
+
+    // Entity name input should be enabled
+    const nameInput = screen.getByLabelText(/name/i)
+    expect(nameInput).not.toBeDisabled()
+
+    // Tag input and Add button should be enabled
+    const tagInput = screen.getByPlaceholderText(/great cinematography/i)
+    expect(tagInput).not.toBeDisabled()
+    const addBtn = screen.getByText(/^add$/i)
+    expect(addBtn).not.toBeDisabled()
+
+    // Rating star buttons should be enabled
+    const starBtn = screen.getByLabelText(/rate 1 star$/i)
+    expect(starBtn).not.toBeDisabled()
+
+    // Link and Image URL inputs should be enabled
+    const linkInput = screen.getByLabelText(/link/i)
+    expect(linkInput).not.toBeDisabled()
+    const imageUrlInput = screen.getByLabelText(/image url/i)
+    expect(imageUrlInput).not.toBeDisabled()
+
+    // Category-specific fields (Movie) should be enabled
+    expect(screen.getByPlaceholderText(/director/i)).not.toBeDisabled()
+    expect(screen.getByPlaceholderText(/year/i)).not.toBeDisabled()
+    expect(screen.getByPlaceholderText(/genre/i)).not.toBeDisabled()
+    expect(screen.getByPlaceholderText(/duration/i)).not.toBeDisabled()
+  })
+
   it("should handle dialog footer buttons", async () => {
     render(<AddRecommendationDialog onSuccess={jest.fn()} initialCategoryId="1" />)
     fireEvent.click(screen.getByText(/add recommendation/i))
