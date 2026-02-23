@@ -14,7 +14,7 @@ All code changes must include corresponding unit tests with >90% coverage for ne
 
 When all changes are ready and tests are passing, commit with an appropriate commit message, push to the remote branch, and ask the user if a PR needs to be created. Create a PR only upon confirmation, with a detailed description against main.
 
-After a PR is created, ask the user if the PR is merged. When the user confirms, switch back to main and run `git pull` to fetch the merged changes.
+After a PR is created, poll the PR status using `gh pr checks` to monitor validation and check results. Once all checks pass, ask the user if the PR can be merged. If the user confirms, merge the PR using `gh pr merge`. After merging, switch back to main and run `git pull` to fetch the merged changes.
 
 ## Common Commands
 
