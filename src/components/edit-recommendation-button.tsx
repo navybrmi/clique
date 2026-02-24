@@ -48,7 +48,7 @@ export function EditRecommendationButton({ recommendation }: EditRecommendationB
 
   if (!isOwner) {
     return (
-      <Button variant="outline" className="w-full gap-2 opacity-50 cursor-not-allowed" size="lg" disabled>
+      <Button variant="outline" className="w-full gap-2" size="lg" disabled>
         <Pencil className="h-5 w-5" />
         Edit
       </Button>
