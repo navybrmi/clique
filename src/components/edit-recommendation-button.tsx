@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { AddRecommendationDialog } from "@/components/add-recommendation-dialog"
 import { Pencil } from "lucide-react"
@@ -10,41 +9,22 @@ import { useRouter } from "next/navigation"
  * Props for the EditRecommendationButton component
  */
 interface EditRecommendationButtonProps {
-  /** The recommendation object to edit. Must include id, userId, and full entity details */
+  /** The recommendation object to edit. Must include id and full entity details */
   recommendation: any
+  /** Whether the current user is the owner of this recommendation */
+  isOwner: boolean
 }
 
 /**
  * Button component for editing existing recommendations.
- * 
- * Only visible to the recommendation owner. Opens a dialog with pre-filled
- * form data for editing recommendation details.
- * 
- * Features:
- * - Owner-only access control
- * - Pre-populated edit form
- * - Auto-refresh after successful edit
- * - Loading state management
- * 
+ *
+ * Shows a disabled button for non-owners and an interactive edit dialog for the owner.
+ *
  * @param props - Component props
- * @returns An edit button with dialog, or null if user is not the owner
+ * @returns An edit button (disabled for non-owners, interactive for owner)
  */
-export function EditRecommendationButton({ recommendation }: EditRecommendationButtonProps) {
-  const [session, setSession] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+export function EditRecommendationButton({ recommendation, isOwner }: EditRecommendationButtonProps) {
   const router = useRouter()
-
-  useEffect(() => {
-    fetch('/api/auth/session')
-      .then(res => res.json())
-      .then(data => {
-        setSession(data)
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
-  }, [])
-
-  const isOwner = !loading && !!session?.user && session.user.id === recommendation.userId
 
   if (!isOwner) {
     return (

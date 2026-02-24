@@ -12,9 +12,11 @@ import { EditRecommendationButton } from "@/components/edit-recommendation-butto
 import { DeleteRecommendationButton } from "@/components/delete-recommendation-button"
 import { CommentsSection } from "@/components/comments-section"
 import { ActionsSidebar } from "@/components/actions-sidebar"
+import { auth } from "@/lib/auth"
 
 export default async function RecommendationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const session = await auth()
 
   const recommendation = await prisma.recommendation.findUnique({
     where: { id },
@@ -62,6 +64,8 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
   if (!recommendation) {
     notFound()
   }
+
+  const isOwner = session?.user?.id === recommendation.userId
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black">
@@ -330,8 +334,8 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
             <ActionsSidebar recommendation={recommendation} />
             <Card>
               <CardContent className="pt-6 space-y-3">
-                <EditRecommendationButton recommendation={recommendation} />
-                <DeleteRecommendationButton recommendation={recommendation} />
+                <EditRecommendationButton recommendation={recommendation} isOwner={isOwner} />
+                <DeleteRecommendationButton recommendation={recommendation} isOwner={isOwner} />
               </CardContent>
             </Card>
           </div>

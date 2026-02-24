@@ -1,8 +1,6 @@
 import React from 'react'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { EditRecommendationButton } from '../edit-recommendation-button'
-
-global.fetch = jest.fn()
 
 const mockRecommendation = {
   id: 'test-id-123',
@@ -26,73 +24,27 @@ jest.mock('next/navigation', () => ({
 describe('EditRecommendationButton', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    ;(global.fetch as jest.Mock).mockClear()
   })
 
-  it('should render a disabled edit button when user is not logged in', async () => {
-    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ user: null }),
-    })
+  it('should render a disabled edit button when user is not the owner', () => {
+    render(<EditRecommendationButton recommendation={mockRecommendation} isOwner={false} />)
 
-    render(<EditRecommendationButton recommendation={mockRecommendation} />)
-
-    await waitFor(() => {
-      const button = screen.getByRole('button', { name: /edit/i })
-      expect(button).toBeDisabled()
-    })
+    const button = screen.getByRole('button', { name: /edit/i })
+    expect(button).toBeDisabled()
   })
 
-  it('should render a disabled edit button when user is not the owner', async () => {
-    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ user: { id: 'different-user-id' } }),
-    })
-
-    render(<EditRecommendationButton recommendation={mockRecommendation} />)
-
-    await waitFor(() => {
-      const button = screen.getByRole('button', { name: /edit/i })
-      expect(button).toBeDisabled()
-    })
-  })
-
-  it('should render edit button when user is the owner', async () => {
-    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ user: { id: 'user-123' } }),
-    })
-
-    render(<EditRecommendationButton recommendation={mockRecommendation} />)
-    
-    await waitFor(() => {
-      expect(screen.getByText('Edit')).toBeInTheDocument()
-    })
-  })
-
-  it('should render a disabled edit button while loading, then enable it for the owner', async () => {
-    ;(global.fetch as jest.Mock).mockImplementation(
-      () => new Promise(resolve => setTimeout(() => resolve({ ok: true, json: async () => ({ user: { id: 'user-123' } }) }), 100))
-    )
-
-    render(<EditRecommendationButton recommendation={mockRecommendation} />)
-
-    expect(screen.getByRole('button', { name: /edit/i })).toBeDisabled()
+  it('should render an enabled edit button when user is the owner', async () => {
+    render(<EditRecommendationButton recommendation={mockRecommendation} isOwner={true} />)
 
     await waitFor(() => {
       expect(screen.getByText('Edit')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /edit/i })).not.toBeDisabled()
-    }, { timeout: 200 })
+    })
   })
 
   it('should call refresh on successful edit', async () => {
-    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ user: { id: 'user-123' } }),
-    })
+    render(<EditRecommendationButton recommendation={mockRecommendation} isOwner={true} />)
 
-    render(<EditRecommendationButton recommendation={mockRecommendation} />)
-    
     await waitFor(() => {
       expect(screen.getByText('Edit')).toBeInTheDocument()
     })
