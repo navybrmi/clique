@@ -99,12 +99,15 @@ describe('DeleteRecommendationButton', () => {
     ) as jest.Mock
 
     render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
-    
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument()
+
+    // Wait for button to be enabled (owner loaded)
+    const deleteButton = await waitFor(() => {
+      const btn = screen.getByText('Delete').closest('button')
+      expect(btn).not.toBeDisabled()
+      return btn!
     })
 
-    await user.click(screen.getByText('Delete'))
+    await user.click(deleteButton)
 
     await waitFor(() => {
       expect(screen.getByText('Delete Recommendation')).toBeInTheDocument()
@@ -131,12 +134,15 @@ describe('DeleteRecommendationButton', () => {
     global.fetch = fetchMock as any
 
     render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
-    
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument()
+
+    // Wait for button to be enabled (owner loaded)
+    const deleteButton = await waitFor(() => {
+      const btn = screen.getByText('Delete').closest('button')
+      expect(btn).not.toBeDisabled()
+      return btn!
     })
 
-    await user.click(screen.getByText('Delete'))
+    await user.click(deleteButton)
 
     await waitFor(() => {
       expect(screen.getByText('Delete Recommendation')).toBeInTheDocument()
@@ -145,12 +151,12 @@ describe('DeleteRecommendationButton', () => {
     // Wait for dialog to open, then find all buttons and click the destructive one
     await waitFor(async () => {
       const allButtons = screen.getAllByRole('button')
-      const confirmButton = allButtons.find(button => 
-        button.textContent?.includes('Delete') && 
+      const confirmButton = allButtons.find(button =>
+        button.textContent?.includes('Delete') &&
         button.className.includes('destructive') &&
         !button.hasAttribute('aria-haspopup')
       )
-      
+
       if (confirmButton) {
         await user.click(confirmButton)
       }
@@ -187,14 +193,16 @@ describe('DeleteRecommendationButton', () => {
     global.fetch = fetchMock as any
 
     render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
-    
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument()
+
+    // Wait for button to be enabled (owner loaded)
+    const deleteButton = await waitFor(() => {
+      const btn = screen.getByText('Delete').closest('button')
+      expect(btn).not.toBeDisabled()
+      return btn!
     })
 
-
     // Open the dialog
-    await user.click(screen.getByText('Delete'))
+    await user.click(deleteButton)
 
     // Wait for the destructive Delete button to be enabled
     const destructiveButton = await waitFor(() => {
@@ -229,17 +237,19 @@ describe('DeleteRecommendationButton', () => {
     global.fetch = fetchMock as any
 
     render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
-    
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument()
+
+    // Wait for button to be enabled (owner loaded)
+    const deleteButton = await waitFor(() => {
+      const btn = screen.getByText('Delete').closest('button')
+      expect(btn).not.toBeDisabled()
+      return btn!
     })
 
-    await user.click(screen.getByText('Delete'))
+    await user.click(deleteButton)
 
     await waitFor(() => {
       expect(screen.getByText('Delete Recommendation')).toBeInTheDocument()
     })
-
 
     // Wait for the destructive Delete button to be enabled
     const destructiveButton = await waitFor(() => {
@@ -270,12 +280,15 @@ describe('DeleteRecommendationButton', () => {
     ) as jest.Mock
 
     render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
-    
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument()
+
+    // Wait for button to be enabled (owner loaded)
+    const deleteButton = await waitFor(() => {
+      const btn = screen.getByText('Delete').closest('button')
+      expect(btn).not.toBeDisabled()
+      return btn!
     })
 
-    await user.click(screen.getByText('Delete'))
+    await user.click(deleteButton)
 
     await waitFor(() => {
       expect(screen.getByText('Cancel')).toBeInTheDocument()
