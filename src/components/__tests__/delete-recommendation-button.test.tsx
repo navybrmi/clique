@@ -34,7 +34,7 @@ describe('DeleteRecommendationButton', () => {
     ) as jest.Mock
   })
 
-  it('should not render when user is not logged in', async () => {
+  it('should render disabled delete button when user is not logged in', async () => {
     global.fetch = jest.fn(() =>
       Promise.resolve(
         new Response(JSON.stringify({ user: null }), {
@@ -44,14 +44,15 @@ describe('DeleteRecommendationButton', () => {
       )
     ) as jest.Mock
 
-    const { container } = render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
-    
+    render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
+
     await waitFor(() => {
-      expect(container.firstChild).toBeNull()
+      const button = screen.getByText('Delete').closest('button')
+      expect(button).toBeDisabled()
     })
   })
 
-  it('should not render when user is not the owner', async () => {
+  it('should render disabled delete button when user is not the owner', async () => {
     global.fetch = jest.fn(() =>
       Promise.resolve(
         new Response(JSON.stringify({ user: { id: 'different-user-id' } }), {
@@ -61,10 +62,11 @@ describe('DeleteRecommendationButton', () => {
       )
     ) as jest.Mock
 
-    const { container } = render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
-    
+    render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
+
     await waitFor(() => {
-      expect(container.firstChild).toBeNull()
+      const button = screen.getByText('Delete').closest('button')
+      expect(button).toBeDisabled()
     })
   })
 
@@ -97,12 +99,15 @@ describe('DeleteRecommendationButton', () => {
     ) as jest.Mock
 
     render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
-    
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument()
+
+    // Wait for button to be enabled (owner loaded)
+    const deleteButton = await waitFor(() => {
+      const btn = screen.getByText('Delete').closest('button')
+      expect(btn).not.toBeDisabled()
+      return btn!
     })
 
-    await user.click(screen.getByText('Delete'))
+    await user.click(deleteButton)
 
     await waitFor(() => {
       expect(screen.getByText('Delete Recommendation')).toBeInTheDocument()
@@ -129,12 +134,15 @@ describe('DeleteRecommendationButton', () => {
     global.fetch = fetchMock as any
 
     render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
-    
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument()
+
+    // Wait for button to be enabled (owner loaded)
+    const deleteButton = await waitFor(() => {
+      const btn = screen.getByText('Delete').closest('button')
+      expect(btn).not.toBeDisabled()
+      return btn!
     })
 
-    await user.click(screen.getByText('Delete'))
+    await user.click(deleteButton)
 
     await waitFor(() => {
       expect(screen.getByText('Delete Recommendation')).toBeInTheDocument()
@@ -143,12 +151,12 @@ describe('DeleteRecommendationButton', () => {
     // Wait for dialog to open, then find all buttons and click the destructive one
     await waitFor(async () => {
       const allButtons = screen.getAllByRole('button')
-      const confirmButton = allButtons.find(button => 
-        button.textContent?.includes('Delete') && 
+      const confirmButton = allButtons.find(button =>
+        button.textContent?.includes('Delete') &&
         button.className.includes('destructive') &&
         !button.hasAttribute('aria-haspopup')
       )
-      
+
       if (confirmButton) {
         await user.click(confirmButton)
       }
@@ -185,14 +193,16 @@ describe('DeleteRecommendationButton', () => {
     global.fetch = fetchMock as any
 
     render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
-    
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument()
+
+    // Wait for button to be enabled (owner loaded)
+    const deleteButton = await waitFor(() => {
+      const btn = screen.getByText('Delete').closest('button')
+      expect(btn).not.toBeDisabled()
+      return btn!
     })
 
-
     // Open the dialog
-    await user.click(screen.getByText('Delete'))
+    await user.click(deleteButton)
 
     // Wait for the destructive Delete button to be enabled
     const destructiveButton = await waitFor(() => {
@@ -227,17 +237,19 @@ describe('DeleteRecommendationButton', () => {
     global.fetch = fetchMock as any
 
     render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
-    
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument()
+
+    // Wait for button to be enabled (owner loaded)
+    const deleteButton = await waitFor(() => {
+      const btn = screen.getByText('Delete').closest('button')
+      expect(btn).not.toBeDisabled()
+      return btn!
     })
 
-    await user.click(screen.getByText('Delete'))
+    await user.click(deleteButton)
 
     await waitFor(() => {
       expect(screen.getByText('Delete Recommendation')).toBeInTheDocument()
     })
-
 
     // Wait for the destructive Delete button to be enabled
     const destructiveButton = await waitFor(() => {
@@ -268,12 +280,15 @@ describe('DeleteRecommendationButton', () => {
     ) as jest.Mock
 
     render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
-    
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument()
+
+    // Wait for button to be enabled (owner loaded)
+    const deleteButton = await waitFor(() => {
+      const btn = screen.getByText('Delete').closest('button')
+      expect(btn).not.toBeDisabled()
+      return btn!
     })
 
-    await user.click(screen.getByText('Delete'))
+    await user.click(deleteButton)
 
     await waitFor(() => {
       expect(screen.getByText('Cancel')).toBeInTheDocument()

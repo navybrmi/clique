@@ -29,29 +29,31 @@ describe('EditRecommendationButton', () => {
     ;(global.fetch as jest.Mock).mockClear()
   })
 
-  it('should not render when user is not logged in', async () => {
+  it('should render disabled edit button when user is not logged in', async () => {
     ;(global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ user: null }),
     })
 
-    const { container } = render(<EditRecommendationButton recommendation={mockRecommendation} />)
-    
+    render(<EditRecommendationButton recommendation={mockRecommendation} />)
+
     await waitFor(() => {
-      expect(container.firstChild).toBeNull()
+      const button = screen.getByText('Edit').closest('button')
+      expect(button).toBeDisabled()
     })
   })
 
-  it('should not render when user is not the owner', async () => {
+  it('should render disabled edit button when user is not the owner', async () => {
     ;(global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ user: { id: 'different-user-id' } }),
     })
 
-    const { container } = render(<EditRecommendationButton recommendation={mockRecommendation} />)
-    
+    render(<EditRecommendationButton recommendation={mockRecommendation} />)
+
     await waitFor(() => {
-      expect(container.firstChild).toBeNull()
+      const button = screen.getByText('Edit').closest('button')
+      expect(button).toBeDisabled()
     })
   })
 
@@ -68,17 +70,19 @@ describe('EditRecommendationButton', () => {
     })
   })
 
-  it('should render with loading state initially', async () => {
+  it('should render disabled button during loading then enable when owner', async () => {
     ;(global.fetch as jest.Mock).mockImplementation(
       () => new Promise(resolve => setTimeout(() => resolve({ ok: true, json: async () => ({ user: { id: 'user-123' } }) }), 100))
     )
 
-    const { container } = render(<EditRecommendationButton recommendation={mockRecommendation} />)
-    
-    expect(container.firstChild).toBeNull()
+    render(<EditRecommendationButton recommendation={mockRecommendation} />)
 
+    // During loading, button should be disabled
+    expect(screen.getByText('Edit').closest('button')).toBeDisabled()
+
+    // After loading, button should be enabled for owner (re-query the DOM)
     await waitFor(() => {
-      expect(screen.getByText('Edit')).toBeInTheDocument()
+      expect(screen.getByText('Edit').closest('button')).not.toBeDisabled()
     }, { timeout: 200 })
   })
 
