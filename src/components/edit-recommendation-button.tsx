@@ -44,9 +44,15 @@ export function EditRecommendationButton({ recommendation }: EditRecommendationB
       .catch(() => setLoading(false))
   }, [])
 
-  // Only show edit button if the logged-in user is the owner
-  if (loading || !session?.user || session.user.id !== recommendation.userId) {
-    return null
+  const isOwner = !loading && !!session?.user && session.user.id === recommendation.userId
+
+  if (!isOwner) {
+    return (
+      <Button variant="outline" className="w-full gap-2 opacity-50 cursor-not-allowed" size="lg" disabled>
+        <Pencil className="h-5 w-5" />
+        Edit
+      </Button>
+    )
   }
 
   return (

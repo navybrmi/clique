@@ -34,7 +34,7 @@ describe('DeleteRecommendationButton', () => {
     ) as jest.Mock
   })
 
-  it('should not render when user is not logged in', async () => {
+  it('should render a disabled delete button when user is not logged in', async () => {
     global.fetch = jest.fn(() =>
       Promise.resolve(
         new Response(JSON.stringify({ user: null }), {
@@ -44,14 +44,15 @@ describe('DeleteRecommendationButton', () => {
       )
     ) as jest.Mock
 
-    const { container } = render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
-    
+    render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
+
     await waitFor(() => {
-      expect(container.firstChild).toBeNull()
+      const button = screen.getByRole('button', { name: /delete/i })
+      expect(button).toBeDisabled()
     })
   })
 
-  it('should not render when user is not the owner', async () => {
+  it('should render a disabled delete button when user is not the owner', async () => {
     global.fetch = jest.fn(() =>
       Promise.resolve(
         new Response(JSON.stringify({ user: { id: 'different-user-id' } }), {
@@ -61,10 +62,11 @@ describe('DeleteRecommendationButton', () => {
       )
     ) as jest.Mock
 
-    const { container } = render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
-    
+    render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
+
     await waitFor(() => {
-      expect(container.firstChild).toBeNull()
+      const button = screen.getByRole('button', { name: /delete/i })
+      expect(button).toBeDisabled()
     })
   })
 
