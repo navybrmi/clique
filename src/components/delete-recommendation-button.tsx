@@ -83,7 +83,7 @@ export function DeleteRecommendationButton({ recommendation }: DeleteRecommendat
 
   if (!isOwner) {
     return (
-      <Button variant="destructive" className="w-full gap-2 opacity-50 cursor-not-allowed" size="lg" disabled>
+      <Button variant="destructive" className="w-full gap-2" size="lg" disabled>
         <Trash2 className="h-5 w-5" />
         Delete
       </Button>
