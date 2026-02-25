@@ -22,6 +22,7 @@ const customJestConfig = {
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
     '<rootDir>/src/components/__tests__/', // Exclude component tests
+    '<rootDir>/src/app/__tests__/', // Exclude page component tests
   ],
   collectCoverageFrom: [
     'src/app/api/**/*.{js,jsx,ts,tsx}',
