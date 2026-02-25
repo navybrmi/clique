@@ -42,7 +42,7 @@ export async function GET(
       return NextResponse.json({ error: "Google Places API key not configured" }, { status: 500 })
     }
 
-    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${id}&fields=name,rating,formatted_address,formatted_phone_number,website,photos,price_level,opening_hours,types,user_ratings_total&key=${googleApiKey}`
+    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(id)}&fields=name,rating,formatted_address,formatted_phone_number,website,photos,price_level,opening_hours,types,user_ratings_total,editorial_summary&key=${googleApiKey}`
 
     const response = await fetch(url)
 
@@ -69,10 +69,10 @@ export async function GET(
       rating: place.rating || 0,
       reviewCount: place.user_ratings_total || 0,
       cuisine: place.types
-        ?.filter((t: string) => !["restaurant", "food", "point_of_interest", "establishment"].includes(t))
+        ?.filter((t: string) => !["restaurant", "food", "point_of_interest", "establishment", "meal_delivery", "meal_takeaway", "store", "health"].includes(t))
         .map((t: string) => t.replace(/_/g, " "))
         .slice(0, 3)
-        .join(", ") || "",
+        .join(", ") || place.editorial_summary?.overview || "",
       location: place.formatted_address || "",
       priceRange: place.price_level ? "$".repeat(place.price_level) : null,
       phone: place.formatted_phone_number || "",

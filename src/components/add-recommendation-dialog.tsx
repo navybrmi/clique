@@ -150,7 +150,7 @@ export function AddRecommendationDialog({
       setImageUrl("")
       setRating("")
       setMovieData({ director: "", year: "", genre: "", duration: "" })
-      setRestaurantData({ cuisine: "", location: "", priceRange: "", hours: "" })
+      setRestaurantData({ cuisine: "", location: "", priceRange: "", hours: "", phoneNumber: "", placeId: "" })
       setFashionData({ brand: "", price: "", size: "", color: "" })
       setHouseholdData({ productType: "", model: "", purchaseLink: "" })
     }
@@ -170,6 +170,7 @@ export function AddRecommendationDialog({
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [searchingMovies, setSearchingMovies] = useState(false)
   const [searchingRestaurants, setSearchingRestaurants] = useState(false)
+  const [fetchingRestaurantDetails, setFetchingRestaurantDetails] = useState(false)
   const debounceTimer = useRef<NodeJS.Timeout | null>(null)
 
   // Category-specific fields
@@ -178,6 +179,8 @@ export function AddRecommendationDialog({
     location: "",
     priceRange: "",
     hours: "",
+    phoneNumber: "",
+    placeId: "",
   })
   const [movieData, setMovieData] = useState({
     director: "",
@@ -410,14 +413,42 @@ export function AddRecommendationDialog({
   const handleRestaurantSelect = (restaurant: RestaurantSuggestion) => {
     setEntityName(restaurant.name)
     setImageUrl(restaurant.imageUrl || "")
+    // Set basic data from search results immediately for instant feedback
     setRestaurantData({
       cuisine: restaurant.categories || "",
       location: restaurant.location || "",
       priceRange: restaurant.price || "",
-      hours: "", // Google Places doesn't provide hours in text search
+      hours: "",
+      phoneNumber: "",
+      placeId: restaurant.id || "",
     })
-    setShowSuggestions(false)
-    setRestaurantSuggestions([])
+    // Clear link before fetching details to avoid stale data from a prior selection
+    setLink("")
+    // Fetch full details from the Details API
+    setFetchingRestaurantDetails(true)
+    fetch(`/api/restaurants/${restaurant.id}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Failed to fetch restaurant details")
+        const details = await res.json()
+        setRestaurantData({
+          cuisine: details.cuisine || restaurant.categories || "",
+          location: details.location || restaurant.location || "",
+          priceRange: details.priceRange || restaurant.price || "",
+          hours: details.hours || "",
+          phoneNumber: details.phone || "",
+          placeId: restaurant.id || "",
+        })
+        setImageUrl(details.imageUrl || restaurant.imageUrl || "")
+        setLink(details.url || "")
+      })
+      .catch(() => {
+        // Fallback: keep the search result data already set above
+      })
+      .finally(() => {
+        setFetchingRestaurantDetails(false)
+        setShowSuggestions(false)
+        setRestaurantSuggestions([])
+      })
   }
 
   /**
@@ -511,7 +542,7 @@ export function AddRecommendationDialog({
         setLink("")
         setImageUrl("")
         setRating("")
-        setRestaurantData({ cuisine: "", location: "", priceRange: "", hours: "" })
+        setRestaurantData({ cuisine: "", location: "", priceRange: "", hours: "", phoneNumber: "", placeId: "" })
         setMovieData({ director: "", year: "", genre: "", duration: "" })
         setFashionData({ brand: "", price: "", size: "", color: "" })
         setHouseholdData({ productType: "", model: "", purchaseLink: "" })
@@ -833,7 +864,10 @@ export function AddRecommendationDialog({
           {/* Category-Specific Fields */}
           {selectedCategory?.name === "RESTAURANT" && (
             <div className="space-y-4 border-t pt-4">
-              <h4 className="font-semibold">Restaurant Details</h4>
+              <h4 className="font-semibold flex items-center gap-2">
+                Restaurant Details
+                {fetchingRestaurantDetails && <Loader2 className="h-4 w-4 animate-spin" />}
+              </h4>
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   placeholder="Cuisine"

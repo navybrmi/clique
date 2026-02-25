@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowUp, MessageCircle, Star } from "lucide-react"
+import { ArrowUp, MessageCircle, Star, MapPin } from "lucide-react"
 import { AddRecommendationDialog } from "@/components/add-recommendation-dialog"
 import { X } from "lucide-react"
 import { Header } from "@/components/header"
@@ -261,6 +261,18 @@ export default function Home() {
                         {rec.entity.movie.releaseYear && <p>Year: {rec.entity.movie.releaseYear}</p>}
                         {rec.entity.movie.genre && <p>Genre: {rec.entity.movie.genre}</p>}
                         {rec.entity.movie.duration && <p>Duration: {rec.entity.movie.duration} mins</p>}
+                      </div>
+                    )}
+                    {rec.entity.restaurant && (
+                      <div className="mt-3 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+                        {rec.entity.restaurant.cuisine && <p>Cuisine: {rec.entity.restaurant.cuisine}</p>}
+                        {rec.entity.restaurant.location && (
+                          <p className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">{rec.entity.restaurant.location}</span>
+                          </p>
+                        )}
+                        {rec.entity.restaurant.priceRange && <p>Price: {rec.entity.restaurant.priceRange}</p>}
                       </div>
                     )}
                   </CardHeader>
