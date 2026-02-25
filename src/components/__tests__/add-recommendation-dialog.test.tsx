@@ -488,35 +488,80 @@ describe("AddRecommendationDialog", () => {
     })
   })
 
-  it("should include phoneNumber and placeId in restaurant submission payload", async () => {
+  it("should include phoneNumber and placeId from details API in restaurant submission payload", async () => {
     let capturedPayload: any = null
-    ;(global.fetch as jest.Mock).mockImplementation((url: string, init?: RequestInit) => {
+    ;(global.fetch as jest.Mock).mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : (input instanceof Request ? input.url : ''));
       if (url.includes("/api/auth/session")) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ user: { id: "user1" } }) })
+        return Promise.resolve(new Response(JSON.stringify({ user: { id: "user1", name: "Test User", email: "test@example.com" } })) as unknown as Response);
       }
       if (url.includes("/api/categories")) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve([
+        return Promise.resolve(new Response(JSON.stringify([
           { id: "1", name: "MOVIE", displayName: "Movie" },
           { id: "2", name: "RESTAURANT", displayName: "Restaurant" },
-        ]) })
+        ])) as unknown as Response);
+      }
+      if (url.includes("/api/restaurants/search")) {
+        return Promise.resolve(new Response(JSON.stringify({
+          results: [
+            {
+              id: "ChIJ_test_place_id",
+              name: "Test Pizza Place",
+              imageUrl: "https://maps.example.com/photo-search.jpg",
+              location: "123 Main St, New York, NY",
+              categories: "Italian, Pizza",
+              price: "$$",
+            },
+          ],
+        })) as unknown as Response);
+      }
+      if (url.match(/\/api\/restaurants\/[^/]+$/) && !url.includes("search")) {
+        return Promise.resolve(new Response(JSON.stringify({
+          id: "ChIJ_test_place_id",
+          name: "Test Pizza Place",
+          imageUrl: "https://maps.example.com/photo-detail.jpg",
+          cuisine: "Italian, Pizza, Pasta",
+          location: "123 Main St, New York, NY 10001",
+          priceRange: "$$",
+          phone: "(212) 555-1234",
+          url: "https://testpizzaplace.com",
+          hours: "Monday: 11:00 AM - 10:00 PM",
+        })) as unknown as Response);
       }
       if (url.includes("/api/recommendations") && init?.method === "POST") {
         capturedPayload = JSON.parse(init.body as string)
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ id: "rec-1" }) })
+        return Promise.resolve(new Response(JSON.stringify({ id: "rec-1" })) as unknown as Response);
       }
       if (url.includes("/api/tags")) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ tags: [] }) })
+        return Promise.resolve(new Response(JSON.stringify({ tags: [] })) as unknown as Response);
       }
-      return Promise.resolve({ ok: true, json: () => Promise.resolve({ results: [] }) })
+      return Promise.resolve(new Response(JSON.stringify({ results: [] })) as unknown as Response);
     })
-    render(<AddRecommendationDialog onSuccess={jest.fn()} initialCategoryId="2" />)
+    render(<AddRecommendationDialog onSuccess={jest.fn()} />)
     fireEvent.click(screen.getByText(/add recommendation/i))
     await screen.findByLabelText(/category/i)
-    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: "Test Restaurant" } })
-    // Manually set restaurant data fields including phoneNumber and placeId
-    await waitFor(() => expect(screen.getByPlaceholderText(/cuisine/i)).toBeInTheDocument())
-    fireEvent.change(screen.getByPlaceholderText(/cuisine/i), { target: { value: "Italian" } })
-    fireEvent.change(screen.getByPlaceholderText(/location/i), { target: { value: "NYC" } })
+    // Select Restaurant category
+    const combobox = screen.getByRole('combobox')
+    fireEvent.click(combobox)
+    await waitFor(() => {
+      const options = within(document.body).queryAllByText(/Restaurant/i)
+      expect(options.length).toBeGreaterThan(0)
+    })
+    const restaurantOption = within(document.body).queryAllByText(/Restaurant/i).find(node => node.tagName === 'OPTION' || node.tagName === 'SPAN')
+    if (restaurantOption) fireEvent.click(restaurantOption)
+    // Search and select a restaurant to populate phoneNumber and placeId via details API
+    const nameInput = screen.getByLabelText(/name/i)
+    fireEvent.change(nameInput, { target: { value: "Pizza" } })
+    const suggestion = await waitFor(() => {
+      const btns = within(document.body).queryAllByRole('button', { name: /test pizza place/i })
+      if (!btns.length) throw new Error('No suggestion button')
+      return btns[0]
+    }, { timeout: 2000 })
+    fireEvent.click(suggestion)
+    // Wait for details fetch to complete
+    await waitFor(() => {
+      expect((screen.getByPlaceholderText(/cuisine/i) as HTMLInputElement).value).toBe("Italian, Pizza, Pasta")
+    })
     // Submit
     const createBtns = screen.getAllByText(/^create$/i)
     const submitBtn = createBtns.find(btn => btn.tagName === 'BUTTON')!
@@ -524,8 +569,8 @@ describe("AddRecommendationDialog", () => {
     await waitFor(() => {
       expect(capturedPayload).toBeTruthy()
       expect(capturedPayload.restaurantData).toBeDefined()
-      expect(capturedPayload.restaurantData).toHaveProperty("phoneNumber")
-      expect(capturedPayload.restaurantData).toHaveProperty("placeId")
+      expect(capturedPayload.restaurantData.phoneNumber).toBe("(212) 555-1234")
+      expect(capturedPayload.restaurantData.placeId).toBe("ChIJ_test_place_id")
     })
   })
 

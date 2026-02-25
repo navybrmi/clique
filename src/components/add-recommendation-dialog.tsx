@@ -422,6 +422,8 @@ export function AddRecommendationDialog({
       phoneNumber: "",
       placeId: restaurant.id || "",
     })
+    // Clear link before fetching details to avoid stale data from a prior selection
+    setLink("")
     // Fetch full details from the Details API
     setFetchingRestaurantDetails(true)
     fetch(`/api/restaurants/${restaurant.id}`)
