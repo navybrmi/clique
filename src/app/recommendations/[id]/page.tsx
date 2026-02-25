@@ -173,6 +173,22 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
                       </div>
                     </div>
                   )}
+                  {recommendation.link && (
+                    <div className="flex items-start gap-3">
+                      <ExternalLink className="h-5 w-5 text-zinc-500 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-zinc-500">Website</p>
+                        <a
+                          href={recommendation.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-base text-blue-600 hover:underline break-all"
+                        >
+                          {recommendation.link}
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
