@@ -31,7 +31,7 @@ Review the current PR for code quality, security issues, architectural consisten
 ## Review Checklist
 
 ### Security (Critical)
-- No hardcoded secrets or API keys (TMDB_API_KEY, GOOGLE_PLACES_API_KEY, NEXTAUTH_SECRET)
+- No hardcoded secrets or API keys (TMDB_API_KEY, GOOGLE_PLACES_API_KEY, AUTH_SECRET / legacy NEXTAUTH_SECRET)
 - No SQL injection risks — all database access must go through Prisma (no raw SQL without parameterization)
 - No XSS vulnerabilities — user input must be sanitized before rendering
 - No exposed sensitive data in API responses (passwords, tokens, internal IDs that shouldn't be public)

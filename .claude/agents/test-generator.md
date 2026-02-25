@@ -39,14 +39,14 @@ Generate comprehensive unit or integration tests for new or modified source code
 
 ### Unit Tests (Components)
 - Use `@testing-library/react` with `render`, `screen`, `fireEvent`, `waitFor`
-- Mock Prisma: `jest.mock('@/lib/prisma')`
+- Do not import or mock Prisma directly in component tests; mock the API layer (e.g., `global.fetch`) instead
 - Mock fetch for external API calls: `(global.fetch as jest.Mock).mockResolvedValueOnce(...)`
 - Suppress console.error in error tests: `jest.spyOn(console, 'error').mockImplementation()`
 - Place tests in `src/components/__tests__/`
 
 ### Integration Tests (API Routes)
 - Import the route handler directly: `import { GET, POST } from '../route'`
-- Create `Request` objects: `new Request('http://localhost/api/...', { method: 'POST', body: JSON.stringify(data) })`
+- Create `NextRequest` objects from `next/server`: `new NextRequest('http://localhost/api/...', { method: 'POST', body: JSON.stringify(data) })`
 - Mock Prisma operations: `(prisma.model.method as jest.Mock).mockResolvedValue(data)`
 - Mock external fetch for TMDB/Google Places APIs
 - Place tests in `src/app/api/endpoint/__tests__/route.test.ts`

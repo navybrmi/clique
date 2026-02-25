@@ -27,7 +27,7 @@ Add or improve JSDoc/TSDoc documentation in source files, following the project'
 
 ## Documentation Style (Established in this project)
 
-The project uses **JSDoc block comments** (`/** ... */`) with TSDoc conventions. Do NOT add inline `//` comments for explanations — the codebase keeps logic self-documenting.
+The project uses **JSDoc block comments** (`/** ... */`) with TSDoc conventions as the primary form of documentation. Prefer JSDoc for public APIs and components, and use inline `//` comments sparingly when they add meaningful clarity (e.g., around complex logic), avoiding redundant or overly chatty commentary.
 
 ### Library Functions
 ```typescript
