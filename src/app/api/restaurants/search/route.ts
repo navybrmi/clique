@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
           : "",
         location: place.formatted_address || "",
         categories: place.types
-          ?.filter((t: string) => !["restaurant", "food", "point_of_interest", "establishment"].includes(t))
+          ?.filter((t: string) => !["restaurant", "food", "point_of_interest", "establishment", "meal_delivery", "meal_takeaway", "store", "health"].includes(t))
           .map((t: string) => t.replace(/_/g, " "))
           .slice(0, 2)
           .join(", ") || "",

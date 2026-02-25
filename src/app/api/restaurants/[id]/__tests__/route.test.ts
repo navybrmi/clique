@@ -229,6 +229,90 @@ describe("GET /api/restaurants/[id]", () => {
     expect(cuisineCount).toBeLessThanOrEqual(3)
   })
 
+  it("should filter out meal_delivery and meal_takeaway from cuisine", async () => {
+    // Arrange
+    const mockPlaceData = {
+      status: "OK",
+      result: {
+        name: "Delivery Restaurant",
+        types: ["restaurant", "food", "meal_delivery", "meal_takeaway", "point_of_interest", "establishment"],
+      },
+    }
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockPlaceData,
+    })
+
+    const request = new NextRequest("http://localhost/api/restaurants/delivery")
+
+    // Act
+    const response = await GET(request, { params: Promise.resolve({ id: "delivery" }) })
+    const data = await response.json()
+
+    // Assert
+    expect(response.status).toBe(200)
+    expect(data.cuisine).toBe("")
+  })
+
+  it("should fall back to editorial_summary when no cuisine types available", async () => {
+    // Arrange
+    const mockPlaceData = {
+      status: "OK",
+      result: {
+        name: "SAJJ Mediterranean",
+        types: ["restaurant", "food", "meal_delivery", "point_of_interest", "establishment"],
+        editorial_summary: {
+          overview: "Casual counter-serve chain for Mediterranean wraps, plates & salads.",
+        },
+      },
+    }
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockPlaceData,
+    })
+
+    const request = new NextRequest("http://localhost/api/restaurants/sajj")
+
+    // Act
+    const response = await GET(request, { params: Promise.resolve({ id: "sajj" }) })
+    const data = await response.json()
+
+    // Assert
+    expect(response.status).toBe(200)
+    expect(data.cuisine).toBe("Casual counter-serve chain for Mediterranean wraps, plates & salads.")
+  })
+
+  it("should prefer cuisine types over editorial_summary", async () => {
+    // Arrange
+    const mockPlaceData = {
+      status: "OK",
+      result: {
+        name: "Italian Place",
+        types: ["restaurant", "food", "italian_restaurant", "point_of_interest", "establishment"],
+        editorial_summary: {
+          overview: "Classic Italian dining.",
+        },
+      },
+    }
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockPlaceData,
+    })
+
+    const request = new NextRequest("http://localhost/api/restaurants/italian")
+
+    // Act
+    const response = await GET(request, { params: Promise.resolve({ id: "italian" }) })
+    const data = await response.json()
+
+    // Assert
+    expect(response.status).toBe(200)
+    expect(data.cuisine).toBe("italian restaurant")
+  })
+
   it("should handle network errors", async () => {
     // Arrange
     mockFetch.mockRejectedValueOnce(new Error("Network error"))

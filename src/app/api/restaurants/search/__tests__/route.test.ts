@@ -227,6 +227,37 @@ describe("GET /api/restaurants/search", () => {
     consoleErrorSpy.mockRestore()
   })
 
+  it("should filter out meal_delivery and meal_takeaway from categories", async () => {
+    // Arrange
+    const mockPlacesData = {
+      status: "OK",
+      results: [
+        {
+          place_id: "place1",
+          name: "Delivery Place",
+          formatted_address: "123 Street",
+          types: ["restaurant", "food", "meal_delivery", "meal_takeaway", "point_of_interest", "establishment"],
+          photos: [],
+        },
+      ],
+    }
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockPlacesData,
+    })
+
+    const request = new NextRequest("http://localhost/api/restaurants/search?query=delivery")
+
+    // Act
+    const response = await GET(request)
+    const data = await response.json()
+
+    // Assert
+    expect(response.status).toBe(200)
+    expect(data.results[0].categories).toBe("")
+  })
+
   it("should handle restaurants without photos or ratings", async () => {
     // Arrange
     const mockPlacesData = {
