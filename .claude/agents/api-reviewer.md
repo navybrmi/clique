@@ -1,6 +1,6 @@
 ---
 name: api-reviewer
-description: Review API route implementations for consistency, proper error handling, and security
+description: Review a specific API route for consistency, proper error handling, and security. Use for targeted single-route reviews, not full-PR reviews (use pr-reviewer for that).
 tools:
   - Read
   - Grep
@@ -66,7 +66,7 @@ return NextResponse.json(
 - Use the Prisma singleton from `@/lib/prisma`
 - Include related data with `include` for nested relations
 - Follow the polymorphic entity pattern — query through `Entity` with includes for category-specific tables
-- Entity includes pattern:
+- Entity includes pattern (only include relations the route actually needs — avoid over-fetching unused categories):
   ```typescript
   include: {
     entity: {

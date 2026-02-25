@@ -19,9 +19,9 @@ Review the current PR for code quality, security issues, architectural consisten
 
 ## Process
 
-1. **Get the PR diff:**
+1. **Get the PR diff** (the PR number will be provided by the caller):
    ```bash
-   gh pr diff
+   gh pr diff <PR_NUMBER>
    ```
 2. **Identify all changed files** and read them in full.
 3. **Review each changed file** against the checklist below.

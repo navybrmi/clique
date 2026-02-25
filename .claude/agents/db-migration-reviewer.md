@@ -23,6 +23,7 @@ Review Prisma schema changes and generated migrations for correctness, data safe
    ```bash
    git diff main -- prisma/schema.prisma
    ```
+   If there are no schema changes, skip this review — it is only relevant for PRs that modify `prisma/schema.prisma` or add migration files.
 2. **Find and read migration files:**
    ```bash
    git diff main --name-only -- prisma/migrations/

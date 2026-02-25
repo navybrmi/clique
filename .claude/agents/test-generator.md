@@ -47,7 +47,7 @@ Generate comprehensive unit or integration tests for new or modified source code
 ### Integration Tests (API Routes)
 - Import the route handler directly: `import { GET, POST } from '../route'`
 - Create `NextRequest` objects from `next/server`: `new NextRequest('http://localhost/api/...', { method: 'POST', body: JSON.stringify(data) })`
-- Mock Prisma operations: `(prisma.model.method as jest.Mock).mockResolvedValue(data)`
+- Mock Prisma operations (integration tests only): `(prisma.model.method as jest.Mock).mockResolvedValue(data)`
 - Mock external fetch for TMDB/Google Places APIs
 - Place tests in `src/app/api/endpoint/__tests__/route.test.ts`
 
@@ -59,7 +59,7 @@ Generate comprehensive unit or integration tests for new or modified source code
 
 ### Coverage Thresholds
 - Unit tests: 10% branches, 20% functions, 29% lines (project minimums)
-- Integration tests: 70% branches, 100% functions, 80% lines (stricter)
+- Integration tests: 70% branches, 80% functions, 80% lines (stricter)
 - **Your target: >90% coverage for the specific new/modified code**
 
 ## Running Tests

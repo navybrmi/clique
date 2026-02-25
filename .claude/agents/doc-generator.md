@@ -23,7 +23,7 @@ Add or improve JSDoc/TSDoc documentation in source files, following the project'
 2. **Check existing documentation** — note what's already documented to avoid duplication.
 3. **Read related files** for context (types, imports, callers) to write accurate descriptions.
 4. **Add documentation** following the patterns below.
-5. **Verify** the file still compiles by checking for syntax issues.
+5. **Verify** the edits by visually inspecting for syntax issues (unclosed comments, misplaced annotations).
 
 ## Documentation Style (Established in this project)
 
