@@ -137,39 +137,39 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
                   <CardTitle>Restaurant Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {recommendation.cuisine && (
+                  {recommendation.entity.restaurant.cuisine && (
                     <div className="flex items-start gap-3">
                       <Package className="h-5 w-5 text-zinc-500 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-zinc-500">Cuisine</p>
-                        <p className="text-base">{recommendation.cuisine}</p>
+                        <p className="text-base">{recommendation.entity.restaurant.cuisine}</p>
                       </div>
                     </div>
                   )}
-                  {recommendation.location && (
+                  {recommendation.entity.restaurant.location && (
                     <div className="flex items-start gap-3">
                       <MapPin className="h-5 w-5 text-zinc-500 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-zinc-500">Location</p>
-                        <p className="text-base">{recommendation.location}</p>
+                        <p className="text-base">{recommendation.entity.restaurant.location}</p>
                       </div>
                     </div>
                   )}
-                  {recommendation.priceRange && (
+                  {recommendation.entity.restaurant.priceRange && (
                     <div className="flex items-start gap-3">
                       <span className="text-zinc-500 mt-0.5">💰</span>
                       <div>
                         <p className="text-sm font-medium text-zinc-500">Price Range</p>
-                        <p className="text-base">{recommendation.priceRange}</p>
+                        <p className="text-base">{recommendation.entity.restaurant.priceRange}</p>
                       </div>
                     </div>
                   )}
-                  {recommendation.hours && (
+                  {recommendation.entity.restaurant.hours && (
                     <div className="flex items-start gap-3">
                       <Clock className="h-5 w-5 text-zinc-500 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-zinc-500">Hours</p>
-                        <p className="text-base">{recommendation.hours}</p>
+                        <p className="text-base">{recommendation.entity.restaurant.hours}</p>
                       </div>
                     </div>
                   )}
