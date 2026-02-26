@@ -58,8 +58,8 @@ Generate comprehensive unit or integration tests for new or modified source code
 - For API routes: verify status codes, response bodies, and error formats (`{ error: "message", details?: string }`)
 
 ### Coverage Thresholds
-- Unit tests: 10% branches, 20% functions, 29% lines (project minimums)
-- Integration tests: 70% branches, 80% functions, 80% lines (stricter)
+- Unit tests (`jest.config.js` minimums): 10% branches, 20% functions, 29% lines, 29% statements
+- Integration tests (`jest.integration.config.js` minimums): 70% branches, 100% functions, 80% lines, 80% statements
 - **Your target: >90% coverage for the specific new/modified code**
 
 ## Running Tests

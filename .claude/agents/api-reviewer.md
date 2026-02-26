@@ -61,12 +61,13 @@ return NextResponse.json(
 - Return 500 with `"API key not configured"` if missing
 - Handle fetch failures gracefully
 - Limit results (e.g., top 5 for movie search)
+- **Note:** Search endpoints (`/api/movies/search`, `/api/restaurants/search`) use a different response format: `{ results: [], error?: "..." }` instead of the standard `{ error: "...", details?: "..." }` format. Do not flag this as inconsistent.
 
 ### Prisma Queries
 - Use the Prisma singleton from `@/lib/prisma`
 - Include related data with `include` for nested relations
 - Follow the polymorphic entity pattern — query through `Entity` with includes for category-specific tables
-- Entity includes pattern (only include relations the route actually needs — avoid over-fetching unused categories):
+- Entity includes pattern (currently all category tables are included for consistency; selective inclusion is a possible future optimization):
   ```typescript
   include: {
     entity: {
