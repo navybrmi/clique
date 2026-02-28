@@ -405,10 +405,11 @@ describe("AddRecommendationDialog", () => {
       return btns[0]
     }, { timeout: 2000 })
     fireEvent.click(suggestion)
-    // Verify the details API was called
+    // Verify the details API was called with an AbortController signal
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/api/restaurants/ChIJ_test_place_id")
+        expect.stringContaining("/api/restaurants/ChIJ_test_place_id"),
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
       )
     })
     // Verify form fields are populated from the details response
