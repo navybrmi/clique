@@ -142,6 +142,10 @@ export function AddRecommendationDialog({
   }
     // Reset form state to initial values
     const resetForm = () => {
+      // Abort any in-flight detail fetches to prevent stale updates after form reset
+      restaurantDetailsAbortRef.current?.abort()
+      movieDetailsAbortRef.current?.abort()
+      setFetchingRestaurantDetails(false)
       setSelectedCategoryId("")
       setEntityName("")
       setTags([])
@@ -391,6 +395,14 @@ export function AddRecommendationDialog({
 
     setEntityName(movie.title)
     setImageUrl(movie.posterPath || "")
+    // Immediately reset movie-specific fields and link to avoid showing stale data
+    setMovieData({
+      year: movie.year?.toString() || "",
+      genre: movie.genre || "",
+      director: "",
+      duration: "",
+    })
+    setLink("")
     // Fetch full movie details to populate all fields
     fetch(`/api/movies/${movie.id}`, { signal: abortController.signal })
       .then(async (res) => {
