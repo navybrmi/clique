@@ -1,0 +1,28 @@
+{
+  "status": "OK",
+  "result": {
+    "name": "Joe's Pizza",
+    "formatted_address": "7 Carmine St, New York, NY 10014, United States",
+    "rating": 4.4,
+    "user_ratings_total": 5200,
+    "price_level": 1,
+    "formatted_phone_number": "(212) 366-1182",
+    "website": "http://www.joespizzanyc.com/",
+    "types": ["restaurant", "food", "pizza", "point_of_interest", "establishment"],
+    "photos": [{ "photo_reference": "perf_test_photo_ref_detail" }],
+    "opening_hours": {
+      "weekday_text": [
+        "Monday: 10:00 AM – 4:00 AM",
+        "Tuesday: 10:00 AM – 4:00 AM",
+        "Wednesday: 10:00 AM – 4:00 AM",
+        "Thursday: 10:00 AM – 4:00 AM",
+        "Friday: 10:00 AM – 5:00 AM",
+        "Saturday: 10:00 AM – 5:00 AM",
+        "Sunday: 10:00 AM – 4:00 AM"
+      ]
+    },
+    "editorial_summary": {
+      "overview": "No-frills, old-school pizzeria serving huge, thin-crust slices."
+    }
+  }
+}

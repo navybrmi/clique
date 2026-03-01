@@ -22,7 +22,10 @@
     "verify-build": "./scripts/test-build.sh",
     "hooks:install": "git config core.hooksPath .githooks",
     "hooks:status": "git config --get core.hooksPath || echo '(not set)'",
-    "docker:dev": "DOCKER_COMPOSE_FILE=docker-compose.dev.yml node scripts/docker-dev.mjs"
+    "docker:dev": "DOCKER_COMPOSE_FILE=docker-compose.dev.yml node scripts/docker-dev.mjs",
+    "perf:record": "bash perf/scripts/perf-record.sh",
+    "perf:test": "bash perf/scripts/perf-test.sh",
+    "perf:stop": "bash perf/scripts/perf-stop.sh"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",

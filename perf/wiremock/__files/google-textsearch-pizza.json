@@ -1,0 +1,55 @@
+{
+  "status": "OK",
+  "results": [
+    {
+      "place_id": "ChIJN1t_tDeuEmsRUsoyG83frY4",
+      "name": "Joe's Pizza",
+      "formatted_address": "7 Carmine St, New York, NY 10014, United States",
+      "rating": 4.4,
+      "user_ratings_total": 5200,
+      "price_level": 1,
+      "types": ["restaurant", "food", "pizza", "point_of_interest", "establishment"],
+      "photos": [{ "photo_reference": "perf_test_photo_ref_1" }]
+    },
+    {
+      "place_id": "ChIJhz0mJW5YwokR7eGvhVQkWnY",
+      "name": "Di Fara Pizza",
+      "formatted_address": "1424 Avenue J, Brooklyn, NY 11230, United States",
+      "rating": 4.3,
+      "user_ratings_total": 3100,
+      "price_level": 2,
+      "types": ["restaurant", "food", "pizza", "italian_restaurant", "point_of_interest", "establishment"],
+      "photos": [{ "photo_reference": "perf_test_photo_ref_2" }]
+    },
+    {
+      "place_id": "ChIJr4cQBPBZwokRJm0p88b6xSY",
+      "name": "Lucali",
+      "formatted_address": "575 Henry St, Brooklyn, NY 11231, United States",
+      "rating": 4.6,
+      "user_ratings_total": 2800,
+      "price_level": 2,
+      "types": ["restaurant", "food", "italian_restaurant", "point_of_interest", "establishment"],
+      "photos": [{ "photo_reference": "perf_test_photo_ref_3" }]
+    },
+    {
+      "place_id": "ChIJAQCl79FYwokRN2MqfLz79LA",
+      "name": "Prince Street Pizza",
+      "formatted_address": "27 Prince St, New York, NY 10012, United States",
+      "rating": 4.5,
+      "user_ratings_total": 4700,
+      "price_level": 1,
+      "types": ["restaurant", "food", "pizza", "point_of_interest", "establishment"],
+      "photos": [{ "photo_reference": "perf_test_photo_ref_4" }]
+    },
+    {
+      "place_id": "ChIJw4cSGpZZwokR7kGgAl8McVU",
+      "name": "L&B Spumoni Gardens",
+      "formatted_address": "2725 86th St, Brooklyn, NY 11223, United States",
+      "rating": 4.4,
+      "user_ratings_total": 6100,
+      "price_level": 1,
+      "types": ["restaurant", "food", "pizza", "point_of_interest", "establishment"],
+      "photos": [{ "photo_reference": "perf_test_photo_ref_5" }]
+    }
+  ]
+}

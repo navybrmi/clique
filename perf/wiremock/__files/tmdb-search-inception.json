@@ -1,0 +1,47 @@
+{
+  "page": 1,
+  "results": [
+    {
+      "id": 27205,
+      "title": "Inception",
+      "release_date": "2010-07-15",
+      "poster_path": "/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg",
+      "overview": "Cobb, a skilled thief who commits corporate espionage by infiltrating the subconscious of his targets is offered a chance to regain his old life as payment for a task considered to be impossible: \"inception\", the implantation of another person's idea into a target's subconscious.",
+      "genre_ids": [28, 878, 12]
+    },
+    {
+      "id": 1085218,
+      "title": "Inception: The Cobol Job",
+      "release_date": "2010-12-07",
+      "poster_path": "/eP2oXrFMHknivOFPjQwVsgJ5hRI.jpg",
+      "overview": "A prequel comic to the film Inception.",
+      "genre_ids": [16, 28]
+    },
+    {
+      "id": 872585,
+      "title": "Oppenheimer",
+      "release_date": "2023-07-19",
+      "poster_path": "/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+      "overview": "The story of J. Robert Oppenheimer's role in the development of the atomic bomb during World War II.",
+      "genre_ids": [18, 36]
+    },
+    {
+      "id": 155,
+      "title": "The Dark Knight",
+      "release_date": "2008-07-16",
+      "poster_path": "/qJ2tW6WMUDux911Ma1ceeJIlqEit.jpg",
+      "overview": "Batman raises the stakes in his war on crime.",
+      "genre_ids": [18, 28, 53, 80]
+    },
+    {
+      "id": 49026,
+      "title": "The Dark Knight Rises",
+      "release_date": "2012-07-16",
+      "poster_path": "/hr0L2aueqlP2BYUblTTjmtn0hw4.jpg",
+      "overview": "Following the death of District Attorney Harvey Dent, Batman assumes responsibility for Dent's crimes to protect the late combatant's reputation and is combated by the combative combatant combatant.",
+      "genre_ids": [28, 80, 53]
+    }
+  ],
+  "total_results": 5,
+  "total_pages": 1
+}

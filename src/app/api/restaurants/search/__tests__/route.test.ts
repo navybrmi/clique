@@ -258,6 +258,32 @@ describe("GET /api/restaurants/search", () => {
     expect(data.results[0].categories).toBe("")
   })
 
+  it("should use custom GOOGLE_PLACES_BASE_URL when set", async () => {
+    // Arrange
+    process.env.GOOGLE_PLACES_BASE_URL = "http://wiremock:8080/google"
+    const mockPlacesData = {
+      status: "OK",
+      results: [],
+    }
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockPlacesData,
+    })
+
+    const request = new NextRequest("http://localhost/api/restaurants/search?query=pizza")
+
+    // Act
+    await GET(request)
+
+    // Assert
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining("http://wiremock:8080/google/maps/api/place/textsearch/json")
+    )
+
+    delete process.env.GOOGLE_PLACES_BASE_URL
+  })
+
   it("should handle restaurants without photos or ratings", async () => {
     // Arrange
     const mockPlacesData = {

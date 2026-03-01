@@ -44,3 +44,10 @@ next-env.d.ts
 
 /src/generated/prisma
 .env*.local
+
+# Performance testing
+!perf/.env.perf
+perf/wiremock/recordings/*
+!perf/wiremock/recordings/.gitkeep
+perf/k6/results/*
+!perf/k6/results/.gitkeep

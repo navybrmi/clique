@@ -1,0 +1,64 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: clique_perf
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  wiremock:
+    image: wiremock/wiremock:3.12.1
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./wiremock/mappings:/home/wiremock/mappings
+      - ./wiremock/__files:/home/wiremock/__files
+      - ./wiremock/recordings:/home/wiremock/recordings
+    command: >
+      --verbose
+      --global-response-templating
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/__admin/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.perf
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/clique_perf
+      TMDB_BASE_URL: http://wiremock:8080/tmdb
+      GOOGLE_PLACES_BASE_URL: http://wiremock:8080/google
+    depends_on:
+      db:
+        condition: service_healthy
+      wiremock:
+        condition: service_healthy
+    volumes:
+      - ../src:/app/src
+      - ../public:/app/public
+
+  k6:
+    image: grafana/k6:0.55.0
+    volumes:
+      - ./k6/scripts:/scripts
+      - ./k6/results:/results
+    environment:
+      - APP_BASE_URL=http://app:3000
+    depends_on:
+      - app
+    profiles:
+      - test
