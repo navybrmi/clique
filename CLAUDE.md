@@ -14,7 +14,7 @@ All code changes must include corresponding unit tests with >90% coverage for ne
 
 When all changes are ready and tests are passing, commit with an appropriate commit message, push to the remote branch, and ask the user if a PR needs to be created. Create a PR only upon confirmation, with a detailed description against main.
 
-After a PR is created, poll the PR status using `gh pr checks --watch` to monitor validation and check results, and use `gh pr view` to verify all review comments/conversations are resolved.
+After a PR is created, poll the PR status using `gh pr checks --watch` to monitor validation and check results, and use `gh pr view` to verify all review comments/conversations are resolved. Additionally, check the Codecov status for the PR using the Codecov MCP server and display a summary of the coverage report (patch coverage, base/head coverage change, hits/misses). If the MCP server is unavailable, fall back to the Codecov API: `curl -s -H "Authorization: Bearer $CODECOV_API_KEY" "https://api.codecov.io/api/v2/github/navybrmi/repos/clique/pulls/{pr_number}" | jq '.'`.
 
 If there are unresolved or new review comments on the PR:
 1. Fetch and read all unresolved/new comments.
