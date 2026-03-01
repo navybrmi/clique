@@ -142,6 +142,19 @@ export function AddRecommendationDialog({
   }
     // Reset form state to initial values
     const resetForm = () => {
+      // Clear any pending debounced search to prevent late-arriving suggestion updates
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current)
+        debounceTimer.current = null
+      }
+      // Abort any in-flight detail fetches to prevent stale updates after form reset
+      restaurantDetailsAbortRef.current?.abort()
+      movieDetailsAbortRef.current?.abort()
+      setFetchingRestaurantDetails(false)
+      // Reset suggestion UI state so reopening the dialog doesn't show stale suggestions
+      setShowSuggestions(false)
+      setRestaurantSuggestions([])
+      setMovieSuggestions([])
       setSelectedCategoryId("")
       setEntityName("")
       setTags([])
@@ -172,6 +185,8 @@ export function AddRecommendationDialog({
   const [searchingRestaurants, setSearchingRestaurants] = useState(false)
   const [fetchingRestaurantDetails, setFetchingRestaurantDetails] = useState(false)
   const debounceTimer = useRef<NodeJS.Timeout | null>(null)
+  const restaurantDetailsAbortRef = useRef<AbortController | null>(null)
+  const movieDetailsAbortRef = useRef<AbortController | null>(null)
 
   // Category-specific fields
   const [restaurantData, setRestaurantData] = useState({
@@ -203,6 +218,14 @@ export function AddRecommendationDialog({
   // Suggested tags state (combination of hardcoded and promoted community tags)
   const [suggestedTags, setSuggestedTags] = useState<string[]>([])
 
+  // Abort in-flight detail fetches on unmount
+  useEffect(() => {
+    return () => {
+      restaurantDetailsAbortRef.current?.abort()
+      movieDetailsAbortRef.current?.abort()
+    }
+  }, [])
+
   // Fetch categories on mount
   useEffect(() => {
     const fetchCategories = async () => {
@@ -221,6 +244,12 @@ export function AddRecommendationDialog({
 
   // Load initial data in edit mode
   useEffect(() => {
+    if (!open) {
+      // Abort any in-flight detail fetches when the dialog closes, regardless of mode
+      restaurantDetailsAbortRef.current?.abort()
+      movieDetailsAbortRef.current?.abort()
+      return
+    }
     if (open) {
       if (editMode && initialData) {
         setEntityName(initialData.entity?.name || "")
@@ -372,10 +401,25 @@ export function AddRecommendationDialog({
    * @param movie - Selected movie suggestion object
    */
   const handleMovieSelect = (movie: MovieSuggestion) => {
+    // Abort any in-flight movie details fetch to prevent stale responses
+    if (movieDetailsAbortRef.current) {
+      movieDetailsAbortRef.current.abort()
+    }
+    const abortController = new AbortController()
+    movieDetailsAbortRef.current = abortController
+
     setEntityName(movie.title)
     setImageUrl(movie.posterPath || "")
+    // Immediately reset movie-specific fields and link to avoid showing stale data
+    setMovieData({
+      year: movie.year?.toString() || "",
+      genre: movie.genre || "",
+      director: "",
+      duration: "",
+    })
+    setLink("")
     // Fetch full movie details to populate all fields
-    fetch(`/api/movies/${movie.id}`)
+    fetch(`/api/movies/${movie.id}`, { signal: abortController.signal })
       .then(async (res) => {
         if (!res.ok) throw new Error("Failed to fetch movie details")
         const details = await res.json()
@@ -388,7 +432,8 @@ export function AddRecommendationDialog({
         setImageUrl(details.posterPath || movie.posterPath || "")
         setLink(details.imdbLink || "")
       })
-      .catch(() => {
+      .catch((err) => {
+        if (err.name === "AbortError") return
         // fallback to what we have from search
         setMovieData({
           year: movie.year?.toString() || "",
@@ -399,8 +444,10 @@ export function AddRecommendationDialog({
         setLink("")
       })
       .finally(() => {
-        setShowSuggestions(false)
-        setMovieSuggestions([])
+        if (!abortController.signal.aborted) {
+          setShowSuggestions(false)
+          setMovieSuggestions([])
+        }
       })
   }
 
@@ -411,6 +458,13 @@ export function AddRecommendationDialog({
    * @param restaurant - Selected restaurant suggestion object
    */
   const handleRestaurantSelect = (restaurant: RestaurantSuggestion) => {
+    // Abort any in-flight restaurant details fetch to prevent stale responses
+    if (restaurantDetailsAbortRef.current) {
+      restaurantDetailsAbortRef.current.abort()
+    }
+    const abortController = new AbortController()
+    restaurantDetailsAbortRef.current = abortController
+
     setEntityName(restaurant.name)
     setImageUrl(restaurant.imageUrl || "")
     // Set basic data from search results immediately for instant feedback
@@ -426,7 +480,7 @@ export function AddRecommendationDialog({
     setLink("")
     // Fetch full details from the Details API
     setFetchingRestaurantDetails(true)
-    fetch(`/api/restaurants/${restaurant.id}`)
+    fetch(`/api/restaurants/${restaurant.id}`, { signal: abortController.signal })
       .then(async (res) => {
         if (!res.ok) throw new Error("Failed to fetch restaurant details")
         const details = await res.json()
@@ -441,13 +495,16 @@ export function AddRecommendationDialog({
         setImageUrl(details.imageUrl || restaurant.imageUrl || "")
         setLink(details.url || "")
       })
-      .catch(() => {
+      .catch((err) => {
+        if (err.name === "AbortError") return
         // Fallback: keep the search result data already set above
       })
       .finally(() => {
-        setFetchingRestaurantDetails(false)
-        setShowSuggestions(false)
-        setRestaurantSuggestions([])
+        if (!abortController.signal.aborted) {
+          setFetchingRestaurantDetails(false)
+          setShowSuggestions(false)
+          setRestaurantSuggestions([])
+        }
       })
   }
 

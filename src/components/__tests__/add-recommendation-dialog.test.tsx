@@ -405,10 +405,11 @@ describe("AddRecommendationDialog", () => {
       return btns[0]
     }, { timeout: 2000 })
     fireEvent.click(suggestion)
-    // Verify the details API was called
+    // Verify the details API was called with an AbortController signal
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/api/restaurants/ChIJ_test_place_id")
+        expect.stringContaining("/api/restaurants/ChIJ_test_place_id"),
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
       )
     })
     // Verify form fields are populated from the details response
@@ -864,6 +865,167 @@ describe("AddRecommendationDialog", () => {
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining("/api/tags?categoryName=RESTAURANT")
       )
+    })
+  })
+
+  it("should abort previous movie detail fetch when a new movie is selected", async () => {
+    // Track AbortController signals and resolvers for each movie detail fetch
+    const abortSignals: AbortSignal[] = []
+    const movieDetailResolvers: ((value: Response) => void)[] = []
+
+    // Override fetch to keep movie detail responses pending until we resolve them manually
+    const baseFetch = global.fetch as jest.Mock
+    ;(global.fetch as jest.Mock) = jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : (input instanceof Request ? input.url : ''));
+      if (url.includes("/api/movies/") && !url.includes("search")) {
+        if (init?.signal) abortSignals.push(init.signal)
+        return new Promise<Response>((resolve) => {
+          movieDetailResolvers.push(resolve)
+        })
+      }
+      return baseFetch(input, init)
+    })
+
+    render(<AddRecommendationDialog onSuccess={jest.fn()} initialCategoryId="1" />)
+    fireEvent.click(screen.getByText(/add recommendation/i))
+    await screen.findByLabelText(/category/i)
+
+    // Type to trigger movie suggestions
+    const nameInput = screen.getByLabelText(/name/i)
+    fireEvent.change(nameInput, { target: { value: "Inception" } })
+
+    // Wait for suggestion and click (first selection — detail fetch will hang)
+    const suggestion1 = await waitFor(() => {
+      const btns = within(document.body).queryAllByRole('button', { name: /inception/i })
+      if (!btns.length) throw new Error('No suggestion button')
+      return btns[0]
+    }, { timeout: 2000 })
+    fireEvent.click(suggestion1)
+
+    // First detail fetch is now in-flight (pending)
+    await waitFor(() => expect(abortSignals.length).toBe(1))
+    expect(abortSignals[0].aborted).toBe(false)
+
+    // DO NOT resolve the first fetch — keep it pending to simulate a true race condition
+    // The component immediately resets movie fields on selection, so verify the reset values
+    expect((screen.getByLabelText(/name/i) as HTMLInputElement).value).toBe("Inception")
+
+    // Trigger suggestions again and make a second selection while the first fetch is still in-flight
+    fireEvent.change(nameInput, { target: { value: "" } })
+    fireEvent.change(nameInput, { target: { value: "Inception" } })
+    const suggestion2 = await waitFor(() => {
+      const btns = within(document.body).queryAllByRole('button', { name: /inception/i })
+      if (!btns.length) throw new Error('No suggestion button')
+      return btns[0]
+    }, { timeout: 4000 })
+    fireEvent.click(suggestion2)
+
+    // Second detail fetch initiated — first signal should now be aborted
+    await waitFor(() => expect(abortSignals.length).toBe(2))
+    expect(abortSignals[0].aborted).toBe(true)
+    expect(abortSignals[1].aborted).toBe(false)
+
+    // Now resolve the first (aborted) fetch — it should NOT update the form with stale data
+    movieDetailResolvers[0]?.(new Response(JSON.stringify({
+      title: "Inception", director: "Stale Director", year: 1999,
+      genre: "Stale Genre", duration: "1h 00min",
+      posterPath: "https://image.tmdb.org/t/p/w500/stale.jpg",
+      imdbLink: "https://www.imdb.com/title/stale/",
+    })) as unknown as Response)
+
+    // Resolve the second fetch with the correct data
+    movieDetailResolvers[1]?.(new Response(JSON.stringify({
+      title: "Inception", director: "Christopher Nolan", year: 2010,
+      genre: "Action, Sci-Fi", duration: "2h 28min",
+      posterPath: "https://image.tmdb.org/t/p/w500/inception.jpg",
+      imdbLink: "https://www.imdb.com/title/tt1375666/",
+    })) as unknown as Response)
+
+    // Wait for the second fetch to populate the form — stale data from first fetch should not appear
+    await waitFor(() => {
+      const linkInput = screen.getByLabelText(/^link$/i) as HTMLInputElement
+      expect(linkInput.value).toBe("https://www.imdb.com/title/tt1375666/")
+    })
+  })
+
+  it("should abort previous restaurant detail fetch when a new restaurant is selected", async () => {
+    const abortSignals: AbortSignal[] = []
+    const restaurantDetailResolvers: ((value: Response) => void)[] = []
+
+    const baseFetch = global.fetch as jest.Mock
+    ;(global.fetch as jest.Mock) = jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : (input instanceof Request ? input.url : ''));
+      if (url.match(/\/api\/restaurants\/[^/]+$/) && !url.includes("search")) {
+        if (init?.signal) abortSignals.push(init.signal)
+        return new Promise<Response>((resolve) => {
+          restaurantDetailResolvers.push(resolve)
+        })
+      }
+      return baseFetch(input, init)
+    })
+
+    render(<AddRecommendationDialog onSuccess={jest.fn()} initialCategoryId="2" />)
+    fireEvent.click(screen.getByText(/add recommendation/i))
+    await screen.findByLabelText(/category/i)
+
+    // Type to trigger restaurant search
+    const nameInput = screen.getByLabelText(/name/i)
+    fireEvent.change(nameInput, { target: { value: "Pizza" } })
+
+    // Wait for suggestion and click (first selection — detail fetch will hang)
+    const suggestion1 = await waitFor(() => {
+      const btns = within(document.body).queryAllByRole('button', { name: /test pizza place/i })
+      if (!btns.length) throw new Error('No suggestion button')
+      return btns[0]
+    }, { timeout: 2000 })
+    fireEvent.click(suggestion1)
+
+    // First detail fetch is now in-flight (pending)
+    await waitFor(() => expect(abortSignals.length).toBe(1))
+    expect(abortSignals[0].aborted).toBe(false)
+
+    // DO NOT resolve the first fetch — keep it pending to simulate a true race condition
+    expect((screen.getByLabelText(/name/i) as HTMLInputElement).value).toBe("Test Pizza Place")
+
+    // Trigger suggestions again and make a second selection while first fetch is still in-flight
+    fireEvent.change(nameInput, { target: { value: "Pizza" } })
+    const suggestion2 = await waitFor(() => {
+      const btns = within(document.body).queryAllByRole('button', { name: /test pizza place/i })
+      if (!btns.length) throw new Error('No suggestion button')
+      return btns[0]
+    }, { timeout: 2000 })
+    fireEvent.click(suggestion2)
+
+    // Second detail fetch initiated — first signal should now be aborted
+    await waitFor(() => expect(abortSignals.length).toBe(2))
+    expect(abortSignals[0].aborted).toBe(true)
+    expect(abortSignals[1].aborted).toBe(false)
+
+    // Now resolve the first (aborted) fetch with stale data — it should NOT update the form
+    restaurantDetailResolvers[0]?.(new Response(JSON.stringify({
+      id: "ChIJ_stale", name: "Stale Pizza Place",
+      imageUrl: "https://maps.example.com/stale.jpg", rating: 1.0,
+      reviewCount: 5, cuisine: "Stale Cuisine",
+      location: "999 Stale St", priceRange: "$$$$$",
+      phone: "(000) 000-0000", url: "https://stale.com",
+      hours: "Closed",
+    })) as unknown as Response)
+
+    // Resolve the second fetch with the correct data
+    const correctResponse = {
+      id: "ChIJ_test_place_id", name: "Test Pizza Place",
+      imageUrl: "https://maps.example.com/photo-detail.jpg", rating: 4.5,
+      reviewCount: 200, cuisine: "Italian, Pizza, Pasta",
+      location: "123 Main St, New York, NY 10001", priceRange: "$$",
+      phone: "(212) 555-1234", url: "https://testpizzaplace.com",
+      hours: "Monday: 11:00 AM - 10:00 PM",
+    }
+    restaurantDetailResolvers[1]?.(new Response(JSON.stringify(correctResponse)) as unknown as Response)
+
+    // Wait for the second fetch to populate the form — stale data should not appear
+    await waitFor(() => {
+      const linkInput = screen.getByLabelText(/^link$/i) as HTMLInputElement
+      expect(linkInput.value).toBe("https://testpizzaplace.com")
     })
   })
 
