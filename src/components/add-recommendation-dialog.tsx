@@ -142,10 +142,19 @@ export function AddRecommendationDialog({
   }
     // Reset form state to initial values
     const resetForm = () => {
+      // Clear any pending debounced search to prevent late-arriving suggestion updates
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current)
+        debounceTimer.current = null
+      }
       // Abort any in-flight detail fetches to prevent stale updates after form reset
       restaurantDetailsAbortRef.current?.abort()
       movieDetailsAbortRef.current?.abort()
       setFetchingRestaurantDetails(false)
+      // Reset suggestion UI state so reopening the dialog doesn't show stale suggestions
+      setShowSuggestions(false)
+      setRestaurantSuggestions([])
+      setMovieSuggestions([])
       setSelectedCategoryId("")
       setEntityName("")
       setTags([])
@@ -235,6 +244,12 @@ export function AddRecommendationDialog({
 
   // Load initial data in edit mode
   useEffect(() => {
+    if (!open) {
+      // Abort any in-flight detail fetches when the dialog closes, regardless of mode
+      restaurantDetailsAbortRef.current?.abort()
+      movieDetailsAbortRef.current?.abort()
+      return
+    }
     if (open) {
       if (editMode && initialData) {
         setEntityName(initialData.entity?.name || "")

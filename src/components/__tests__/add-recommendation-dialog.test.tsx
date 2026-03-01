@@ -869,21 +869,20 @@ describe("AddRecommendationDialog", () => {
   })
 
   it("should abort previous movie detail fetch when a new movie is selected", async () => {
-    // Track AbortController signals passed to movie detail fetches
+    // Track AbortController signals and resolvers for each movie detail fetch
     const abortSignals: AbortSignal[] = []
-    let movieDetailResolve: ((value: Response) => void) | null = null
+    const movieDetailResolvers: ((value: Response) => void)[] = []
 
-    // Override fetch to delay movie detail responses so we can trigger a second selection
+    // Override fetch to keep movie detail responses pending until we resolve them manually
     const baseFetch = global.fetch as jest.Mock
     ;(global.fetch as jest.Mock) = jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : (input instanceof Request ? input.url : ''));
       if (url.includes("/api/movies/") && !url.includes("search")) {
         if (init?.signal) abortSignals.push(init.signal)
         return new Promise<Response>((resolve) => {
-          movieDetailResolve = resolve
+          movieDetailResolvers.push(resolve)
         })
       }
-      // Delegate all other URLs to the base mock from beforeEach
       return baseFetch(input, init)
     })
 
@@ -907,20 +906,11 @@ describe("AddRecommendationDialog", () => {
     await waitFor(() => expect(abortSignals.length).toBe(1))
     expect(abortSignals[0].aborted).toBe(false)
 
-    // Resolve the first fetch so the .finally() runs and suggestions close
-    movieDetailResolve?.(new Response(JSON.stringify({
-      title: "Inception", director: "Christopher Nolan", year: 2010,
-      genre: "Action, Sci-Fi", duration: "2h 28min",
-      posterPath: "https://image.tmdb.org/t/p/w500/inception.jpg",
-      imdbLink: "https://www.imdb.com/title/tt1375666/",
-    })) as unknown as Response)
+    // DO NOT resolve the first fetch — keep it pending to simulate a true race condition
+    // The component immediately resets movie fields on selection, so verify the reset values
+    expect((screen.getByLabelText(/name/i) as HTMLInputElement).value).toBe("Inception")
 
-    // Wait for the component to process the response
-    await waitFor(() => {
-      expect((screen.getByLabelText(/name/i) as HTMLInputElement).value).toBe("Inception")
-    })
-
-    // Type a different value first, then search again to re-trigger suggestions
+    // Trigger suggestions again and make a second selection while the first fetch is still in-flight
     fireEvent.change(nameInput, { target: { value: "" } })
     fireEvent.change(nameInput, { target: { value: "Inception" } })
     const suggestion2 = await waitFor(() => {
@@ -935,18 +925,32 @@ describe("AddRecommendationDialog", () => {
     expect(abortSignals[0].aborted).toBe(true)
     expect(abortSignals[1].aborted).toBe(false)
 
-    // Clean up: resolve second fetch
-    movieDetailResolve?.(new Response(JSON.stringify({
+    // Now resolve the first (aborted) fetch — it should NOT update the form with stale data
+    movieDetailResolvers[0]?.(new Response(JSON.stringify({
+      title: "Inception", director: "Stale Director", year: 1999,
+      genre: "Stale Genre", duration: "1h 00min",
+      posterPath: "https://image.tmdb.org/t/p/w500/stale.jpg",
+      imdbLink: "https://www.imdb.com/title/stale/",
+    })) as unknown as Response)
+
+    // Resolve the second fetch with the correct data
+    movieDetailResolvers[1]?.(new Response(JSON.stringify({
       title: "Inception", director: "Christopher Nolan", year: 2010,
       genre: "Action, Sci-Fi", duration: "2h 28min",
       posterPath: "https://image.tmdb.org/t/p/w500/inception.jpg",
       imdbLink: "https://www.imdb.com/title/tt1375666/",
     })) as unknown as Response)
+
+    // Wait for the second fetch to populate the form — stale data from first fetch should not appear
+    await waitFor(() => {
+      const linkInput = screen.getByLabelText(/^link$/i) as HTMLInputElement
+      expect(linkInput.value).toBe("https://www.imdb.com/title/tt1375666/")
+    })
   })
 
   it("should abort previous restaurant detail fetch when a new restaurant is selected", async () => {
     const abortSignals: AbortSignal[] = []
-    let restaurantDetailResolve: ((value: Response) => void) | null = null
+    const restaurantDetailResolvers: ((value: Response) => void)[] = []
 
     const baseFetch = global.fetch as jest.Mock
     ;(global.fetch as jest.Mock) = jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
@@ -954,7 +958,7 @@ describe("AddRecommendationDialog", () => {
       if (url.match(/\/api\/restaurants\/[^/]+$/) && !url.includes("search")) {
         if (init?.signal) abortSignals.push(init.signal)
         return new Promise<Response>((resolve) => {
-          restaurantDetailResolve = resolve
+          restaurantDetailResolvers.push(resolve)
         })
       }
       return baseFetch(input, init)
@@ -976,25 +980,14 @@ describe("AddRecommendationDialog", () => {
     }, { timeout: 2000 })
     fireEvent.click(suggestion1)
 
+    // First detail fetch is now in-flight (pending)
     await waitFor(() => expect(abortSignals.length).toBe(1))
     expect(abortSignals[0].aborted).toBe(false)
 
-    // Resolve the first fetch so the .finally() runs
-    const detailResponse = {
-      id: "ChIJ_test_place_id", name: "Test Pizza Place",
-      imageUrl: "https://maps.example.com/photo-detail.jpg", rating: 4.5,
-      reviewCount: 200, cuisine: "Italian, Pizza, Pasta",
-      location: "123 Main St, New York, NY 10001", priceRange: "$$",
-      phone: "(212) 555-1234", url: "https://testpizzaplace.com",
-      hours: "Monday: 11:00 AM - 10:00 PM",
-    }
-    restaurantDetailResolve?.(new Response(JSON.stringify(detailResponse)) as unknown as Response)
+    // DO NOT resolve the first fetch — keep it pending to simulate a true race condition
+    expect((screen.getByLabelText(/name/i) as HTMLInputElement).value).toBe("Test Pizza Place")
 
-    await waitFor(() => {
-      expect((screen.getByLabelText(/name/i) as HTMLInputElement).value).toBe("Test Pizza Place")
-    })
-
-    // Type again to re-trigger suggestions
+    // Trigger suggestions again and make a second selection while first fetch is still in-flight
     fireEvent.change(nameInput, { target: { value: "Pizza" } })
     const suggestion2 = await waitFor(() => {
       const btns = within(document.body).queryAllByRole('button', { name: /test pizza place/i })
@@ -1003,12 +996,37 @@ describe("AddRecommendationDialog", () => {
     }, { timeout: 2000 })
     fireEvent.click(suggestion2)
 
+    // Second detail fetch initiated — first signal should now be aborted
     await waitFor(() => expect(abortSignals.length).toBe(2))
     expect(abortSignals[0].aborted).toBe(true)
     expect(abortSignals[1].aborted).toBe(false)
 
-    // Clean up
-    restaurantDetailResolve?.(new Response(JSON.stringify(detailResponse)) as unknown as Response)
+    // Now resolve the first (aborted) fetch with stale data — it should NOT update the form
+    restaurantDetailResolvers[0]?.(new Response(JSON.stringify({
+      id: "ChIJ_stale", name: "Stale Pizza Place",
+      imageUrl: "https://maps.example.com/stale.jpg", rating: 1.0,
+      reviewCount: 5, cuisine: "Stale Cuisine",
+      location: "999 Stale St", priceRange: "$$$$$",
+      phone: "(000) 000-0000", url: "https://stale.com",
+      hours: "Closed",
+    })) as unknown as Response)
+
+    // Resolve the second fetch with the correct data
+    const correctResponse = {
+      id: "ChIJ_test_place_id", name: "Test Pizza Place",
+      imageUrl: "https://maps.example.com/photo-detail.jpg", rating: 4.5,
+      reviewCount: 200, cuisine: "Italian, Pizza, Pasta",
+      location: "123 Main St, New York, NY 10001", priceRange: "$$",
+      phone: "(212) 555-1234", url: "https://testpizzaplace.com",
+      hours: "Monday: 11:00 AM - 10:00 PM",
+    }
+    restaurantDetailResolvers[1]?.(new Response(JSON.stringify(correctResponse)) as unknown as Response)
+
+    // Wait for the second fetch to populate the form — stale data should not appear
+    await waitFor(() => {
+      const linkInput = screen.getByLabelText(/^link$/i) as HTMLInputElement
+      expect(linkInput.value).toBe("https://testpizzaplace.com")
+    })
   })
 
   it("should handle dialog footer buttons", async () => {
