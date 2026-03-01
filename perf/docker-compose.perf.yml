@@ -42,6 +42,8 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/clique_perf
       TMDB_BASE_URL: http://wiremock:8080/tmdb
       GOOGLE_PLACES_BASE_URL: http://wiremock:8080/google
+      TMDB_API_KEY: ${TMDB_API_KEY:-perf-test-key}
+      GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-perf-test-key}
     depends_on:
       db:
         condition: service_healthy
