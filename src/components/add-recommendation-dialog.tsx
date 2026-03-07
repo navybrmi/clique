@@ -696,7 +696,7 @@ export function AddRecommendationDialog({
               </Select>
             </div>
 
-            <div className={!isCategorySelected ? "opacity-60" : ""}>
+            <div className={`space-y-6 ${!isCategorySelected ? "opacity-60" : ""}`}>
             {/* Entity Name with Search */}
             <div className="space-y-2 relative">
               <Label htmlFor="entityName">
