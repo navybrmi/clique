@@ -18,6 +18,7 @@ export const options = {
   scenarios: {
     mixed: {
       executor: "constant-arrival-rate",
+      exec: "mixedWorkload",
       rate: 30,               // 30 requests per second
       timeUnit: "1s",
       duration: "2m",
@@ -40,7 +41,7 @@ function pickAction() {
   return "restaurant_detail";
 }
 
-export default function () {
+export function mixedWorkload() {
   const action = pickAction();
   const ts = Date.now();
 
