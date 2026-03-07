@@ -313,6 +313,36 @@ describe("GET /api/restaurants/[id]", () => {
     expect(data.cuisine).toBe("italian restaurant")
   })
 
+  it("should use custom GOOGLE_PLACES_BASE_URL when set", async () => {
+    // Arrange
+    process.env.GOOGLE_PLACES_BASE_URL = "http://wiremock:8080/google"
+
+    const mockPlaceData = {
+      status: "OK",
+      result: {
+        name: "Test Restaurant",
+        types: ["restaurant"],
+      },
+    }
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockPlaceData,
+    })
+
+    const request = new NextRequest("http://localhost/api/restaurants/place123")
+
+    // Act
+    await GET(request, { params: Promise.resolve({ id: "place123" }) })
+
+    // Assert
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining("http://wiremock:8080/google/maps/api/place/details/json")
+    )
+
+    delete process.env.GOOGLE_PLACES_BASE_URL
+  })
+
   it("should handle network errors", async () => {
     // Arrange
     mockFetch.mockRejectedValueOnce(new Error("Network error"))

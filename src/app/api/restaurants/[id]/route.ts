@@ -42,7 +42,8 @@ export async function GET(
       return NextResponse.json({ error: "Google Places API key not configured" }, { status: 500 })
     }
 
-    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(id)}&fields=name,rating,formatted_address,formatted_phone_number,website,photos,price_level,opening_hours,types,user_ratings_total,editorial_summary&key=${googleApiKey}`
+    const GOOGLE_PLACES_BASE_URL = process.env.GOOGLE_PLACES_BASE_URL || "https://maps.googleapis.com"
+    const url = `${GOOGLE_PLACES_BASE_URL}/maps/api/place/details/json?place_id=${encodeURIComponent(id)}&fields=name,rating,formatted_address,formatted_phone_number,website,photos,price_level,opening_hours,types,user_ratings_total,editorial_summary&key=${googleApiKey}`
 
     const response = await fetch(url)
 

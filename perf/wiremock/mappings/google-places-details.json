@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/google/maps/api/place/details/json.*"
+  },
+  "response": {
+    "status": 200,
+    "bodyFileName": "google-details-sample.json",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

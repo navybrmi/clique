@@ -170,6 +170,42 @@ describe("GET /api/movies/[id]", () => {
     expect(data.duration).toBe("1h 5min")
   })
 
+  it("should use custom TMDB_BASE_URL when set", async () => {
+    // Arrange
+    process.env.TMDB_BASE_URL = "http://wiremock:8080/tmdb"
+    jest.resetModules()
+    const { GET: GetWithCustomUrl } = await import("../route")
+
+    const mockMovieData = {
+      title: "Inception",
+      release_date: "2010-07-16",
+      runtime: 148,
+      poster_path: "/poster.jpg",
+      overview: "A thief...",
+      imdb_id: "tt1375666",
+      genres: [{ id: 28, name: "Action" }],
+      credits: { crew: [{ job: "Director", name: "Christopher Nolan" }] },
+    }
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockMovieData,
+    })
+
+    const request = new NextRequest("http://localhost/api/movies/27205")
+
+    // Act
+    await GetWithCustomUrl(request, { params: Promise.resolve({ id: "27205" }) })
+
+    // Assert
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining("http://wiremock:8080/tmdb/movie/27205"),
+      expect.any(Object)
+    )
+
+    delete process.env.TMDB_BASE_URL
+  })
+
   it("should handle fetch errors gracefully", async () => {
     // Arrange
     mockFetch.mockRejectedValueOnce(new Error("Network error"))

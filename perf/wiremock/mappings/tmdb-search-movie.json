@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/tmdb/search/movie.*"
+  },
+  "response": {
+    "status": 200,
+    "bodyFileName": "tmdb-search-inception.json",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

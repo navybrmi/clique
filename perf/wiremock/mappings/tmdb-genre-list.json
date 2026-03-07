@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/tmdb/genre/movie/list.*"
+  },
+  "response": {
+    "status": 200,
+    "bodyFileName": "tmdb-genres.json",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

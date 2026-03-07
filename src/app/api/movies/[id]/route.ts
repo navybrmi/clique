@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 
-const TMDB_BASE_URL = "https://api.themoviedb.org/3"
+const TMDB_BASE_URL = process.env.TMDB_BASE_URL || "https://api.themoviedb.org/3"
 
 /**
  * GET /api/movies/[id]
