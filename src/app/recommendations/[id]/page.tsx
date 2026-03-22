@@ -10,6 +10,7 @@ import Image from "next/image"
 import { Header } from "@/components/header"
 import { EditRecommendationButton } from "@/components/edit-recommendation-button"
 import { DeleteRecommendationButton } from "@/components/delete-recommendation-button"
+import { RefreshEntityButton } from "@/components/refresh-entity-button"
 import { CommentsSection } from "@/components/comments-section"
 import { ActionsSidebar } from "@/components/actions-sidebar"
 
@@ -347,6 +348,9 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
             <Card>
               <CardContent className="pt-6 space-y-3">
                 <EditRecommendationButton recommendation={recommendation} />
+                {(recommendation.entity.movie || recommendation.entity.restaurant) && (
+                  <RefreshEntityButton recommendation={recommendation} />
+                )}
                 <DeleteRecommendationButton recommendation={recommendation} />
               </CardContent>
             </Card>
