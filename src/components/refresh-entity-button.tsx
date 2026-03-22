@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { RefreshCw, Loader2 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { REFRESH_EVENT } from "@/components/refreshable-entity-details"
 
 export interface RefreshResult {
   updatedFields: string[]
@@ -17,13 +17,6 @@ export interface RefreshResult {
 interface RefreshEntityButtonProps {
   /** The recommendation object. Must include id and userId. */
   recommendation: { id: string; userId: string }
-  /**
-   * Optional callback invoked with the refreshed data after a successful API call.
-   * When provided, the component does NOT call router.refresh() — the parent is
-   * responsible for updating displayed data in-place (used in PR 3).
-   * When omitted, router.refresh() is called to re-fetch server component data.
-   */
-  onRefresh?: (result: RefreshResult) => void
 }
 
 /**
@@ -35,14 +28,14 @@ interface RefreshEntityButtonProps {
  * - Grayed out (disabled) for non-owners
  * - Shows a loading spinner while the refresh is in progress
  * - Disabled during loading to prevent double-clicks
- * - Calls onRefresh(result) if provided, otherwise triggers router.refresh()
+ * - Dispatches a custom `entity-data-refreshed` DOM event with the result so
+ *   RefreshableEntityDetails can update in-place without a page reload
  * - Shows an error alert on API failure
  */
-export function RefreshEntityButton({ recommendation, onRefresh }: RefreshEntityButtonProps) {
+export function RefreshEntityButton({ recommendation }: RefreshEntityButtonProps) {
   const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const router = useRouter()
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -65,11 +58,7 @@ export function RefreshEntityButton({ recommendation, onRefresh }: RefreshEntity
 
       if (response.ok) {
         const result: RefreshResult = await response.json()
-        if (onRefresh) {
-          onRefresh(result)
-        } else {
-          router.refresh()
-        }
+        document.dispatchEvent(new CustomEvent(REFRESH_EVENT, { detail: result }))
       } else {
         const error = await response.json()
         alert(error.error || "Failed to refresh recommendation")

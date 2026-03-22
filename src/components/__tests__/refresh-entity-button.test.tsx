@@ -2,6 +2,7 @@ import React from "react"
 import { render, screen, waitFor, act } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { RefreshEntityButton } from "../refresh-entity-button"
+import { REFRESH_EVENT } from "../refreshable-entity-details"
 
 const mockRecommendation = {
   id: "rec-123",
@@ -106,12 +107,14 @@ describe("RefreshEntityButton", () => {
 
   // --- Success ---
 
-  it("calls router.refresh() on success when no onRefresh prop is provided", async () => {
+  it("dispatches the entity-data-refreshed event with result data on success", async () => {
     const user = userEvent.setup()
+    const eventHandler = jest.fn()
+    document.addEventListener(REFRESH_EVENT, eventHandler)
 
     global.fetch = jest.fn()
       .mockResolvedValueOnce(sessionResponse("user-123"))
-      .mockResolvedValueOnce(refreshSuccessResponse()) as jest.Mock
+      .mockResolvedValueOnce(refreshSuccessResponse(["name", "genre"])) as jest.Mock
 
     render(<RefreshEntityButton recommendation={mockRecommendation} />)
 
@@ -122,40 +125,21 @@ describe("RefreshEntityButton", () => {
     await user.click(screen.getByRole("button", { name: /^refresh$/i }))
 
     await waitFor(() => {
-      expect(mockRouter.refresh).toHaveBeenCalledTimes(1)
-    })
-  })
-
-  it("calls onRefresh callback with result data on success", async () => {
-    const user = userEvent.setup()
-    const onRefresh = jest.fn()
-
-    global.fetch = jest.fn()
-      .mockResolvedValueOnce(sessionResponse("user-123"))
-      .mockResolvedValueOnce(refreshSuccessResponse(["name", "genre"])) as jest.Mock
-
-    render(<RefreshEntityButton recommendation={mockRecommendation} onRefresh={onRefresh} />)
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /refresh/i })).not.toBeDisabled()
+      expect(eventHandler).toHaveBeenCalledTimes(1)
+      const event = eventHandler.mock.calls[0][0] as CustomEvent
+      expect(event.detail).toMatchObject({
+        updatedFields: ["name", "genre"],
+        entity: expect.objectContaining({ name: "Inception" }),
+        imageUrl: "https://example.com/poster.jpg",
+      })
     })
 
-    await user.click(screen.getByRole("button", { name: /^refresh$/i }))
-
-    await waitFor(() => {
-      expect(onRefresh).toHaveBeenCalledWith(
-        expect.objectContaining({
-          updatedFields: ["name", "genre"],
-          entity: expect.objectContaining({ name: "Inception" }),
-          imageUrl: "https://example.com/poster.jpg",
-        })
-      )
-      expect(mockRouter.refresh).not.toHaveBeenCalled()
-    })
+    document.removeEventListener(REFRESH_EVENT, eventHandler)
   })
 
   it("re-enables the button after a successful refresh", async () => {
     const user = userEvent.setup()
+    document.addEventListener(REFRESH_EVENT, () => {})
 
     global.fetch = jest.fn()
       .mockResolvedValueOnce(sessionResponse("user-123"))
@@ -245,4 +229,3 @@ describe("RefreshEntityButton", () => {
     jest.restoreAllMocks()
   })
 })
-
