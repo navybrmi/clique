@@ -1,5 +1,5 @@
 import React from "react"
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitFor, act } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { RefreshEntityButton } from "../refresh-entity-button"
 
@@ -80,7 +80,7 @@ describe("RefreshEntityButton", () => {
 
   it("shows a loading spinner and disables button during refresh", async () => {
     const user = userEvent.setup()
-    let resolveRefresh: (value: Response) => void
+    let resolveRefresh!: (value: Response) => void
     const refreshPromise = new Promise<Response>((res) => { resolveRefresh = res })
 
     global.fetch = jest.fn()
@@ -101,7 +101,7 @@ describe("RefreshEntityButton", () => {
     })
 
     // Resolve the refresh so React doesn't warn about state updates after unmount
-    act(() => resolveRefresh(refreshSuccessResponse()))
+    await act(async () => { resolveRefresh(refreshSuccessResponse()) })
   })
 
   // --- Success ---
@@ -246,7 +246,3 @@ describe("RefreshEntityButton", () => {
   })
 })
 
-// Helper — imported to fix "act" warning in loading state test
-function act(fn: () => void) {
-  fn()
-}
