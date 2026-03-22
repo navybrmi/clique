@@ -164,7 +164,82 @@ describe("POST /api/recommendations/[id]/refresh", () => {
 
   // --- Movie refresh ---
 
-  it("returns 400 when movie has no tmdbId", async () => {
+  it("looks up tmdbId by name when missing and proceeds with refresh", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.recommendation.findUnique as jest.Mock)
+      .mockResolvedValueOnce({
+        ...mockMovieRecommendation,
+        entity: {
+          ...mockMovieRecommendation.entity,
+          movie: { ...mockMovieRecommendation.entity.movie, tmdbId: null },
+        },
+      })
+      .mockResolvedValueOnce({
+        imageUrl: "https://image.tmdb.org/t/p/w500/poster.jpg",
+        entity: { name: "Inception", movie: { year: 2010, genre: "Action", duration: "2h 28m", tmdbId: "27205", imdbId: null, director: null, attributes: [] } },
+      })
+    ;(global.fetch as jest.Mock)
+      // First call: TMDB search by name
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ results: [{ id: 27205, title: "Old Title", release_date: "2008-01-01" }] }),
+      })
+      // Second call: TMDB movie details
+      .mockResolvedValueOnce({ ok: true, json: async () => mockTmdbResponse })
+    ;(prisma.movie.update as jest.Mock).mockResolvedValue({})
+    ;(prisma.entity.update as jest.Mock).mockResolvedValue({})
+    ;(prisma.recommendation.update as jest.Mock).mockResolvedValue({})
+
+    const response = await POST(mockRequest("rec1"), { params: Promise.resolve({ id: "rec1" }) })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.updatedFields).toEqual(expect.arrayContaining(["name", "year", "genre", "duration"]))
+    // tmdbId should have been saved via movie.update before the transaction
+    expect(prisma.movie.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ tmdbId: "27205" }) })
+    )
+  })
+
+  it("prefers year-and-title matched result when looking up tmdbId by name", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.recommendation.findUnique as jest.Mock)
+      .mockResolvedValueOnce({
+        ...mockMovieRecommendation,
+        entity: {
+          ...mockMovieRecommendation.entity,
+          name: "Inception",
+          movie: { ...mockMovieRecommendation.entity.movie, tmdbId: null, year: 2010 },
+        },
+      })
+      .mockResolvedValueOnce({
+        imageUrl: null,
+        entity: { name: "Inception", movie: { year: 2010, genre: "Sci-Fi", duration: null, tmdbId: "27205", imdbId: null, director: null, attributes: [] } },
+      })
+    ;(global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          results: [
+            { id: 99999, title: "Inception", release_date: "2000-01-01" }, // year mismatch
+            { id: 27205, title: "Inception", release_date: "2010-07-16" }, // exact match
+          ],
+        }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => mockTmdbResponse })
+    ;(prisma.movie.update as jest.Mock).mockResolvedValue({})
+    ;(prisma.entity.update as jest.Mock).mockResolvedValue({})
+    ;(prisma.recommendation.update as jest.Mock).mockResolvedValue({})
+
+    await POST(mockRequest("rec1"), { params: Promise.resolve({ id: "rec1" }) })
+
+    // Should have used the year+title matched id (27205), not the top result (99999)
+    expect(prisma.movie.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ tmdbId: "27205" }) })
+    )
+  })
+
+  it("returns 400 when tmdbId is missing and TMDB search finds no results", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
     ;(prisma.recommendation.findUnique as jest.Mock).mockResolvedValue({
       ...mockMovieRecommendation,
@@ -173,12 +248,16 @@ describe("POST /api/recommendations/[id]/refresh", () => {
         movie: { ...mockMovieRecommendation.entity.movie, tmdbId: null },
       },
     })
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ results: [] }),
+    })
 
     const response = await POST(mockRequest("rec1"), { params: Promise.resolve({ id: "rec1" }) })
     const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toMatch(/no TMDB ID/i)
+    expect(data.error).toMatch(/could not find this movie on TMDB/i)
   })
 
   it("returns 502 when TMDB API call fails", async () => {
