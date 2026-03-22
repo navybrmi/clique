@@ -137,9 +137,9 @@ describe("RefreshEntityButton", () => {
     document.removeEventListener(REFRESH_EVENT, eventHandler)
   })
 
-  it("re-enables the button after a successful refresh", async () => {
-    const user = userEvent.setup()
-    document.addEventListener(REFRESH_EVENT, () => {})
+  it("shows a Refreshed! success state after a successful refresh", async () => {
+    jest.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime })
 
     global.fetch = jest.fn()
       .mockResolvedValueOnce(sessionResponse("user-123"))
@@ -154,8 +154,42 @@ describe("RefreshEntityButton", () => {
     await user.click(screen.getByRole("button", { name: /^refresh$/i }))
 
     await waitFor(() => {
+      expect(screen.getByRole("button", { name: /refreshed!/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /refreshed!/i })).toBeDisabled()
+    })
+
+    jest.useRealTimers()
+  })
+
+  it("reverts from Refreshed! back to Refresh after 2 seconds", async () => {
+    jest.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime })
+
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce(sessionResponse("user-123"))
+      .mockResolvedValueOnce(refreshSuccessResponse()) as jest.Mock
+
+    render(<RefreshEntityButton recommendation={mockRecommendation} />)
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /refresh/i })).not.toBeDisabled()
+    })
+
+    await user.click(screen.getByRole("button", { name: /^refresh$/i }))
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /refreshed!/i })).toBeInTheDocument()
+    })
+
+    act(() => {
+      jest.advanceTimersByTime(2000)
+    })
+
+    await waitFor(() => {
       expect(screen.getByRole("button", { name: /^refresh$/i })).not.toBeDisabled()
     })
+
+    jest.useRealTimers()
   })
 
   // --- Error handling ---

@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { RefreshCw, Loader2 } from "lucide-react"
+import { RefreshCw, Loader2, CheckCircle2 } from "lucide-react"
 import { REFRESH_EVENT } from "@/components/refreshable-entity-details"
 
 export interface RefreshResult {
@@ -10,6 +10,9 @@ export interface RefreshResult {
   entity: any
   imageUrl: string | null
 }
+
+/** How long the "Refreshed!" success state stays visible before reverting (ms) */
+const SUCCESS_DISPLAY_DURATION = 2000
 
 /**
  * Props for the RefreshEntityButton component
@@ -30,12 +33,15 @@ interface RefreshEntityButtonProps {
  * - Disabled during loading to prevent double-clicks
  * - Dispatches a custom `entity-data-refreshed` DOM event with the result so
  *   RefreshableEntityDetails can update in-place without a page reload
+ * - Shows a green "Refreshed!" success state for 2 seconds after success
  * - Shows an error alert on API failure
  */
 export function RefreshEntityButton({ recommendation }: RefreshEntityButtonProps) {
   const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [succeeded, setSucceeded] = useState(false)
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -45,6 +51,10 @@ export function RefreshEntityButton({ recommendation }: RefreshEntityButtonProps
         setLoading(false)
       })
       .catch(() => setLoading(false))
+
+    return () => {
+      if (successTimerRef.current !== null) clearTimeout(successTimerRef.current)
+    }
   }, [])
 
   const isOwner = !loading && session?.user?.id === recommendation.userId
@@ -59,6 +69,12 @@ export function RefreshEntityButton({ recommendation }: RefreshEntityButtonProps
       if (response.ok) {
         const result: RefreshResult = await response.json()
         document.dispatchEvent(new CustomEvent(REFRESH_EVENT, { detail: result }))
+        setSucceeded(true)
+        if (successTimerRef.current !== null) clearTimeout(successTimerRef.current)
+        successTimerRef.current = setTimeout(() => {
+          setSucceeded(false)
+          successTimerRef.current = null
+        }, SUCCESS_DISPLAY_DURATION)
       } else {
         const error = await response.json()
         alert(error.error || "Failed to refresh recommendation")
@@ -82,15 +98,24 @@ export function RefreshEntityButton({ recommendation }: RefreshEntityButtonProps
   return (
     <Button
       variant="outline"
-      className="w-full gap-2"
+      className={`w-full gap-2 transition-colors duration-300 ${
+        succeeded
+          ? "border-green-500 text-green-600 hover:text-green-600 hover:bg-green-50 dark:border-green-500 dark:text-green-400"
+          : ""
+      }`}
       size="lg"
       onClick={handleRefresh}
-      disabled={refreshing}
+      disabled={refreshing || succeeded}
     >
       {refreshing ? (
         <>
           <Loader2 className="h-5 w-5 animate-spin" />
           Refreshing...
+        </>
+      ) : succeeded ? (
+        <>
+          <CheckCircle2 className="h-5 w-5" />
+          Refreshed!
         </>
       ) : (
         <>
