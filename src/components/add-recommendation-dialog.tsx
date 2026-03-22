@@ -162,7 +162,7 @@ export function AddRecommendationDialog({
       setLink("")
       setImageUrl("")
       setRating("")
-      setMovieData({ director: "", year: "", genre: "", duration: "" })
+      setMovieData({ director: "", year: "", genre: "", duration: "", tmdbId: "" })
       setRestaurantData({ cuisine: "", location: "", priceRange: "", hours: "", phoneNumber: "", placeId: "" })
       setFashionData({ brand: "", price: "", size: "", color: "" })
       setHouseholdData({ productType: "", model: "", purchaseLink: "" })
@@ -202,6 +202,7 @@ export function AddRecommendationDialog({
     year: "",
     genre: "",
     duration: "",
+    tmdbId: "",
   })
   const [fashionData, setFashionData] = useState({
     brand: "",
@@ -416,6 +417,7 @@ export function AddRecommendationDialog({
       genre: movie.genre || "",
       director: "",
       duration: "",
+      tmdbId: String(movie.id),
     })
     setLink("")
     // Fetch full movie details to populate all fields
@@ -428,6 +430,7 @@ export function AddRecommendationDialog({
           genre: details.genre || "",
           director: details.director || "",
           duration: details.duration || "",
+          tmdbId: String(movie.id),
         })
         setImageUrl(details.posterPath || movie.posterPath || "")
         setLink(details.imdbLink || "")
@@ -440,6 +443,7 @@ export function AddRecommendationDialog({
           genre: movie.genre || "",
           director: "",
           duration: "",
+          tmdbId: String(movie.id),
         })
         setLink("")
       })
@@ -600,7 +604,7 @@ export function AddRecommendationDialog({
         setImageUrl("")
         setRating("")
         setRestaurantData({ cuisine: "", location: "", priceRange: "", hours: "", phoneNumber: "", placeId: "" })
-        setMovieData({ director: "", year: "", genre: "", duration: "" })
+        setMovieData({ director: "", year: "", genre: "", duration: "", tmdbId: "" })
         setFashionData({ brand: "", price: "", size: "", color: "" })
         setHouseholdData({ productType: "", model: "", purchaseLink: "" })
         setMovieSuggestions([])
