@@ -7,6 +7,10 @@ import { prisma } from "@/lib/prisma";
 import { isHardcodedMovieTag } from "@/lib/movie-tags";
 import { isHardcodedRestaurantTag } from "@/lib/restaurant-tags";
 
+/**
+ * Minimum number of times a community tag must be used before it is promoted
+ * to a curated suggestion visible to all users of that category.
+ */
 const TAG_PROMOTION_THRESHOLD = 20;
 
 /**

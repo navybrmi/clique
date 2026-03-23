@@ -5,11 +5,21 @@ import { auth } from "@/lib/auth"
 const TMDB_BASE_URL = process.env.TMDB_BASE_URL || "https://api.themoviedb.org/3"
 const GOOGLE_PLACES_BASE_URL = process.env.GOOGLE_PLACES_BASE_URL || "https://maps.googleapis.com"
 
+/**
+ * Google Places type values that are too generic to be useful as cuisine descriptors.
+ * Filtered out when building the `cuisine` field from a place's `types` array.
+ */
 const GENERIC_PLACE_TYPES = [
   "restaurant", "food", "point_of_interest", "establishment",
   "meal_delivery", "meal_takeaway", "store", "health",
 ]
 
+/**
+ * Converts a runtime in minutes to a human-readable string such as `"2h 28m"`.
+ *
+ * @param minutes - Runtime in minutes, or null/undefined when unknown
+ * @returns Formatted duration string, or `null` if `minutes` is falsy
+ */
 function formatRuntime(minutes: number | null | undefined): string | null {
   if (!minutes) return null
   const h = Math.floor(minutes / 60)
@@ -99,6 +109,15 @@ export async function POST(
   }
 }
 
+/**
+ * Searches TMDB for a movie by name (and optionally year) and returns its TMDB ID.
+ * Prefers an exact title + year match; falls back to the top result.
+ *
+ * @param name - Movie title to search for
+ * @param year - Release year used to disambiguate results, or null to skip
+ * @param apiKey - TMDB API key
+ * @returns TMDB movie ID string, or null when no results are found or the request fails
+ */
 async function lookupTmdbId(name: string, year: number | null, apiKey: string): Promise<string | null> {
   const searchUrl = `${TMDB_BASE_URL}/search/movie?api_key=${apiKey}&query=${encodeURIComponent(name)}&language=en-US&page=1&include_adult=false`
   const searchResponse = await fetch(searchUrl)
@@ -120,6 +139,16 @@ async function lookupTmdbId(name: string, year: number | null, apiKey: string): 
   return String(results[0].id)
 }
 
+/**
+ * Refreshes movie data for a recommendation by fetching the latest information
+ * from TMDB and persisting changed fields in a database transaction.
+ * If the movie's `tmdbId` is missing, it is looked up by name and backfilled.
+ *
+ * @param recommendationId - ID of the recommendation record to update
+ * @param recommendation - Current recommendation data including entity and movie sub-object
+ * @returns NextResponse with `{ updatedFields, entity, imageUrl }` on success,
+ *          or an error response if the TMDB lookup or DB update fails
+ */
 async function refreshMovie(
   recommendationId: string,
   recommendation: {
@@ -286,6 +315,16 @@ async function refreshMovie(
   })
 }
 
+/**
+ * Refreshes restaurant data for a recommendation by fetching the latest Place Details
+ * from the Google Places API and persisting changed fields in a database transaction.
+ * Requires the restaurant to have a stored `placeId`.
+ *
+ * @param recommendationId - ID of the recommendation record to update
+ * @param recommendation - Current recommendation data including entity and restaurant sub-object
+ * @returns NextResponse with `{ updatedFields, entity, imageUrl }` on success,
+ *          or an error response if the Places API call or DB update fails
+ */
 async function refreshRestaurant(
   recommendationId: string,
   recommendation: {

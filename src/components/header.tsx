@@ -39,6 +39,9 @@ export function Header({ showBack }: HeaderProps) {
       .catch(() => setLoading(false))
   }, [])
 
+  /**
+   * Signs the user out via NextAuth and redirects to the home page.
+   */
   const handleSignOut = async () => {
     await signOut({ callbackUrl: '/' })
   }

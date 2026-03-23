@@ -98,6 +98,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   callbacks: {
+    /**
+     * Augments the session object with the database user ID so that
+     * `session.user.id` is always available in server and client components.
+     *
+     * @param session - The current session object
+     * @param user - The database user record returned by the Prisma adapter
+     * @returns The session with `user.id` populated
+     */
     session({ session, user }) {
       session.user.id = user.id
       return session
