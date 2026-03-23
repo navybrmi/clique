@@ -1,12 +1,8 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ArrowUp, MessageCircle, Share2, ArrowLeft, ExternalLink, MapPin, Clock, Star, Calendar, Film, ShoppingBag, Package } from "lucide-react"
-import Link from "next/link"
+import { Star, ShoppingBag, Package } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
-import Image from "next/image"
 import { Header } from "@/components/header"
 import { EditRecommendationButton } from "@/components/edit-recommendation-button"
 import { DeleteRecommendationButton } from "@/components/delete-recommendation-button"
@@ -82,7 +78,7 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
                 name: recommendation.entity.name,
                 movie: recommendation.entity.movie
                   ? {
-                      year: recommendation.entity.movie.releaseYear ?? null,
+                      year: recommendation.entity.movie.year ?? null,
                       genre: recommendation.entity.movie.genre ?? null,
                       duration: recommendation.entity.movie.duration
                         ? String(recommendation.entity.movie.duration)

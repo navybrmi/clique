@@ -30,6 +30,17 @@ function dispatchRefreshEvent(result: RefreshResult) {
 }
 
 describe("RefreshableEntityDetails", () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+
+  afterEach(() => {
+    act(() => {
+      jest.runOnlyPendingTimers()
+    })
+    jest.useRealTimers()
+  })
+
   // --- Initial rendering ---
 
   it("renders the entity name", () => {
@@ -176,7 +187,6 @@ describe("RefreshableEntityDetails", () => {
   // --- Highlight animation ---
 
   it("applies highlight class to updated fields immediately after refresh", () => {
-    jest.useFakeTimers()
     render(<RefreshableEntityDetails initialEntity={movieEntity} />)
 
     act(() => {
@@ -191,12 +201,9 @@ describe("RefreshableEntityDetails", () => {
     const genreValue = screen.getByText("Action")
     const highlightedContainer = genreValue.parentElement?.parentElement
     expect(highlightedContainer).toHaveClass("bg-green-50")
-
-    jest.useRealTimers()
   })
 
   it("removes highlight class after 1200ms", () => {
-    jest.useFakeTimers()
     render(<RefreshableEntityDetails initialEntity={movieEntity} />)
 
     act(() => {
@@ -214,8 +221,6 @@ describe("RefreshableEntityDetails", () => {
     const genreValue = screen.getByText("Action")
     const highlightedContainer = genreValue.parentElement?.parentElement
     expect(highlightedContainer).not.toHaveClass("bg-green-50")
-
-    jest.useRealTimers()
   })
 
   // --- Event listener cleanup ---

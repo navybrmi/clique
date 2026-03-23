@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MapPin, Clock, Package, Film, Calendar, ExternalLink } from "lucide-react"
 import Image from "next/image"
@@ -57,6 +57,13 @@ export function RefreshableEntityDetails({
   const [entity, setEntity] = useState<EntityData>(initialEntity)
   const [imageUrl, setImageUrl] = useState<string | null | undefined>(initialImageUrl)
   const [highlightedFields, setHighlightedFields] = useState<Set<string>>(new Set())
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current !== null) clearTimeout(highlightTimerRef.current)
+    }
+  }, [])
 
   const handleRefreshResult = useCallback((result: RefreshResult) => {
     // Merge updated entity data, preserving existing values for null API returns
@@ -82,9 +89,13 @@ export function RefreshableEntityDetails({
       setImageUrl(result.imageUrl)
     }
 
-    // Trigger highlights on updated fields, then clear after animation
+    // Trigger highlights on updated fields, cancelling any previous timer
+    if (highlightTimerRef.current !== null) clearTimeout(highlightTimerRef.current)
     setHighlightedFields(new Set(result.updatedFields))
-    setTimeout(() => setHighlightedFields(new Set()), 1200)
+    highlightTimerRef.current = setTimeout(() => {
+      setHighlightedFields(new Set())
+      highlightTimerRef.current = null
+    }, 1200)
   }, [])
 
   useEffect(() => {
@@ -97,9 +108,11 @@ export function RefreshableEntityDetails({
   }, [handleRefreshResult])
 
   const hl = (field: string) =>
-    highlightedFields.has(field)
-      ? "bg-green-50 dark:bg-green-950/30 transition-colors duration-1000 rounded px-1 -mx-1"
-      : "transition-colors duration-1000"
+    `px-1 -mx-1 rounded transition-colors duration-1000 ${
+      highlightedFields.has(field)
+        ? "bg-green-50 dark:bg-green-950/30"
+        : ""
+    }`
 
   return (
     <>
@@ -110,6 +123,7 @@ export function RefreshableEntityDetails({
             src={imageUrl}
             alt=""
             fill
+            sizes="(max-width: 1024px) 100vw, 66vw"
             className="object-cover blur-2xl scale-110 opacity-60"
             aria-hidden="true"
           />
@@ -117,6 +131,7 @@ export function RefreshableEntityDetails({
             src={imageUrl}
             alt={entity.name}
             fill
+            sizes="(max-width: 1024px) 100vw, 66vw"
             className="object-contain z-10"
             priority
           />
