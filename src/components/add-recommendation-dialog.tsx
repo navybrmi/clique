@@ -75,11 +75,10 @@ interface AddRecommendationDialogProps {
 }
 
 /**
- * Dialog component for creating and editing recommendations.
- * 
-  )
- * (Movies, Restaurants, Fashion, Household, Other). Features:
- * 
+ * Dialog component for creating and editing recommendations across all categories
+ * (Movies, Restaurants, Fashion, Household, Other).
+ *
+ * Features:
  * - Category-specific form fields
  * - Real-time search for movies (TMDB) and restaurants (Google Places)
  * - Auto-population from search results
@@ -87,12 +86,12 @@ interface AddRecommendationDialogProps {
  * - Image URL and rating support
  * - Edit mode with pre-populated data
  * - Loading states and error handling
- * 
- * The component dynamically shows/hides fields based on selected category
- * and provides suggestions as user types for movies and restaurants.
- * 
+ *
+ * The component dynamically shows/hides fields based on the selected category
+ * and provides live suggestions as the user types for movies and restaurants.
+ *
  * @param props - Component props
- * @returns A modal dialog with dynamic recommendation form
+ * @returns A modal dialog with a dynamic recommendation form
  */
 export function AddRecommendationDialog({
   onSuccess,

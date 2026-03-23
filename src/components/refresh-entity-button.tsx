@@ -5,9 +5,17 @@ import { Button } from "@/components/ui/button"
 import { RefreshCw, Loader2, CheckCircle2 } from "lucide-react"
 import { REFRESH_EVENT } from "@/components/refreshable-entity-details"
 
+/**
+ * Payload returned by `POST /api/recommendations/[id]/refresh` and carried in
+ * the `entity-data-refreshed` custom DOM event so that RefreshableEntityDetails
+ * can apply targeted in-place updates without a full page reload.
+ */
 export interface RefreshResult {
+  /** Names of the fields that were updated, e.g. `["name", "genre", "imageUrl"]` */
   updatedFields: string[]
+  /** Updated entity sub-object containing movie or restaurant data */
   entity: any
+  /** New hero image URL, or null when the external API returned no photo */
   imageUrl: string | null
 }
 
@@ -59,6 +67,10 @@ export function RefreshEntityButton({ recommendation }: RefreshEntityButtonProps
 
   const isOwner = !loading && session?.user?.id === recommendation.userId
 
+  /**
+   * Calls the refresh API endpoint, dispatches the `entity-data-refreshed` DOM
+   * event with the result, and shows a brief success state on the button.
+   */
   const handleRefresh = async () => {
     setRefreshing(true)
     try {

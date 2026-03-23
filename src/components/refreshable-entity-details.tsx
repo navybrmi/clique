@@ -6,37 +6,74 @@ import { MapPin, Clock, Package, Film, Calendar, ExternalLink } from "lucide-rea
 import Image from "next/image"
 import type { RefreshResult } from "@/components/refresh-entity-button"
 
-// Custom DOM event name used to broadcast refresh results across the component tree
+/**
+ * Custom DOM event name dispatched by RefreshEntityButton after a successful
+ * refresh API call. RefreshableEntityDetails listens for this event and applies
+ * targeted in-place updates without a full page reload.
+ *
+ * @example
+ * ```typescript
+ * document.dispatchEvent(new CustomEvent(REFRESH_EVENT, { detail: result }))
+ * ```
+ */
 export const REFRESH_EVENT = "entity-data-refreshed"
 
+/**
+ * Movie-specific fields displayed and updated by the entity detail card.
+ * All fields are optional because TMDB may not return every value on refresh.
+ */
 interface MovieData {
+  /** Release year */
   year?: number | null
+  /** Comma-separated genre names */
   genre?: string | null
+  /** Formatted runtime, e.g. "2h 28m" */
   duration?: string | null
+  /** Director's name */
   director?: string | null
   [key: string]: unknown
 }
 
+/**
+ * Restaurant-specific fields displayed and updated by the entity detail card.
+ * All fields are optional because the Places API may not return every value on refresh.
+ */
 interface RestaurantData {
+  /** Cuisine type(s) derived from Google Places `types` */
   cuisine?: string | null
+  /** Formatted street address */
   location?: string | null
+  /** Price range expressed as dollar signs, e.g. "$$" */
   priceRange?: string | null
+  /** Newline-separated weekly opening hours */
   hours?: string | null
+  /** Formatted phone number */
   phoneNumber?: string | null
   [key: string]: unknown
 }
 
+/**
+ * Unified entity data shape consumed by this component, covering both movie
+ * and restaurant variants via their respective optional sub-objects.
+ */
 interface EntityData {
+  /** Display name of the entity (film title or restaurant name) */
   name: string
+  /** Present when the entity belongs to the MOVIE category */
   movie?: MovieData | null
+  /** Present when the entity belongs to the RESTAURANT category */
   restaurant?: RestaurantData | null
 }
 
+/**
+ * Props for the RefreshableEntityDetails component.
+ */
 interface RefreshableEntityDetailsProps {
-  /** Initial recommendation data from the server */
+  /** Initial entity data rendered on first load (from server-side fetch) */
   initialEntity: EntityData
+  /** Initial hero image URL rendered on first load */
   initialImageUrl?: string | null
-  /** Optional link shown in the restaurant card */
+  /** Optional external link shown in the restaurant detail card */
   link?: string | null
 }
 
@@ -65,6 +102,13 @@ export function RefreshableEntityDetails({
     }
   }, [])
 
+  /**
+   * Merges the refresh result into local state and triggers field highlight animations.
+   * Only fields returned by the API are updated; existing values are preserved for
+   * fields where the external API returned null.
+   *
+   * @param result - Payload from the `entity-data-refreshed` custom event
+   */
   const handleRefreshResult = useCallback((result: RefreshResult) => {
     // Merge updated entity data, preserving existing values for null API returns
     setEntity((prev) => {
@@ -107,6 +151,13 @@ export function RefreshableEntityDetails({
     return () => document.removeEventListener(REFRESH_EVENT, handler)
   }, [handleRefreshResult])
 
+  /**
+   * Returns Tailwind class names that apply a temporary green highlight when the
+   * given field name is present in the current `highlightedFields` set.
+   *
+   * @param field - Field name matching a key in `RefreshResult.updatedFields`
+   * @returns Space-separated Tailwind class string
+   */
   const hl = (field: string) =>
     `px-1 -mx-1 rounded transition-colors duration-1000 ${
       highlightedFields.has(field)

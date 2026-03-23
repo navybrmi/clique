@@ -55,6 +55,10 @@ export function DeleteRecommendationButton({ recommendation }: DeleteRecommendat
       .catch(() => setLoading(false))
   }, [])
 
+  /**
+   * Sends a DELETE request to the recommendations API and redirects to the
+   * home page on success. Displays an alert if the deletion fails.
+   */
   const handleDelete = async () => {
     setDeleting(true)
     try {
