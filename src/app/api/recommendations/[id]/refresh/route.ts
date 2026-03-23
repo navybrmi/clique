@@ -99,6 +99,27 @@ export async function POST(
   }
 }
 
+async function lookupTmdbId(name: string, year: number | null, apiKey: string): Promise<string | null> {
+  const searchUrl = `${TMDB_BASE_URL}/search/movie?api_key=${apiKey}&query=${encodeURIComponent(name)}&language=en-US&page=1&include_adult=false`
+  const searchResponse = await fetch(searchUrl)
+  if (!searchResponse.ok) return null
+
+  const searchData = await searchResponse.json()
+  const results: Array<{ id: number; title: string; release_date?: string }> = searchData.results ?? []
+  if (results.length === 0) return null
+
+  // Prefer a result whose title and year both match; fall back to top result
+  if (year) {
+    const yearMatch = results.find((r) => {
+      const releaseYear = r.release_date ? new Date(r.release_date).getFullYear() : null
+      return releaseYear === year && r.title.toLowerCase() === name.toLowerCase()
+    })
+    if (yearMatch) return String(yearMatch.id)
+  }
+
+  return String(results[0].id)
+}
+
 async function refreshMovie(
   recommendationId: string,
   recommendation: {
@@ -118,17 +139,33 @@ async function refreshMovie(
     }
   }
 ) {
-  const tmdbId = recommendation.entity.movie?.tmdbId
-  if (!tmdbId) {
-    return NextResponse.json(
-      { error: "No TMDB ID found for this movie — cannot refresh" },
-      { status: 400 }
-    )
-  }
-
   const apiKey = process.env.TMDB_API_KEY
   if (!apiKey) {
     return NextResponse.json({ error: "TMDB API key not configured" }, { status: 500 })
+  }
+
+  let tmdbId = recommendation.entity.movie?.tmdbId ?? null
+
+  // If tmdbId is missing, look it up by movie name and backfill it
+  if (!tmdbId) {
+    tmdbId = await lookupTmdbId(
+      recommendation.entity.name,
+      recommendation.entity.movie?.year ?? null,
+      apiKey
+    )
+
+    if (!tmdbId) {
+      return NextResponse.json(
+        { error: "Could not find this movie on TMDB — try editing the recommendation to re-select the movie from search" },
+        { status: 400 }
+      )
+    }
+
+    // Persist the discovered tmdbId immediately so future refreshes are instant
+    await prisma.movie.update({
+      where: { entityId: recommendation.entityId },
+      data: { tmdbId },
+    })
   }
 
   const tmdbUrl = `${TMDB_BASE_URL}/movie/${tmdbId}?api_key=${apiKey}&language=en-US`
