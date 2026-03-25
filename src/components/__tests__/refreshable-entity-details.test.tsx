@@ -223,6 +223,52 @@ describe("RefreshableEntityDetails", () => {
     expect(highlightedContainer).not.toHaveClass("bg-green-50")
   })
 
+  // --- children slot ---
+
+  it("renders children when provided", () => {
+    render(
+      <RefreshableEntityDetails initialEntity={movieEntity}>
+        <span data-testid="slot">metadata slot</span>
+      </RefreshableEntityDetails>
+    )
+    expect(screen.getByTestId("slot")).toBeInTheDocument()
+    expect(screen.getByTestId("slot")).toHaveTextContent("metadata slot")
+  })
+
+  it("renders children after the entity name", () => {
+    render(
+      <RefreshableEntityDetails initialEntity={movieEntity}>
+        <span data-testid="slot">metadata slot</span>
+      </RefreshableEntityDetails>
+    )
+    const heading = screen.getByRole("heading", { level: 1 })
+    const slot = screen.getByTestId("slot")
+    // heading should appear before slot in DOM order
+    expect(
+      heading.compareDocumentPosition(slot) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
+  it("renders children before the detail card content", () => {
+    render(
+      <RefreshableEntityDetails initialEntity={movieEntity}>
+        <span data-testid="slot">metadata slot</span>
+      </RefreshableEntityDetails>
+    )
+    const slot = screen.getByTestId("slot")
+    const genreLabel = screen.getByText("Genre")
+    // slot should appear before the detail card content in DOM order
+    expect(
+      slot.compareDocumentPosition(genreLabel) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
+  it("renders correctly with no children provided", () => {
+    render(<RefreshableEntityDetails initialEntity={movieEntity} />)
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Inception")
+    expect(screen.getByText("Sci-Fi")).toBeInTheDocument()
+  })
+
   // --- Event listener cleanup ---
 
   it("removes the event listener on unmount", () => {
