@@ -24,6 +24,7 @@ const customJestConfig = {
     '<rootDir>/src/components/__tests__/', // Exclude component tests
     '<rootDir>/src/app/__tests__/', // Exclude page component tests
     '<rootDir>/src/hooks/__tests__/', // Exclude hook tests (jsdom only)
+    '<rootDir>/src/app/recommendations/', // Exclude page-level unit tests (jsdom only)
   ],
   collectCoverageFrom: [
     'src/app/api/**/*.{js,jsx,ts,tsx}',
