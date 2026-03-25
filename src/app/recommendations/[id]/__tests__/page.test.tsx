@@ -136,6 +136,11 @@ describe("RecommendationDetailPage — layout order", () => {
     expect(screen.getByText("No tags added")).toBeInTheDocument()
   })
 
+  it('renders "No tags added" placeholder when tags is undefined', async () => {
+    await renderPage({ ...baseRecommendation, tags: undefined } as any)
+    expect(screen.getByText("No tags added")).toBeInTheDocument()
+  })
+
   it("still renders restaurant detail fields", async () => {
     await renderPage(baseRecommendation)
     expect(screen.getByText("19672 Stevens Creek Blvd, Cupertino, CA 95014, USA")).toBeInTheDocument()
