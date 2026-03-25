@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MapPin, Clock, Package, Film, Calendar, ExternalLink } from "lucide-react"
 import Image from "next/image"
@@ -75,6 +75,12 @@ interface RefreshableEntityDetailsProps {
   initialImageUrl?: string | null
   /** Optional external link shown in the restaurant detail card */
   link?: string | null
+  /**
+   * Optional content rendered between the entity name and the detail card.
+   * Use this slot for recommendation metadata (category badge, rating, tags)
+   * that should appear immediately below the title.
+   */
+  children?: React.ReactNode
 }
 
 /**
@@ -90,6 +96,7 @@ export function RefreshableEntityDetails({
   initialEntity,
   initialImageUrl,
   link,
+  children,
 }: RefreshableEntityDetailsProps) {
   const [entity, setEntity] = useState<EntityData>(initialEntity)
   const [imageUrl, setImageUrl] = useState<string | null | undefined>(initialImageUrl)
@@ -195,6 +202,9 @@ export function RefreshableEntityDetails({
           {entity.name}
         </h1>
       </div>
+
+      {/* Slot for recommendation metadata (category, rating, tags) */}
+      {children}
 
       {/* Restaurant detail card */}
       {entity.restaurant && (

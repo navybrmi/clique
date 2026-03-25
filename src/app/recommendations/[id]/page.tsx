@@ -98,10 +98,8 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
               }}
               initialImageUrl={recommendation.imageUrl ?? null}
               link={recommendation.link ?? null}
-            />
-
-            {/* Title and Category */}
-            <div>
+            >
+              {/* Category badge + rating — shown directly below the entity name */}
               <div className="mb-4 flex items-center gap-3">
                 <Badge className="text-sm">{recommendation.entity.category.displayName}</Badge>
                 <div className="flex items-center gap-1">
@@ -120,21 +118,23 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
                   <span className="text-sm font-semibold ml-1">{recommendation.rating || 0}/10</span>
                 </div>
               </div>
-            </div>
 
-            {/* Tags / Why This Recommendation */}
-            {recommendation.tags && recommendation.tags.length > 0 && (
+              {/* Tags / Why This Recommendation — always visible */}
               <div>
                 <h3 className="font-semibold mb-2">Why This Recommendation?</h3>
                 <div className="flex flex-wrap gap-2">
-                  {recommendation.tags.map((tag: string, idx: number) => (
-                    <Badge key={idx} variant="secondary">
-                      {tag}
-                    </Badge>
-                  ))}
+                  {recommendation.tags && recommendation.tags.length > 0 ? (
+                    recommendation.tags.map((tag: string, idx: number) => (
+                      <Badge key={idx} variant="secondary">
+                        {tag}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-sm text-zinc-400 italic">No tags added</span>
+                  )}
                 </div>
               </div>
-            )}
+            </RefreshableEntityDetails>
 
             {recommendation.entity.fashion && (
               <Card>
