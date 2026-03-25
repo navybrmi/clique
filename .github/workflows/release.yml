@@ -1,21 +1,22 @@
-name: Generate Changelog
+name: Create Release
 
 on:
   push:
     branches: [main]
 
 jobs:
-  changelog:
+  release:
     runs-on: ubuntu-latest
-    # Skip commits made by this workflow itself to prevent infinite loops
+    # Skip the bot commit that updates CHANGELOG.md to prevent infinite loops
     if: "!contains(github.event.head_commit.message, 'chore: update CHANGELOG')"
     permissions:
-      contents: write
+      contents: write  # Required to create releases, tags, and push CHANGELOG.md
 
     steps:
       - uses: actions/checkout@v4
         with:
-          # Use a token with write access to push back to main
+          # Fetch full history so we can read all existing tags
+          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
@@ -23,19 +24,18 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Generate changelog entry
+      - name: Create release and update changelog
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REPO: ${{ github.repository }}
-        run: node scripts/generate-changelog.mjs
+        run: node scripts/generate-release.mjs
 
       - name: Commit and push changelog
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add CHANGELOG.md
-          # Only commit if CHANGELOG.md actually changed
           git diff --staged --quiet || git commit -m "chore: update CHANGELOG"
           git push
