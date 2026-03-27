@@ -1,0 +1,88 @@
+name: Create Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # Skip runs triggered by the bot's own CHANGELOG commit to prevent infinite loops
+    if: github.actor != 'github-actions[bot]'
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history needed so the tag action can find the previous tag
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Reads conventional commit prefixes (feat: → minor, fix:/chore:/docs: → patch)
+      # and pushes the new semver tag to the repo.
+      - name: Bump version and push tag
+        uses: mathieudutour/github-tag-action@v6.2
+        id: tag_version
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+          release_branches: main
+
+      # Creates the GitHub Release and uses GitHub's native release note generator,
+      # which groups PRs into sections based on labels (configured in .github/release.yml).
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        id: create_release
+        with:
+          tag_name: ${{ steps.tag_version.outputs.new_tag }}
+          name: ${{ steps.tag_version.outputs.new_tag }}
+          generate_release_notes: true
+
+      # Prepends a versioned, hyperlinked entry to CHANGELOG.md.
+      # Release notes are fetched from the release we just created so they
+      # match exactly what GitHub generated.
+      - name: Update CHANGELOG.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.tag_version.outputs.new_tag }}
+          RELEASE_URL: ${{ steps.create_release.outputs.url }}
+        run: |
+          DATE=$(date -u +"%Y-%m-%d")
+
+          # Fetch the generated release notes into a temp file (avoids quoting issues)
+          gh release view "$VERSION" --json body -q '.body' > /tmp/release-notes.txt
+
+          # Extract existing versioned entries (everything from the first ## [ line onward)
+          if [ -f CHANGELOG.md ]; then
+            sed -n '/^## \[/,$p' CHANGELOG.md > /tmp/existing-entries.txt
+          else
+            touch /tmp/existing-entries.txt
+          fi
+
+          # Write the updated CHANGELOG.md
+          {
+            echo "# Changelog"
+            echo ""
+            echo "All notable changes to Clique will be documented in this file."
+            echo "Each version links to its GitHub Release."
+            echo ""
+            echo "## [$VERSION]($RELEASE_URL) — $DATE"
+            echo ""
+            cat /tmp/release-notes.txt
+            echo ""
+            echo "---"
+            echo ""
+            cat /tmp/existing-entries.txt
+          } > CHANGELOG.md
+
+      - name: Commit and push CHANGELOG.md
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --staged --quiet || git commit -m "chore: update CHANGELOG"
+          git push

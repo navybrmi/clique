@@ -1,0 +1,29 @@
+changelog:
+  categories:
+    - title: "🚀 Features"
+      labels:
+        - enhancement
+        - feature
+    - title: "🐛 Bug Fixes"
+      labels:
+        - bug
+        - fix
+    - title: "📚 Documentation"
+      labels:
+        - documentation
+    - title: "🧪 Tests"
+      labels:
+        - test
+        - tests
+    - title: "🔧 Maintenance"
+      labels:
+        - chore
+        - refactor
+        - dependencies
+    - title: "⬆️ Dependencies"
+      labels:
+        - dependencies
+        - npm
+    - title: "Other Changes"
+      labels:
+        - "*"
