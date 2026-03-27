@@ -4,11 +4,15 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
-    # Skip the bot commit that updates CHANGELOG.md to prevent infinite loops
-    if: "!startsWith(github.event.head_commit.message, 'chore: update CHANGELOG')"
+    # Skip runs triggered by the bot's own CHANGELOG commit to prevent infinite loops
+    if: github.actor != 'github-actions[bot]'
     permissions:
       contents: write
 
