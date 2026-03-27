@@ -9,36 +9,42 @@ A social web application for sharing recommendations among friends. Discover and
 
 ## Tech Stack
 
-- **Framework**: Next.js 16.0.6 with App Router and Turbopack
+- **Framework**: Next.js 16 with App Router and Turbopack
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4
 - **UI Components**: shadcn/ui
 - **Database ORM**: Prisma 6.9.0
 - **Database**: PostgreSQL
-- **Authentication**: NextAuth.js v5 (configured, not yet implemented)
+- **Authentication**: NextAuth.js v5 with Google and Facebook OAuth
 - **Form Management**: React Hook Form + Zod
 - **Icons**: Lucide React
-- **Runtime**: Node.js v25.2.1
+- **Runtime**: Node.js v20
 
 ## Features
 
 ### ✅ Implemented
-- 🔐 User authentication with GitHub and Google OAuth
-- 📝 Create and share recommendations via dialog form
+- 🔐 User authentication with Google and Facebook OAuth
+- 📝 Create, edit, and delete recommendations (owners only)
 - 🔍 Browse recommendations on homepage with interactive cards
-- 📄 View detailed recommendation pages with comments and likes
+- 🖼️ Full-image cards with blurred background fill
+- 📄 View detailed recommendation pages with comments and upvote counts
 - 🏷️ Category-based organization (Restaurant, Movie, Fashion, Household, Other)
 - 📊 Category-specific fields (cuisine, director, brand, etc.)
 - 🎬 Movie typeahead search with TMDB integration (auto-fill movie details)
+- 🍽️ Restaurant typeahead search with Google Places integration (auto-fill restaurant details)
+- 🏷️ Tag suggestions with community promotion system (tags with 20+ uses auto-promoted)
 - ⭐ Rating system (0-10 scale)
 - 🔗 Link and image URL support for recommendations
 - 📡 RESTful API routes for CRUD operations
 - 🔄 Auto-refresh after creating new recommendations
 - 👤 User menu with profile dropdown
+- 💬 Add and delete comments on recommendations
+- 🔢 Upvote and comment counts displayed on recommendation detail pages
+- 🔁 Refresh external data (re-fetch movie/restaurant details from TMDB/Google Places)
+- 🚫 Form fields disabled until category is selected
 
 ### 🚧 Coming Soon
-- 💬 Add comments to recommendations
-- ❤️ Like/unlike functionality
+- ❤️ Interactive upvote/like functionality
 - 🖼️ Image upload capability
 - 🔎 Search and filtering
 - 👥 User profiles and friend connections
@@ -47,7 +53,7 @@ A social web application for sharing recommendations among friends. Discover and
 
 ### Prerequisites
 
-- Node.js 18.x or higher (tested with v25.2.1)
+- Node.js 24.x or higher
 - PostgreSQL database
 - npm
 
@@ -73,10 +79,10 @@ NEXTAUTH_URL="http://localhost:3000"
 AUTH_SECRET="your-secret-key-here"
 
 # OAuth Providers (see AUTH_SETUP.md for setup instructions)
-GITHUB_ID="your-github-client-id"
-GITHUB_SECRET="your-github-client-secret"
 GOOGLE_ID="your-google-client-id"
 GOOGLE_SECRET="your-google-client-secret"
+FACEBOOK_ID="your-facebook-app-id"
+FACEBOOK_SECRET="your-facebook-app-secret"
 
 # TMDB API for movie search (get your free API key at https://www.themoviedb.org/settings/api)
 TMDB_API_KEY="your-tmdb-api-key"
@@ -113,7 +119,7 @@ npx prisma migrate dev
 npx prisma generate
 
 # Seed database with sample data
-psql -d clique -f prisma/seed.sql
+npm run db:seed
 ```
 
 5. Start the development server:
@@ -214,16 +220,35 @@ npx prisma migrate reset
 src/
 ├── app/
 │   ├── api/
-│   │   └── recommendations/
-│   │       ├── route.ts          # GET all, POST new
-│   │       └── [id]/route.ts     # GET single recommendation
+│   │   ├── auth/[...nextauth]/   # NextAuth.js OAuth routes
+│   │   ├── recommendations/
+│   │   │   ├── route.ts          # GET all, POST new
+│   │   │   └── [id]/
+│   │   │       ├── route.ts      # GET single, PUT update, DELETE
+│   │   │       ├── comments/     # POST new comment
+│   │   │       │   └── [commentId]/route.ts  # DELETE comment
+│   │   │       └── refresh/route.ts  # POST refresh from external API
+│   │   ├── movies/search/        # GET movie search (TMDB)
+│   │   ├── restaurants/search/   # GET restaurant search (Google Places)
+│   │   ├── categories/           # GET list of categories
+│   │   └── tags/                 # GET tag suggestions
 │   ├── recommendations/
 │   │   └── [id]/page.tsx         # Dynamic detail page
+│   ├── data-deletion/            # OAuth data deletion page
 │   ├── layout.tsx                # Root layout
 │   ├── page.tsx                  # Homepage with cards
 │   └── globals.css               # Global styles
 ├── components/
-│   ├── add-recommendation-dialog.tsx  # Form dialog component
+│   ├── add-recommendation-dialog.tsx  # Create recommendation form
+│   ├── edit-recommendation-button.tsx # Edit owned recommendations
+│   ├── delete-recommendation-button.tsx # Delete owned recommendations
+│   ├── add-comment-form.tsx      # Add comment form
+│   ├── comments-section.tsx      # Comments list and form
+│   ├── actions-sidebar.tsx       # Upvote/comment/share counts
+│   ├── refresh-entity-button.tsx # Refresh external data button
+│   ├── refreshable-entity-details.tsx # Entity details with refresh
+│   ├── header.tsx                # Site header with auth
+│   ├── user-menu.tsx             # User profile dropdown
 │   └── ui/                       # shadcn/ui components
 │       ├── button.tsx
 │       ├── card.tsx
@@ -234,17 +259,22 @@ src/
 │       ├── textarea.tsx
 │       └── ... (other UI components)
 ├── lib/
-│   ├── auth.ts                   # NextAuth configuration
+│   ├── auth.ts                   # NextAuth configuration (Google + Facebook)
 │   ├── prisma.ts                 # Prisma client singleton
+│   ├── tag-service.ts            # Community tag promotion logic
+│   ├── movie-tags.ts             # Hardcoded movie tag definitions
 │   └── utils.ts                  # Utility functions
 ├── types/
 │   └── index.ts                  # TypeScript definitions
+perf/
+├── k6/                           # k6 load test scripts
+├── wiremock/                     # WireMock stubs for API mocking
+└── docker-compose.perf.yml       # Performance test environment
 prisma/
 ├── schema.prisma                 # Database schema
 ├── migrations/                   # Migration history
-├── seed.sql                      # SQL seed file
-├── seed.ts                       # TypeScript seed (alternative)
-└── seed.js                       # JavaScript seed (alternative)
+├── seed.ts                       # Primary TypeScript seed script
+└── seed.sql                      # Legacy SQL seed script (still referenced)
 ```
 
 ## Database Schema
@@ -252,9 +282,16 @@ prisma/
 The application uses PostgreSQL with Prisma ORM. Main models:
 
 - **User**: User accounts with email, name, and profile image
-- **Recommendation**: Core model with title, description, category, rating (0-10), link, and imageUrl
+- **Entity**: Base container linked 1-to-1 with category-specific tables (polymorphic model)
+- **Restaurant**: Restaurant-specific data (cuisine, location, priceRange, placeId, etc.)
+- **Movie**: Movie-specific data (director, year, genre, tmdbId, imdbId, etc.)
+- **Fashion**: Fashion-specific data (brand, size, material, etc.)
+- **Household**: Household-specific data (brand, model, store, etc.)
+- **Other**: Catch-all for miscellaneous recommendations
+- **Recommendation**: Core model linking a User to an Entity with title, description, rating (0-10), link, and imageUrl
 - **Comment**: User comments on recommendations
-- **Like**: User likes on recommendations
+- **UpVote**: User upvotes on recommendations (unique per user per recommendation)
+- **CommunityTag**: Tag usage tracking; tags reaching 20+ uses are promoted to suggestions
 - **Account/Session/VerificationToken**: NextAuth.js authentication models
 
 ### Category Enum
@@ -266,8 +303,9 @@ The application uses PostgreSQL with Prisma ORM. Main models:
 
 ### Key Relationships
 - Users can create multiple recommendations
-- Recommendations belong to a user and can have many comments and likes
-- Comments and likes are linked to both users and recommendations
+- Recommendations reference an Entity (which holds category-specific data)
+- Recommendations can have many comments and upvotes
+- Comments and upvotes are linked to both users and recommendations
 
 ## Available Scripts
 
@@ -275,11 +313,14 @@ The application uses PostgreSQL with Prisma ORM. Main models:
 - `npm run build` - Build for production
 - `npm start` - Start production server
 - `npm run lint` - Run ESLint
-- `npm run test` - Run component tests
+- `npm run test` - Run component/unit tests
 - `npm run test:coverage` - Run component tests with coverage
 - `npm run test:integration` - Run API integration tests
 - `npm run test:integration:coverage` - Run integration tests with coverage
 - `npm run test:all` - Run all tests (required before build)
+- `npm run docker:dev` - Start PostgreSQL + app with hot reload
+- `npm run docker:prod` - Run production-style Docker build
+- `npm run db:seed` - Seed database with sample data
 
 ## Testing & CI/CD
 
@@ -302,25 +343,23 @@ npm run test:coverage
 npm run test:integration:coverage
 
 # Watch mode for development
-npm run test -- --watch
-npm run test:integration -- --watch
+npm run test:watch
 ```
 
 ### Test Structure
 
-- **Component Tests**: 21 tests covering UI components (5 skipped in CI due to environment-specific Radix UI rendering)
-- **Integration Tests**: 60 tests covering API routes and business logic
-- **Total**: 76 passing, 9 skipped
-- **Test Environment**: Dual Jest configuration (jsdom for components, node for API routes)
+- **Component Tests**: UI components and pages (jsdom environment)
+- **Integration Tests**: API routes and business logic (node environment)
+- **Test Environment**: Dual Jest configuration (`jest.config.js` for components, `jest.integration.config.js` for API routes)
 
 ### Coverage Thresholds
 
 The project maintains strict coverage requirements:
 
 **Component Tests:**
-- Branches: 35%
-- Functions: 30%
-- Lines/Statements: 40%
+- Branches: 10%
+- Functions: 20%
+- Lines/Statements: 29%
 
 **API Routes (Integration Tests):**
 - Branches: 70%
@@ -336,127 +375,16 @@ Coverage reports are generated in:
 Every pull request automatically runs:
 - ✅ All tests (component + integration) with Node.js 20
 - ✅ Coverage report generation in lcov format
-- ✅ Coverage diff automatically commented on PR
-- ✅ (Optional) Upload to Codecov for historical trend tracking
+- ✅ Two separate coverage reports commented directly on the PR (component + integration)
+- ✅ Upload to Codecov for historical trend tracking
+- ✅ CodeQL security analysis
+- ✅ Automated GitHub Release creation on pushes to `main`
 
 The workflow is configured in `.github/workflows/test.yml` and runs on:
 - Pull requests to `main` branch
 - Pushes to `main` branch
 
-### Viewing Test Results
-
-**On Pull Requests:**
-1. GitHub Actions will run tests automatically
-2. Check status appears on the PR (✅ Tests passed or ❌ Tests failed)
-3. Coverage diff is commented directly on the PR showing:
-   - Overall coverage percentage
-   - Changes compared to base branch
-   - File-by-file coverage breakdown
-
-**Locally:**
-```bash
-# Generate and view coverage report
-npm run test:coverage
-open coverage/lcov-report/index.html
-
-npm run test:integration:coverage
-open coverage-integration/lcov-report/index.html
-```
-
-### Setting up Codecov (Optional)
-
-For historical coverage tracking and trend analysis:
-
-1. Sign up at [codecov.io](https://codecov.io) and connect your GitHub repository
-2. Add `CODECOV_TOKEN` to your GitHub repository secrets:
-   - Go to Settings → Secrets and variables → Actions
-   - Add new secret named `CODECOV_TOKEN`
-   - Paste your Codecov token
-3. Coverage data will be automatically uploaded on every test run
-4. View trends at `https://codecov.io/gh/YOUR_USERNAME/clique`
-
-**Note:** Codecov integration is optional. The workflow will continue to run successfully without the token, providing PR coverage comments via the built-in GitHub token.
-
-### Build Quality Gate
-
-The build process (`npm run build`) automatically runs all tests first:
-```bash
-npm run test:all && next build
-```
-
-This ensures that:
-- No broken code is deployed to production
-- All tests must pass before deployment succeeds
-- Coverage thresholds are maintained
-
-**Vercel Deployment:** Connected to the repository and automatically deploys when tests pass.
-- `npm run test` - Run component tests
-- `npm run test:coverage` - Run component tests with coverage
-- `npm run test:integration` - Run API integration tests
-- `npm run test:integration:coverage` - Run integration tests with coverage
-- `npm run test:all` - Run all tests (required before build)
-
-## Testing & CI/CD
-
-This project uses Jest for testing and GitHub Actions for continuous integration.
-
-### Running Tests Locally
-
-```bash
-# Run all tests
-npm run test:all
-
-# Run component tests only
-npm run test
-
-# Run integration tests only
-npm run test:integration
-
-# Run with coverage reports
-npm run test:coverage
-npm run test:integration:coverage
-
-# Watch mode for development
-npm run test -- --watch
-npm run test:integration -- --watch
-```
-
-### Test Structure
-
-- **Component Tests**: 21 total (16 passing, 5 skipped in CI due to environment-specific Radix UI rendering)
-- **Integration Tests**: 64 total (60 passing, 4 skipped)
-- **Total**: 85 tests (76 passing, 9 skipped)
-- **Test Environment**: Dual Jest configuration (jsdom for components, node for API routes)
-
-### Coverage Thresholds
-
-The project maintains strict coverage requirements:
-
-**Component Tests:**
-- Branches: 34%
-- Functions: 30%
-- Lines/Statements: 40%
-
-**API Routes (Integration Tests):**
-- Branches: 70%
-- Functions: 100%
-- Lines/Statements: 80%
-
-Coverage reports are generated in:
-- `coverage/` - Component test coverage
-- `coverage-integration/` - Integration test coverage
-
-### GitHub Actions Workflow
-
-Every pull request automatically runs:
-- ✅ All tests (component + integration) with Node.js 20
-- ✅ Coverage report generation in lcov format
-- ✅ Coverage diff automatically commented on PR
-- ✅ (Optional) Upload to Codecov for historical trend tracking
-
-The workflow is configured in `.github/workflows/test.yml` and runs on:
-- Pull requests to `main` branch
-- Pushes to `main` branch
+Markdown-only changes skip test and CodeQL workflows automatically.
 
 ### Viewing Test Results
 
@@ -506,12 +434,41 @@ This ensures that:
 
 **Vercel Deployment:** Connected to the repository and automatically deploys when tests pass.
 
+### Performance Testing
+
+The project includes a performance testing setup using WireMock and k6:
+
+```bash
+# Start the performance test environment
+docker compose -f perf/docker-compose.perf.yml up
+
+# Run k6 load tests
+k6 run perf/k6/recommendations.js
+```
+
+WireMock stubs in `perf/wiremock/` mock external APIs (TMDB, Google Places) so load tests run without hitting rate limits.
+
 ## API Routes
 
 ### Recommendations
 - `GET /api/recommendations` - List all recommendations with user info and counts
-- `POST /api/recommendations` - Create new recommendation (requires title, category, userId)
+- `POST /api/recommendations` - Create a new recommendation. Expects JSON body including `userId`, `categoryId`, and either `entityName` or `entityId`.
 - `GET /api/recommendations/[id]` - Get single recommendation with full details
+- `PUT /api/recommendations/[id]` - Update recommendation (owner only)
+- `DELETE /api/recommendations/[id]` - Delete recommendation (owner only)
+
+### Comments
+- `POST /api/recommendations/[id]/comments` - Add a comment (requires auth)
+- `DELETE /api/recommendations/[id]/comments/[commentId]` - Delete a comment (owner only)
+
+### External Data Refresh
+- `POST /api/recommendations/[id]/refresh` - Re-fetch entity details from TMDB or Google Places
+
+### Search & Metadata
+- `GET /api/movies/search?query=<query>` - Search movies via TMDB
+- `GET /api/restaurants/search?query=<query>` - Search restaurants via Google Places
+- `GET /api/categories` - List all categories
+- `GET /api/tags?categoryName=<category>[&promoted=true|false]` - Get tag suggestions for a category (optionally filter by promoted tags)
 
 ### Request/Response Examples
 
@@ -519,25 +476,27 @@ This ensures that:
 ```json
 POST /api/recommendations
 {
-  "title": "Amazing Pizza Place",
-  "description": "Best pizza in town!",
-  "category": "RESTAURANT",
+  "userId": "user123",
+  "categoryId": "cat1",
+  "entityName": "Amazing Pizza Place",
   "rating": 9,
   "link": "https://example.com",
   "imageUrl": "https://example.com/image.jpg",
-  "userId": "demo-user-1"
+  "tags": ["Great crust", "Authentic"],
+  "restaurantData": { "cuisine": "Italian", "location": "NYC" }
 }
 ```
 
 ## Development Notes
 
 ### Prisma Version
-This project uses **Prisma 6.9.0** for compatibility with Node.js 25. Prisma 7.x has initialization issues with this Node version.
+This project uses **Prisma 6.9.0** for compatibility with Node.js 24. Prisma 7.x has initialization issues with this Node version.
 
-### Known Issues
-- Authentication UI not yet implemented (NextAuth configured in backend)
-- Comment and like features display data but don't have add/remove functionality yet
-- Currently using `demo-user-1` as the default user for new recommendations
+### Polymorphic Entity Model
+The `Entity` table acts as a base container linked 1-to-1 with category-specific tables (`Restaurant`, `Movie`, `Fashion`, `Household`, `Other`). A `Recommendation` points to an `Entity`, which holds the category-specific data. This keeps the recommendation model clean while supporting rich per-category fields.
+
+### Community Tag Promotion
+Tags are tracked in the `CommunityTag` table with usage counts. Tags reaching 20+ uses get promoted and appear as suggestions in the add recommendation form. Hardcoded tags (in `movie-tags.ts`) are always available regardless of usage count.
 
 ## Next Steps
 
@@ -546,9 +505,9 @@ This project uses **Prisma 6.9.0** for compatibility with Node.js 25. Prisma 7.x
 2. ✅ ~~Implement API routes for recommendations~~
 3. ✅ ~~Build recommendation creation form~~
 4. ✅ ~~Create recommendation browsing and detail pages~~
-5. 🚧 Implement authentication UI and sign-in flow
-6. 🚧 Add comment creation functionality
-7. 🚧 Add like/unlike interactions
+5. ✅ ~~Implement authentication UI and sign-in flow~~
+6. ✅ ~~Add comment creation functionality~~
+7. 🚧 Add interactive upvote/like functionality
 
 ### Future Enhancements
 - Image upload functionality (currently supports URLs only)
@@ -557,7 +516,6 @@ This project uses **Prisma 6.9.0** for compatibility with Node.js 25. Prisma 7.x
 - Real-time updates with WebSockets
 - Recommendation sharing and social features
 - Mobile responsive optimizations
-- Deploy to Vercel or preferred hosting platform
 
 ## Troubleshooting
 
@@ -587,4 +545,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 MIT
-
