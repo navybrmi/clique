@@ -18,7 +18,7 @@ A social web application for sharing recommendations among friends. Discover and
 - **Authentication**: NextAuth.js v5 with Google and Facebook OAuth
 - **Form Management**: React Hook Form + Zod
 - **Icons**: Lucide React
-- **Runtime**: Node.js v24
+- **Runtime**: Node.js v20
 
 ## Features
 
@@ -53,7 +53,7 @@ A social web application for sharing recommendations among friends. Discover and
 
 ### Prerequisites
 
-- Node.js 18.x or higher (tested with v24)
+- Node.js 24.x or higher
 - PostgreSQL database
 - npm
 
@@ -273,7 +273,8 @@ perf/
 prisma/
 ├── schema.prisma                 # Database schema
 ├── migrations/                   # Migration history
-└── seed.ts                       # TypeScript seed script
+├── seed.ts                       # Primary TypeScript seed script
+└── seed.sql                      # Legacy SQL seed script (still referenced)
 ```
 
 ## Database Schema
@@ -451,7 +452,7 @@ WireMock stubs in `perf/wiremock/` mock external APIs (TMDB, Google Places) so l
 
 ### Recommendations
 - `GET /api/recommendations` - List all recommendations with user info and counts
-- `POST /api/recommendations` - Create new recommendation (requires auth)
+- `POST /api/recommendations` - Create a new recommendation. Expects JSON body including `userId`, `categoryId`, and either `entityName` or `entityId`.
 - `GET /api/recommendations/[id]` - Get single recommendation with full details
 - `PUT /api/recommendations/[id]` - Update recommendation (owner only)
 - `DELETE /api/recommendations/[id]` - Delete recommendation (owner only)
@@ -464,10 +465,10 @@ WireMock stubs in `perf/wiremock/` mock external APIs (TMDB, Google Places) so l
 - `POST /api/recommendations/[id]/refresh` - Re-fetch entity details from TMDB or Google Places
 
 ### Search & Metadata
-- `GET /api/movies/search?q=<query>` - Search movies via TMDB
-- `GET /api/restaurants/search?q=<query>` - Search restaurants via Google Places
+- `GET /api/movies/search?query=<query>` - Search movies via TMDB
+- `GET /api/restaurants/search?query=<query>` - Search restaurants via Google Places
 - `GET /api/categories` - List all categories
-- `GET /api/tags?category=<category>` - Get tag suggestions for a category
+- `GET /api/tags?categoryName=<category>[&promoted=true|false]` - Get tag suggestions for a category (optionally filter by promoted tags)
 
 ### Request/Response Examples
 
@@ -475,12 +476,14 @@ WireMock stubs in `perf/wiremock/` mock external APIs (TMDB, Google Places) so l
 ```json
 POST /api/recommendations
 {
-  "title": "Amazing Pizza Place",
-  "description": "Best pizza in town!",
-  "category": "RESTAURANT",
+  "userId": "user123",
+  "categoryId": "cat1",
+  "entityName": "Amazing Pizza Place",
   "rating": 9,
   "link": "https://example.com",
-  "imageUrl": "https://example.com/image.jpg"
+  "imageUrl": "https://example.com/image.jpg",
+  "tags": ["Great crust", "Authentic"],
+  "restaurantData": { "cuisine": "Italian", "location": "NYC" }
 }
 ```
 
