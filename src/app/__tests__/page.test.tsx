@@ -1,14 +1,6 @@
 import '@testing-library/jest-dom'
-// Mock Radix Portal to render children inline for tests
-jest.mock('@radix-ui/react-portal', () => ({
-  __esModule: true,
-  Portal: ({ children }: { children: React.ReactNode }) => children,
-}))
-// Polyfill for Radix UI + JSDOM pointer events
-if (!Element.prototype.hasPointerCapture) {
-  Element.prototype.hasPointerCapture = () => false;
-}
-import { render, screen, waitFor } from '@testing-library/react'
+import React from 'react'
+import { render, screen } from '@testing-library/react'
 
 // Mock next/link
 jest.mock('next/link', () => {
@@ -19,32 +11,27 @@ jest.mock('next/link', () => {
 
 // Mock next/image
 jest.mock('next/image', () => {
-  return ({ src, alt, ...props }: any) => <img src={src} alt={alt} />
+  return ({ src, alt, priority }: { src: string; alt: string; priority?: boolean }) => (
+    <img src={src} alt={alt} data-priority={priority ? 'true' : undefined} />
+  )
 })
 
-// Mock next-auth/react
-jest.mock('next-auth/react', () => ({
-  useSession: () => ({
-    data: { user: { id: 'user1', name: 'Test User' } },
-    status: 'authenticated',
-  }),
-  signIn: jest.fn(),
-  signOut: jest.fn(),
+// Mock Header to isolate page tests from session fetching
+jest.mock('@/components/header', () => ({
+  Header: () => <header data-testid="mock-header" />,
 }))
 
-// Mock next/navigation
-jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), prefetch: jest.fn() }),
-  usePathname: () => '/',
-  useSearchParams: () => new URLSearchParams(),
+// Mock AddRecommendationTrigger to isolate page tests from dynamic imports
+jest.mock('@/components/add-recommendation-trigger', () => ({
+  AddRecommendationTrigger: () => <div data-testid="mock-trigger" />,
 }))
 
-// Polyfill scrollIntoView
-beforeAll(() => {
-  window.HTMLElement.prototype.scrollIntoView = function () { return undefined }
-})
+// Mock getRecommendations so tests don't hit the database
+jest.mock('@/lib/recommendations', () => ({
+  getRecommendations: jest.fn(),
+}))
 
-import React from 'react'
+import { getRecommendations } from '@/lib/recommendations'
 import HomePage from '../page'
 
 const mockRestaurantRec = {
@@ -61,8 +48,8 @@ const mockRestaurantRec = {
       cuisine: 'Mediterranean',
       location: '145 S Frances St, Sunnyvale, CA',
       priceRange: '$$',
-      hours: 'Monday: 11:00 AM - 9:00 PM',
     },
+    movie: null,
   },
   _count: { upvotes: 5, comments: 2 },
 }
@@ -83,71 +70,128 @@ const mockMovieRec = {
       genre: 'Sci-Fi',
       duration: 148,
     },
+    restaurant: null,
   },
   _count: { upvotes: 10, comments: 3 },
 }
 
-function setupFetchMock(recommendations: any[]) {
-  global.fetch = jest.fn((input: RequestInfo | URL) => {
-    const url = typeof input === 'string' ? input : input.toString()
-    if (url.includes('/api/auth/session')) {
-      return Promise.resolve(new Response(JSON.stringify({ user: { id: 'user1', name: 'Test User' } })))
-    }
-    if (url.includes('/api/categories')) {
-      return Promise.resolve(new Response(JSON.stringify([
-        { id: '1', name: 'MOVIE', displayName: 'Movie' },
-        { id: '2', name: 'RESTAURANT', displayName: 'Restaurant' },
-      ])))
-    }
-    if (url.includes('/api/recommendations')) {
-      return Promise.resolve(new Response(JSON.stringify(recommendations)))
-    }
-    if (url.includes('/api/tags')) {
-      return Promise.resolve(new Response(JSON.stringify({ tags: [] })))
-    }
-    return Promise.resolve(new Response(JSON.stringify({})))
-  }) as jest.Mock
+const mockRecWithImage = {
+  id: 'rec-image-1',
+  tags: [],
+  rating: 7,
+  imageUrl: 'https://example.com/image.jpg',
+  link: null,
+  user: { name: 'Test User' },
+  entity: {
+    name: 'Interstellar',
+    category: { displayName: 'Movie' },
+    movie: { director: 'Nolan', releaseYear: 2014, genre: 'Sci-Fi', duration: 169 },
+    restaurant: null,
+  },
+  _count: { upvotes: 3, comments: 1 },
 }
 
-describe('HomePage - Recommendation Cards', () => {
+describe('HomePage - Server Component', () => {
   afterEach(() => {
-    jest.restoreAllMocks()
+    jest.clearAllMocks()
   })
 
-  it('should display restaurant cuisine, location, and price range on cards', async () => {
-    setupFetchMock([mockRestaurantRec, mockMovieRec])
-    render(<HomePage />)
+  it('renders recommendation cards with server-fetched data (no fetch call)', async () => {
+    ;(getRecommendations as jest.Mock).mockResolvedValue([mockRestaurantRec, mockMovieRec])
+    const jsx = await HomePage()
+    render(jsx)
 
-    await waitFor(() => {
-      expect(screen.getAllByText('SAJJ Mediterranean').length).toBeGreaterThan(0)
-    })
+    expect(screen.getAllByText('SAJJ Mediterranean').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Inception').length).toBeGreaterThan(0)
+    // Verify no client-side fetch to /api/recommendations was made
+    expect(global.fetch).not.toHaveBeenCalledWith(
+      expect.stringContaining('/api/recommendations'),
+      expect.anything()
+    )
+  })
+
+  it('displays restaurant cuisine, location, and price range', async () => {
+    ;(getRecommendations as jest.Mock).mockResolvedValue([mockRestaurantRec])
+    render(await HomePage())
 
     expect(screen.getByText(/Cuisine: Mediterranean/)).toBeInTheDocument()
     expect(screen.getByText(/145 S Frances St, Sunnyvale, CA/)).toBeInTheDocument()
     expect(screen.getByText(/Price: \$\$/)).toBeInTheDocument()
   })
 
-  it('should display movie details on movie cards', async () => {
-    setupFetchMock([mockMovieRec])
-    render(<HomePage />)
-
-    await waitFor(() => {
-      expect(screen.getAllByText('Inception').length).toBeGreaterThan(0)
-    })
+  it('displays movie details on movie cards', async () => {
+    ;(getRecommendations as jest.Mock).mockResolvedValue([mockMovieRec])
+    render(await HomePage())
 
     expect(screen.getByText(/Director: Christopher Nolan/)).toBeInTheDocument()
     expect(screen.getByText(/Genre: Sci-Fi/)).toBeInTheDocument()
   })
 
-  it('should not show restaurant fields on non-restaurant cards', async () => {
-    setupFetchMock([mockMovieRec])
-    render(<HomePage />)
-
-    await waitFor(() => {
-      expect(screen.getAllByText('Inception').length).toBeGreaterThan(0)
-    })
+  it('does not show restaurant fields on movie cards', async () => {
+    ;(getRecommendations as jest.Mock).mockResolvedValue([mockMovieRec])
+    render(await HomePage())
 
     expect(screen.queryByText(/Cuisine:/)).not.toBeInTheDocument()
     expect(screen.queryByText(/145 S Frances St/)).not.toBeInTheDocument()
+  })
+
+  it('renders empty state when no recommendations exist', async () => {
+    ;(getRecommendations as jest.Mock).mockResolvedValue([])
+    render(await HomePage())
+
+    expect(
+      screen.getByText('No recommendations yet. Be the first to add one!')
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /SAJJ/i })).not.toBeInTheDocument()
+  })
+
+  it('renders the AddRecommendationTrigger', async () => {
+    ;(getRecommendations as jest.Mock).mockResolvedValue([])
+    render(await HomePage())
+
+    expect(screen.getByTestId('mock-trigger')).toBeInTheDocument()
+  })
+
+  it('sets priority on the first card image and not subsequent ones', async () => {
+    ;(getRecommendations as jest.Mock).mockResolvedValue([
+      mockRecWithImage,
+      { ...mockRecWithImage, id: 'rec-image-2', entity: { ...mockRecWithImage.entity, name: 'Second' } },
+    ])
+    render(await HomePage())
+
+    const images = screen.getAllByRole('img')
+    const priorityImages = images.filter((img) => img.getAttribute('data-priority') === 'true')
+    // Only the sharp image of the first card should have priority
+    expect(priorityImages).toHaveLength(1)
+  })
+
+  it('renders a category emoji placeholder when there is no image', async () => {
+    ;(getRecommendations as jest.Mock).mockResolvedValue([mockMovieRec])
+    render(await HomePage())
+
+    expect(screen.getByText('🎬')).toBeInTheDocument()
+  })
+
+  it('renders tags truncated to 3 with an overflow badge', async () => {
+    const recWithManyTags = {
+      ...mockMovieRec,
+      tags: ['Tag1', 'Tag2', 'Tag3', 'Tag4', 'Tag5'],
+    }
+    ;(getRecommendations as jest.Mock).mockResolvedValue([recWithManyTags])
+    render(await HomePage())
+
+    expect(screen.getByText('Tag1')).toBeInTheDocument()
+    expect(screen.getByText('Tag2')).toBeInTheDocument()
+    expect(screen.getByText('Tag3')).toBeInTheDocument()
+    expect(screen.queryByText('Tag4')).not.toBeInTheDocument()
+    expect(screen.getByText('+2 more')).toBeInTheDocument()
+  })
+
+  it('shows Anonymous when user has no name', async () => {
+    const recAnon = { ...mockMovieRec, user: { name: null } }
+    ;(getRecommendations as jest.Mock).mockResolvedValue([recAnon])
+    render(await HomePage())
+
+    expect(screen.getByText('by Anonymous')).toBeInTheDocument()
   })
 })
