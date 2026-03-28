@@ -31,6 +31,11 @@ jest.mock('@/lib/recommendations', () => ({
   getRecommendations: jest.fn(),
 }))
 
+// Mock auth so tests don't pull in next-auth ESM module
+jest.mock('@/lib/auth', () => ({
+  auth: jest.fn().mockResolvedValue(null),
+}))
+
 import { getRecommendations } from '@/lib/recommendations'
 import HomePage from '../page'
 

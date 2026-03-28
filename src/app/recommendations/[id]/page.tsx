@@ -10,52 +10,58 @@ import { RefreshEntityButton } from "@/components/refresh-entity-button"
 import { RefreshableEntityDetails } from "@/components/refreshable-entity-details"
 import { CommentsSection } from "@/components/comments-section"
 import { ActionsSidebar } from "@/components/actions-sidebar"
+import { auth } from "@/lib/auth"
 
 export default async function RecommendationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
-  const recommendation = await prisma.recommendation.findUnique({
-    where: { id },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          image: true,
-        },
-      },
-      entity: {
-        include: {
-          category: true,
-          restaurant: true,
-          movie: true,
-          fashion: true,
-          household: true,
-          other: true,
-        },
-      },
-      comments: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              image: true,
-            },
+  const [recommendation, session] = await Promise.all([
+    prisma.recommendation.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
           },
         },
-        orderBy: {
-          createdAt: "desc",
+        entity: {
+          include: {
+            category: true,
+            restaurant: true,
+            movie: true,
+            fashion: true,
+            household: true,
+            other: true,
+          },
+        },
+        comments: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
+        _count: {
+          select: {
+            upvotes: true,
+            comments: true,
+          },
         },
       },
-      _count: {
-        select: {
-          upvotes: true,
-          comments: true,
-        },
-      },
-    },
-  }) as any
+    }) as Promise<any>,
+    auth(),
+  ])
+
+  const currentUserId = session?.user?.id ?? null
 
   if (!recommendation) {
     notFound()
@@ -64,7 +70,7 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black">
       {/* Header */}
-      <Header showBack={true} />
+      <Header showBack={true} session={session} />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
@@ -233,6 +239,7 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
               recommendationId={recommendation.id}
               initialComments={recommendation.comments}
               initialCount={recommendation._count.comments}
+              currentUserId={currentUserId}
             />
 
           </div>
@@ -243,11 +250,11 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
             <ActionsSidebar recommendation={recommendation} />
             <Card>
               <CardContent className="pt-6 space-y-3">
-                <EditRecommendationButton recommendation={recommendation} />
+                <EditRecommendationButton recommendation={recommendation} currentUserId={currentUserId} />
                 {(recommendation.entity.movie || recommendation.entity.restaurant) && (
-                  <RefreshEntityButton recommendation={recommendation} />
+                  <RefreshEntityButton recommendation={recommendation} currentUserId={currentUserId} />
                 )}
-                <DeleteRecommendationButton recommendation={recommendation} />
+                <DeleteRecommendationButton recommendation={recommendation} currentUserId={currentUserId} />
               </CardContent>
             </Card>
           </div>

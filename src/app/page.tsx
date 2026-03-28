@@ -6,6 +6,7 @@ import { ArrowUp, MessageCircle, Star, MapPin } from "lucide-react"
 import { Header } from "@/components/header"
 import { AddRecommendationTrigger } from "@/components/add-recommendation-trigger"
 import { getRecommendations } from "@/lib/recommendations"
+import { auth } from "@/lib/auth"
 
 /**
  * Category emoji mapping for placeholder images
@@ -27,11 +28,11 @@ const getCategoryEmoji = (categoryName: string): string =>
  * sending HTML to the browser, eliminating the client-side fetch round-trip.
  */
 export default async function Home() {
-  const recommendations = await getRecommendations()
+  const [recommendations, session] = await Promise.all([getRecommendations(), auth()])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black">
-      <Header />
+      <Header session={session} />
 
       <main className="container mx-auto px-4 py-16">
         <div className="mb-16 text-center">
@@ -42,7 +43,7 @@ export default async function Home() {
             Discover and share recommendations for restaurants, movies, fashion,
             household items, and more with your friends.
           </p>
-          <AddRecommendationTrigger />
+          <AddRecommendationTrigger userId={session?.user?.id ?? null} />
         </div>
 
         {recommendations.length === 0 ? (

@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { UserMenu } from "@/components/user-menu"
@@ -13,37 +12,23 @@ import { signOut } from "next-auth/react"
 interface HeaderProps {
   /** Whether to show the back button. Defaults to false. */
   showBack?: boolean
+  /** Resolved session from the server component parent. */
+  session?: { user?: { id?: string; name?: string | null; image?: string | null } } | null
 }
 
 /**
  * Application header component with authentication UI.
- * 
- * Displays the app logo, navigation, and authentication status.
- * Shows sign-in buttons for unauthenticated users and user menu for authenticated users.
- * Includes optional back button for nested pages.
- * 
+ *
+ * Accepts a `session` prop resolved server-side so no client-side fetch to
+ * /api/auth/session is required. Shows sign-in buttons for unauthenticated
+ * users and a user menu for authenticated users.
+ *
  * @param props - Component props
  * @returns A sticky header with navigation and auth controls
  */
-export function Header({ showBack }: HeaderProps) {
-  const [session, setSession] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetch('/api/auth/session')
-      .then(res => res.json())
-      .then(data => {
-        setSession(data)
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
-  }, [])
-
-  /**
-   * Signs the user out via NextAuth and redirects to the home page.
-   */
+export function Header({ showBack, session }: HeaderProps) {
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/' })
+    await signOut({ callbackUrl: "/" })
   }
 
   return (
@@ -65,9 +50,7 @@ export function Header({ showBack }: HeaderProps) {
           </Link>
         </div>
         <nav className="flex items-center gap-4">
-          {loading ? (
-            <div className="h-10 w-20 animate-pulse bg-zinc-200 dark:bg-zinc-800 rounded" />
-          ) : session?.user ? (
+          {session?.user ? (
             <UserMenu user={session.user} onSignOut={handleSignOut} />
           ) : (
             <>

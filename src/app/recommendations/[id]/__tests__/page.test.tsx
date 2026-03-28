@@ -24,6 +24,11 @@ jest.mock("@/lib/prisma", () => ({
   },
 }))
 
+// Mock auth so tests don't pull in next-auth ESM module
+jest.mock("@/lib/auth", () => ({
+  auth: jest.fn().mockResolvedValue(null),
+}))
+
 // Mock client-only sub-components to avoid "use client" boundary issues in jsdom
 jest.mock("@/components/comments-section", () => ({
   CommentsSection: () => <div data-testid="comments-section" />,

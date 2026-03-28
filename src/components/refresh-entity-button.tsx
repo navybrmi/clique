@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+// useEffect is kept for the success-timer cleanup only
 import { Button } from "@/components/ui/button"
 import { RefreshCw, Loader2, CheckCircle2 } from "lucide-react"
 import { REFRESH_EVENT } from "@/components/refreshable-entity-details"
@@ -28,6 +29,8 @@ const SUCCESS_DISPLAY_DURATION = 2000
 interface RefreshEntityButtonProps {
   /** The recommendation object. Must include id and userId. */
   recommendation: { id: string; userId: string }
+  /** Authenticated user ID resolved server-side. */
+  currentUserId?: string | null
 }
 
 /**
@@ -44,28 +47,18 @@ interface RefreshEntityButtonProps {
  * - Shows a green "Refreshed!" success state for 2 seconds after success
  * - Shows an error alert on API failure
  */
-export function RefreshEntityButton({ recommendation }: RefreshEntityButtonProps) {
-  const [session, setSession] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+export function RefreshEntityButton({ recommendation, currentUserId }: RefreshEntityButtonProps) {
   const [refreshing, setRefreshing] = useState(false)
   const [succeeded, setSucceeded] = useState(false)
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    fetch("/api/auth/session")
-      .then((res) => res.json())
-      .then((data) => {
-        setSession(data)
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
-
     return () => {
       if (successTimerRef.current !== null) clearTimeout(successTimerRef.current)
     }
   }, [])
 
-  const isOwner = !loading && session?.user?.id === recommendation.userId
+  const isOwner = !!currentUserId && currentUserId === recommendation.userId
 
   /**
    * Calls the refresh API endpoint, dispatches the `entity-data-refreshed` DOM

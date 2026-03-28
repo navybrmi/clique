@@ -14,7 +14,12 @@ const AddRecommendationDialog = dynamic(
   { ssr: false }
 )
 
-export function AddRecommendationTrigger() {
+interface AddRecommendationTriggerProps {
+  /** Authenticated user ID resolved server-side. Forwarded to the dialog to skip session fetches. */
+  userId?: string | null
+}
+
+export function AddRecommendationTrigger({ userId }: AddRecommendationTriggerProps) {
   const [showLoginAlert, setShowLoginAlert] = useState(false)
   const router = useRouter()
 
@@ -22,6 +27,7 @@ export function AddRecommendationTrigger() {
     <div className="mt-8 flex flex-col items-center relative" style={{ minHeight: 80 }}>
       <div className="flex gap-4">
         <AddRecommendationDialog
+          userId={userId}
           onSuccess={() => router.refresh()}
           showLoginAlert={showLoginAlert}
           onDismissLoginAlert={() => setShowLoginAlert(false)}

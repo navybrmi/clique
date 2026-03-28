@@ -72,6 +72,8 @@ interface AddRecommendationDialogProps {
   initialData?: any
   /** Initial category id for testing or controlled usage */
   initialCategoryId?: string
+  /** Authenticated user ID resolved server-side. When provided, skips /api/auth/session fetches. */
+  userId?: string | null
 }
 
 /**
@@ -100,6 +102,7 @@ export function AddRecommendationDialog({
   recommendationId,
   initialData,
   initialCategoryId,
+  userId,
   showLoginAlert,
   onDismissLoginAlert,
   onBlockedOpen,
@@ -108,29 +111,27 @@ export function AddRecommendationDialog({
   onDismissLoginAlert?: () => void
   onBlockedOpen?: () => void
 }) {
-  // Track if we are waiting for session check to avoid race with dialog open
-  const [checkingAuth, setCheckingAuth] = useState(false)
   const [open, setOpen] = useState(false)
   // Track if user tried to open dialog while not logged in
   const blockedOpenRef = useRef(false)
-      // Helper to check if user is logged in
-      const checkAuth = async () => {
-        try {
-          const res = await fetch("/api/auth/session")
-          if (!res.ok) return false
-          const session = await res.json()
-          return !!session?.user?.id
-        } catch {
-          return false
-        }
-      }
 
-      // Handler for trigger click
+  // Helper to check if user is logged in — falls back to an API call when
+  // userId was not resolved server-side (e.g. in tests or legacy callers).
+  const checkAuth = async () => {
+    if (userId !== undefined) return !!userId
+    try {
+      const res = await fetch("/api/auth/session")
+      if (!res.ok) return false
+      const session = await res.json()
+      return !!session?.user?.id
+    } catch {
+      return false
+    }
+  }
+
+  // Handler for trigger click
   const handleTriggerClick = async (e?: React.MouseEvent) => {
-    if (checkingAuth) return
-    setCheckingAuth(true)
     const isLoggedIn = await checkAuth()
-    setCheckingAuth(false)
     if (!isLoggedIn) {
       blockedOpenRef.current = true
       if (onBlockedOpen) onBlockedOpen()
@@ -547,10 +548,15 @@ export function AddRecommendationDialog({
     setLoading(true)
 
     try {
-      const sessionRes = await fetch("/api/auth/session")
-      const session = await sessionRes.json()
+      // Resolve the current user ID: prefer the server-side prop, fall back to session API.
+      let resolvedUserId = userId
+      if (!resolvedUserId) {
+        const sessionRes = await fetch("/api/auth/session")
+        const session = await sessionRes.json()
+        resolvedUserId = session?.user?.id ?? null
+      }
 
-      if (!session?.user?.id) {
+      if (!resolvedUserId) {
         alert("Please sign in to create recommendations")
         setLoading(false)
         return
@@ -569,7 +575,7 @@ export function AddRecommendationDialog({
         link: link || null,
         imageUrl: imageUrl || null,
         rating: rating ? parseInt(rating) : null,
-        userId: session.user.id,
+        userId: resolvedUserId,
       }
 
       // Add category-specific data
@@ -666,7 +672,7 @@ export function AddRecommendationDialog({
                 },
               })
             ) : (
-              <Button onClick={handleTriggerClick} disabled={checkingAuth}>
+              <Button onClick={handleTriggerClick}>
                 <Plus className="mr-2 h-4 w-4" />
                 {editMode ? "Edit Recommendation" : "Add Recommendation"}
               </Button>
