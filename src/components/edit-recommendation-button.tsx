@@ -29,7 +29,7 @@ interface EditRecommendationButtonProps {
  * - Loading state management
  * 
  * @param props - Component props
- * @returns An edit button with dialog, or null if user is not the owner
+ * @returns An edit button with dialog for the owner, or a disabled edit button for non-owners
  */
 export function EditRecommendationButton({ recommendation, currentUserId }: EditRecommendationButtonProps) {
   const router = useRouter()
@@ -50,6 +50,7 @@ export function EditRecommendationButton({ recommendation, currentUserId }: Edit
       editMode={true}
       recommendationId={recommendation.id}
       initialData={recommendation}
+      userId={currentUserId ?? undefined}
       onSuccess={() => {
         router.refresh()
       }}

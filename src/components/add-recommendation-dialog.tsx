@@ -549,8 +549,9 @@ export function AddRecommendationDialog({
 
     try {
       // Resolve the current user ID: prefer the server-side prop, fall back to session API.
+      // Only fall back when userId is undefined (not provided). null means explicitly unauthenticated.
       let resolvedUserId = userId
-      if (!resolvedUserId) {
+      if (typeof resolvedUserId === 'undefined') {
         const sessionRes = await fetch("/api/auth/session")
         const session = await sessionRes.json()
         resolvedUserId = session?.user?.id ?? null

@@ -38,7 +38,7 @@ interface DeleteRecommendationButtonProps {
  * - Error handling with user feedback
  * 
  * @param props - Component props
- * @returns A delete button with confirmation dialog, or null if user is not the owner
+ * @returns A delete button with confirmation dialog for the owner, or a disabled delete button for non-owners
  */
 export function DeleteRecommendationButton({ recommendation, currentUserId }: DeleteRecommendationButtonProps) {
   const [open, setOpen] = useState(false)

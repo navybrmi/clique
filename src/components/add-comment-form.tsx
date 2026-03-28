@@ -28,7 +28,7 @@ interface AddCommentFormProps {
  * - Auto-refresh comments after successful submission
  * 
  * @param props - Component props
- * @returns A comment form for authenticated users, or null if not signed in
+ * @returns A comment form for authenticated users, or a sign-in prompt if not authenticated
  */
 export function AddCommentForm({ recommendationId, onCommentAdded, userId }: AddCommentFormProps) {
   const [submitting, setSubmitting] = useState(false)
