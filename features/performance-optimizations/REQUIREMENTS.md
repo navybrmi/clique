@@ -2,7 +2,7 @@
 
 ## Overview & Motivation
 
-The application currently loads pages with multiple avoidable round-trips: the home feed renders as an empty client shell before fetching data, every page fires 6–8 independent database-backed session queries, and the recommendations feed has no pagination or caching. The goal is to reduce page load time by 50% through structural improvements to data fetching, rendering strategy, and bundle size — without changing visible UI behaviour.
+The application currently loads pages with multiple avoidable round-trips: the home feed renders as an empty client shell before fetching data, every page fires 6–8 independent database-backed session queries, and the recommendations feed has no pagination or caching. The goal is to reduce page load time by 50% through structural improvements to data fetching, rendering strategy, and bundle size — while keeping the steady-state UI layout and interactions functionally the same, aside from the explicitly specified loading skeletons and streaming/Suspense behaviours in this document.
 
 ---
 
@@ -17,7 +17,7 @@ The application currently loads pages with multiple avoidable round-trips: the h
 ### F2 — Centralized Session Resolution
 
 4. Each page's server component SHALL call `auth()` once and pass the resolved `userId` (and any other required session fields) as props to child client components that need it.
-5. Client components (Header, AddRecommendationDialog, AddCommentForm, CommentsSection, DeleteRecommendationButton, EditRecommendationButton, RefreshEntityButton) SHALL accept a `userId` prop instead of independently fetching `/api/auth/session` via `useEffect`.
+5. Client components (Header, AddRecommendationDialog, AddCommentForm, CommentsSection, DeleteRecommendationButton, EditRecommendationButton, RefreshEntityButton, ActionsSidebar) SHALL accept a `userId` prop instead of independently fetching `/api/auth/session` via `useEffect`.
 6. The number of HTTP requests to `/api/auth/session` on a full page load SHALL be reduced to zero for authenticated server-rendered pages.
 
 ### F3 — Recommendations Feed Pagination
@@ -39,13 +39,15 @@ The application currently loads pages with multiple avoidable round-trips: the h
 
 ### F6 — Lazy Loading of Heavy Client Components
 
-15. `AddRecommendationDialog` SHALL be imported via `next/dynamic({ ssr: false })` in the home page.
+15. `AddRecommendationDialog` SHALL be lazy-loaded via `next/dynamic({ ssr: false })` inside a dedicated `"use client"` wrapper component (e.g. `AddRecommendationTrigger`), which SHALL be rendered by the server home page (`src/app/page.tsx`) so the home page can remain a Server Component.
 16. The dialog chunk SHALL NOT appear in the initial page bundle. It SHALL only be downloaded when the user first interacts with the "Add Recommendation" trigger.
 
 ### F7 — Recommendations Feed Caching
 
 17. `GET /api/recommendations` SHALL set appropriate `Cache-Control` headers for unauthenticated responses (e.g. `s-maxage=30, stale-while-revalidate=60`).
-18. After create, update, or delete mutations, `revalidatePath('/api/recommendations')` (or equivalent cache invalidation) SHALL be called to prevent stale cached responses.
+18. After create, update, or delete mutations, the recommendations feed cache SHALL be invalidated using a mechanism that matches the chosen caching strategy:
+    - If using Next.js Data Cache (e.g. `fetch` with `next: { tags: ['recommendations'] }`), mutations SHALL call `revalidateTag('recommendations')` to prevent stale cached responses.
+    - If relying on HTTP `Cache-Control` at a CDN/edge layer (e.g. `s-maxage`), a CDN-level purge mechanism (such as cache tags or a purge API) SHALL be configured and documented so that `/api/recommendations` responses are invalidated promptly after mutations.
 
 ### F8 — Dedicated Comments Endpoint
 
@@ -55,7 +57,7 @@ The application currently loads pages with multiple avoidable round-trips: the h
 ### F9 — Image Optimizations
 
 21. The first visible recommendation card on the home page SHALL have `priority={true}` on its `<Image>` tag to trigger `<link rel="preload">` for the LCP image.
-22. `next.config.ts` `remotePatterns` SHALL be restricted to known hostnames (`image.tmdb.org`, `maps.googleapis.com`, `lh3.googleusercontent.com`) instead of the wildcard `**`.
+22. `next.config.ts` `images.remotePatterns` SHALL be restricted to the specific external hostnames actually used by the app — at minimum: `image.tmdb.org` (TMDB posters), `maps.googleapis.com` (Google Places images), `images.unsplash.com` (Unsplash), `lh3.googleusercontent.com` (Google OAuth avatars), `graph.facebook.com` (Facebook OAuth avatars). It SHALL NOT include wildcard host patterns such as `**`, and placeholder domains like `example.com` SHALL be removed.
 
 ### F10 — Font and Bundle Cleanup
 
@@ -67,7 +69,7 @@ The application currently loads pages with multiple avoidable round-trips: the h
 ## Non-Functional Requirements
 
 - All existing functionality (add/edit/delete recommendations, comments, upvotes, auth) SHALL continue to work correctly after each change.
-- No visible UI changes are in scope. Layout, styling, and user interactions remain identical.
+- Steady-state UI layout and interactions remain identical. The only permitted visible changes are the loading skeletons (F5) and Suspense streaming boundaries (F5) explicitly specified in this document.
 - Each sub-feature SHALL be covered by updated or new tests with >90% coverage on modified code.
 - Changes SHALL be implemented and shipped as incremental PRs (one per sub-feature) so each can be reviewed and reverted independently.
 - Performance improvements SHALL be measurable via Lighthouse CI or Web Vitals instrumentation (LCP, TTFB, TBT).

@@ -5,7 +5,7 @@
 ### Unit Tests — `src/app/__tests__/page.test.tsx` (update/new)
 
 1. `renders recommendation cards server-side` — mock Prisma `findMany` to return 2 recommendations; render the page component; assert both card titles appear in the document without any `fetch` calls to `/api/recommendations`.
-2. `does not import AddRecommendationDialog in the initial bundle` — assert the dynamic import is present and that `ssr: false` is configured (inspect the module's dynamic import call).
+2. `lazy-loads AddRecommendationDialog` — render the home page; assert the dialog trigger is rendered but the dialog's internal content (e.g. form fields, category selector) is not present in the document until the trigger is clicked. Bundle-size and initial-bundle constraints (i.e. that the dialog chunk is absent from the first load) SHALL be verified via `next build` + bundle analyzer or manual DevTools Network inspection, not via Jest.
 3. `renders empty state when no recommendations exist` — mock `findMany` to return `[]`; assert an appropriate empty-state message is rendered.
 4. `consolidates lucide-react imports` — static analysis / snapshot test to confirm no duplicate import sources.
 
@@ -172,7 +172,7 @@ Run Lighthouse against the home page and a recommendation detail page before and
 - [ ] After PR 2: zero requests to `/api/auth/session` on page load.
 - [ ] After PR 3: initial `GET /api/recommendations` response is ≤ 20 items.
 - [ ] After PR 4: `GET /api/recommendations/[id]` response does not contain 4 null sub-type fields.
-- [ ] After PR 6 (dialog lazy load): `AddRecommendationDialog` chunk is absent from the Network tab until the dialog trigger is clicked.
+- [ ] After PR 1 (dialog lazy load): `AddRecommendationDialog` chunk is absent from the Network tab until the dialog trigger is clicked.
 
 ---
 

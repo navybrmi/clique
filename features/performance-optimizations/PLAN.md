@@ -2,7 +2,7 @@
 
 ## Architecture Overview
 
-The optimizations are grouped into 5 PRs ordered by impact and dependency. PRs 1–2 are the highest-impact changes and have no dependencies on each other. PRs 3–5 are incremental improvements that can follow in any order.
+The optimizations are grouped into 5 PRs ordered by impact and dependency. PR 1 is the prerequisite for PR 2 (the home page must be a Server Component before `auth()` can be called in it). PRs 3–5 are incremental improvements that can follow in any order after PR 2.
 
 ```
 PR 1: Server component home page + lazy dialog      (F1, F6)
@@ -24,21 +24,23 @@ PR 5: Loading states, images, font, bundle cleanup  (F5, F9, F10)
 - Remove `"use client"` directive.
 - Remove `useState` / `useEffect` for recommendations fetching.
 - Add a direct Prisma call (or call a shared `getRecommendations()` server utility) to fetch the first page of recommendations.
-- Change the `AddRecommendationDialog` import to `next/dynamic`:
-  ```ts
-  const AddRecommendationDialog = dynamic(
-    () => import('@/components/add-recommendation-dialog'),
-    { ssr: false }
-  )
-  ```
-- Any remaining interactive state (e.g. dialog open/close trigger button) should be extracted into a small `"use client"` `AddRecommendationTrigger` component that wraps only the button and the dynamically-loaded dialog.
+- Do NOT use `next/dynamic` directly in `page.tsx` — Server Components cannot render `ssr: false` dynamic imports. Instead, extract all interactive state (dialog open/close) into a small `"use client"` `AddRecommendationTrigger` component and render `<AddRecommendationTrigger />` from the server page.
 - Consolidate the two separate `lucide-react` import lines (lines 9 and 11) into one.
 
 #### `src/lib/recommendations.ts` (new file)
 - Export `getRecommendations({ page, limit })` — a server-side utility that calls `prisma.recommendation.findMany(...)` with pagination. Shared between the page server component and the API route.
 
 ### Files to Create
-- `src/components/add-recommendation-trigger.tsx` — `"use client"` wrapper that holds the dialog open state and renders the trigger button + lazy dialog.
+- `src/components/add-recommendation-trigger.tsx` — `"use client"` wrapper that:
+  - Holds the dialog open state and renders the trigger button.
+  - Uses `next/dynamic` with `{ ssr: false }` to lazy-load `AddRecommendationDialog`:
+    ```ts
+    const AddRecommendationDialog = dynamic(
+      () => import('@/components/add-recommendation-dialog'),
+      { ssr: false }
+    )
+    ```
+  - Renders `<AddRecommendationDialog />` conditionally based on local open state.
 
 ### No Changes Needed
 - `src/app/api/recommendations/route.ts` — keep as-is for now; pagination is added in PR 3.
@@ -121,10 +123,10 @@ Call `auth()` once in each server component entry point, pass `userId` (and `use
 - Since the page is now a server component, the infinite scroll trigger will need to be a small client island component.
 
 #### `src/app/api/recommendations/[id]/route.ts` (`PUT` / `DELETE` handlers)
-- After mutation, call `revalidatePath('/api/recommendations')` or set appropriate cache-busting logic.
+- After mutation, invalidate the recommendations feed cache using a shared cache tag: call `revalidateTag('recommendations')` (or trigger the equivalent CDN cache-tag purge if using an external CDN).
 
 #### `src/app/api/recommendations/route.ts` (`POST` handler)
-- Same `revalidatePath` call after creation.
+- Same `revalidateTag('recommendations')` call after creation so both the Data Cache and any CDN honouring `Cache-Control: s-maxage` are refreshed.
 
 ---
 
@@ -199,13 +201,15 @@ Skeleton matching the detail page two-column layout.
 - Add `priority={true}` to the `<Image>` tag of the first recommendation card (index `0`).
 
 #### `next.config.ts`
-- Replace `{ protocol: 'https', hostname: '**' }` with explicit entries:
+- Replace `{ protocol: 'https', hostname: '**' }` with explicit `remotePatterns` entries for all required image hosts:
   ```ts
-  { protocol: 'https', hostname: 'image.tmdb.org' },
-  { protocol: 'https', hostname: 'maps.googleapis.com' },
-  { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
-  { protocol: 'https', hostname: 'graph.facebook.com' },
+  { protocol: 'https', hostname: 'image.tmdb.org' },          // TMDB posters
+  { protocol: 'https', hostname: 'maps.googleapis.com' },     // Google Places / Maps images
+  { protocol: 'https', hostname: 'images.unsplash.com' },     // Unsplash images
+  { protocol: 'https', hostname: 'lh3.googleusercontent.com' }, // Google OAuth avatars
+  { protocol: 'https', hostname: 'graph.facebook.com' },        // Facebook OAuth avatars
   ```
+- Remove placeholder entries such as `example.com` that are not required for real traffic.
 
 #### `src/app/layout.tsx`
 - Remove `Geist_Mono` import and CSS variable assignment if confirmed unused.
