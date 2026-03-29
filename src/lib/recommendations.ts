@@ -39,7 +39,7 @@ export type RecommendationFeedItem = {
  * Fetches the recommendation feed with related data, ordered by newest first.
  *
  * Each item includes:
- * - The recommending user (id, name, image)
+ * - The recommending user's name
  * - The associated entity with its category and category-specific details
  *   (restaurant, movie, fashion, household, other)
  * - Aggregated counts for upvotes and comments
@@ -50,19 +50,40 @@ export type RecommendationFeedItem = {
  */
 export async function getRecommendations(): Promise<RecommendationFeedItem[]> {
   const rows = await prisma.recommendation.findMany({
-    include: {
+    select: {
+      id: true,
+      tags: true,
+      rating: true,
+      imageUrl: true,
+      link: true,
       user: {
         select: {
-          id: true,
           name: true,
-          image: true,
         },
       },
       entity: {
-        include: {
-          category: true,
-          restaurant: true,
-          movie: true,
+        select: {
+          name: true,
+          category: {
+            select: {
+              displayName: true,
+            },
+          },
+          restaurant: {
+            select: {
+              cuisine: true,
+              location: true,
+              priceRange: true,
+            },
+          },
+          movie: {
+            select: {
+              director: true,
+              year: true,
+              genre: true,
+              duration: true,
+            },
+          },
           fashion: true,
           household: true,
           other: true,

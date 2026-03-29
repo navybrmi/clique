@@ -20,6 +20,17 @@ interface AddRecommendationTriggerProps {
   userId?: string | null
 }
 
+/**
+ * Top-level trigger section for creating a new recommendation.
+ *
+ * Renders the primary "Add recommendation" entry point wired to {@link AddRecommendationDialog}
+ * and a secondary "Browse Categories" action. Handles showing a login-required alert when an
+ * unauthenticated user attempts to open the add recommendation flow.
+ *
+ * @param props - Component props.
+ * @param props.userId - Optional authenticated user ID; forwarded to the dialog to avoid extra session lookups.
+ * @returns The add recommendation trigger UI.
+ */
 export function AddRecommendationTrigger({ userId }: AddRecommendationTriggerProps) {
   const [showLoginAlert, setShowLoginAlert] = useState(false)
   const router = useRouter()
