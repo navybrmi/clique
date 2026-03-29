@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 
 const AddRecommendationDialog = dynamic(
+  /* istanbul ignore next */
   () =>
     import("@/components/add-recommendation-dialog").then(
       (m) => ({ default: m.AddRecommendationDialog })
