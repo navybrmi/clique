@@ -178,20 +178,14 @@ export default async function Home() {
                   <CardContent>
                     <div className="flex items-center justify-between text-sm text-zinc-500">
                       <div className="flex gap-4">
-                        <button
-                          className="flex items-center gap-1 transition-colors hover:text-red-500"
-                          onClick={(e) => e.preventDefault()}
-                        >
+                        <span className="flex items-center gap-1">
                           <ArrowUp className="h-4 w-4" />
                           {rec._count.upvotes}
-                        </button>
-                        <button
-                          className="flex items-center gap-1 transition-colors hover:text-blue-500"
-                          onClick={(e) => e.preventDefault()}
-                        >
+                        </span>
+                        <span className="flex items-center gap-1">
                           <MessageCircle className="h-4 w-4" />
                           {rec._count.comments}
-                        </button>
+                        </span>
                       </div>
                       <span className="text-xs">
                         by {rec.user.name || "Anonymous"}
