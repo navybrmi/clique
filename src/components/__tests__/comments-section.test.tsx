@@ -150,4 +150,48 @@ describe("CommentsSection", () => {
 
     consoleSpy.mockRestore()
   })
+
+  it("should show delete button for current user's comments", () => {
+    const mockComments = [
+      {
+        id: "1",
+        content: "My comment",
+        createdAt: "2026-02-06T12:00:00Z",
+        user: { id: "current-user", name: "Me", image: null },
+      },
+    ]
+
+    render(
+      <CommentsSection
+        recommendationId="rec1"
+        initialComments={mockComments}
+        initialCount={1}
+        currentUserId="current-user"
+      />
+    )
+
+    expect(screen.getByRole("button", { name: /delete comment/i })).toBeInTheDocument()
+  })
+
+  it("should not show delete button for other users' comments", () => {
+    const mockComments = [
+      {
+        id: "1",
+        content: "Someone else's comment",
+        createdAt: "2026-02-06T12:00:00Z",
+        user: { id: "other-user", name: "Other", image: null },
+      },
+    ]
+
+    render(
+      <CommentsSection
+        recommendationId="rec1"
+        initialComments={mockComments}
+        initialCount={1}
+        currentUserId="current-user"
+      />
+    )
+
+    expect(screen.queryByRole("button", { name: /delete comment/i })).not.toBeInTheDocument()
+  })
 })

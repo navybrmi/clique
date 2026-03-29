@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -20,6 +20,8 @@ import { useRouter } from "next/navigation"
 interface DeleteRecommendationButtonProps {
   /** The recommendation object to delete. Must include id, userId, and entity.name */
   recommendation: any
+  /** Authenticated user ID resolved server-side. */
+  currentUserId?: string | null
 }
 
 /**
@@ -36,24 +38,12 @@ interface DeleteRecommendationButtonProps {
  * - Error handling with user feedback
  * 
  * @param props - Component props
- * @returns A delete button with confirmation dialog, or null if user is not the owner
+ * @returns A delete button with confirmation dialog for the owner, or a disabled delete button for non-owners
  */
-export function DeleteRecommendationButton({ recommendation }: DeleteRecommendationButtonProps) {
-  const [session, setSession] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+export function DeleteRecommendationButton({ recommendation, currentUserId }: DeleteRecommendationButtonProps) {
   const [open, setOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const router = useRouter()
-
-  useEffect(() => {
-    fetch('/api/auth/session')
-      .then(res => res.json())
-      .then(data => {
-        setSession(data)
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
-  }, [])
 
   /**
    * Sends a DELETE request to the recommendations API and redirects to the
@@ -83,7 +73,7 @@ export function DeleteRecommendationButton({ recommendation }: DeleteRecommendat
     }
   }
 
-  const isOwner = !loading && session?.user?.id === recommendation.userId
+  const isOwner = !!currentUserId && currentUserId === recommendation.userId
 
   if (!isOwner) {
     return (
