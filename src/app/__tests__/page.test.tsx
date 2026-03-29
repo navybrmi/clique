@@ -71,9 +71,9 @@ const mockMovieRec = {
     category: { displayName: 'Movie' },
     movie: {
       director: 'Christopher Nolan',
-      releaseYear: 2010,
+      year: 2010,
       genre: 'Sci-Fi',
-      duration: 148,
+      duration: '2h 28m',
     },
     restaurant: null,
   },
@@ -90,7 +90,7 @@ const mockRecWithImage = {
   entity: {
     name: 'Interstellar',
     category: { displayName: 'Movie' },
-    movie: { director: 'Nolan', releaseYear: 2014, genre: 'Sci-Fi', duration: 169 },
+    movie: { director: 'Nolan', year: 2014, genre: 'Sci-Fi', duration: '2h 49m' },
     restaurant: null,
   },
   _count: { upvotes: 3, comments: 1 },

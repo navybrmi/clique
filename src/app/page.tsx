@@ -145,14 +145,14 @@ export default async function Home() {
                         {rec.entity.movie.director && (
                           <p>Director: {rec.entity.movie.director}</p>
                         )}
-                        {rec.entity.movie.releaseYear && (
-                          <p>Year: {rec.entity.movie.releaseYear}</p>
+                        {rec.entity.movie.year && (
+                          <p>Year: {rec.entity.movie.year}</p>
                         )}
                         {rec.entity.movie.genre && (
                           <p>Genre: {rec.entity.movie.genre}</p>
                         )}
                         {rec.entity.movie.duration && (
-                          <p>Duration: {rec.entity.movie.duration} mins</p>
+                          <p>Duration: {rec.entity.movie.duration}</p>
                         )}
                       </div>
                     )}
