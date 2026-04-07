@@ -16,6 +16,12 @@ if (process.env.FACEBOOK_ID && process.env.FACEBOOK_SECRET) {
     Facebook({
       clientId: process.env.FACEBOOK_ID,
       clientSecret: process.env.FACEBOOK_SECRET,
+      // Auth.js v5 defaults to PKCE for all providers, but Facebook's GDPR consent
+      // flow uses a POST redirect back to the callback URL. SameSite=Lax cookies
+      // (including the pkceCodeVerifier) are dropped on cross-site POST requests,
+      // causing an InvalidCheck error and a silent redirect back to the sign-in page.
+      // Using state-only checks avoids this — state is a URL parameter, not a cookie.
+      checks: ["state"],
     })
   )
 }
