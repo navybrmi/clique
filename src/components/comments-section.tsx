@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,8 @@ interface CommentsSectionProps {
   initialComments: any[]
   /** Initial comment count */
   initialCount: number
+  /** Authenticated user ID resolved server-side. Used to show delete buttons on own comments. */
+  currentUserId?: string | null
 }
 
 /**
@@ -35,19 +37,12 @@ export function CommentsSection({
   recommendationId,
   initialComments,
   initialCount,
+  currentUserId,
 }: CommentsSectionProps) {
   const [comments, setComments] = useState(initialComments)
   const [count, setCount] = useState(initialCount)
   const [loading, setLoading] = useState(false)
-  const [session, setSession] = useState<any>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetch("/api/auth/session")
-      .then((res) => res.json())
-      .then((data) => setSession(data))
-      .catch(() => setSession(null))
-  }, [])
 
   /**
    * Fetch fresh comments from the API
@@ -138,7 +133,7 @@ export function CommentsSection({
                   {new Date(comment.createdAt).toLocaleDateString()}
                 </p>
               </div>
-              {session?.user?.id === comment.user.id && (
+              {currentUserId && currentUserId === comment.user.id && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -158,6 +153,7 @@ export function CommentsSection({
         <AddCommentForm
           recommendationId={recommendationId}
           onCommentAdded={refreshComments}
+          userId={currentUserId}
         />
       </CardContent>
     </Card>

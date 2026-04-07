@@ -1043,4 +1043,79 @@ describe("AddRecommendationDialog", () => {
     fireEvent.click(createBtns.find(btn => btn.tagName === 'BUTTON')!)
     // No error thrown
   })
+
+  describe("userId prop auth resolution", () => {
+    async function openDialog(userId?: string | null) {
+      const user = userEvent.setup({ delay: null })
+      render(
+        <AddRecommendationDialog
+          onSuccess={jest.fn()}
+          initialCategoryId="1"
+          userId={userId}
+        />
+      )
+      await user.click(screen.getByText(/add recommendation/i))
+      await screen.findByLabelText(/category/i)
+    }
+
+    it("does not call /api/auth/session on submit when userId string is provided", async () => {
+      await openDialog("server-user-id")
+      const sessionCallsBefore = (global.fetch as jest.Mock).mock.calls.filter(
+        ([url]: [unknown]) => typeof url === 'string' && url.includes('/api/auth/session')
+      ).length
+
+      fireEvent.change(screen.getByLabelText(/name/i), { target: { value: "Test Movie" } })
+      const createBtns = screen.getAllByText(/^create$/i)
+      fireEvent.click(createBtns.find(btn => btn.tagName === 'BUTTON')!)
+
+      await waitFor(() => {
+        const sessionCallsAfter = (global.fetch as jest.Mock).mock.calls.filter(
+          ([url]: [unknown]) => typeof url === 'string' && url.includes('/api/auth/session')
+        ).length
+        // No new session calls during submit when userId prop is a string
+        expect(sessionCallsAfter).toBe(sessionCallsBefore)
+      })
+    })
+
+    it("blocks dialog open and makes no session fetch when userId is null (explicitly unauthenticated)", async () => {
+      const user = userEvent.setup({ delay: null })
+      render(
+        <AddRecommendationDialog
+          onSuccess={jest.fn()}
+          initialCategoryId="1"
+          userId={null}
+        />
+      )
+
+      await user.click(screen.getByText(/add recommendation/i))
+
+      // Dialog should remain closed — no category label visible
+      expect(screen.queryByLabelText(/category/i)).toBeNull()
+
+      // No /api/auth/session fetch should have occurred
+      const sessionCalls = (global.fetch as jest.Mock).mock.calls.filter(
+        ([url]: [unknown]) => typeof url === 'string' && url.includes('/api/auth/session')
+      )
+      expect(sessionCalls).toHaveLength(0)
+    })
+
+    it("falls back to /api/auth/session on submit when userId is undefined (not provided)", async () => {
+      await openDialog(undefined)
+      const sessionCallsBefore = (global.fetch as jest.Mock).mock.calls.filter(
+        ([url]: [unknown]) => typeof url === 'string' && url.includes('/api/auth/session')
+      ).length
+
+      fireEvent.change(screen.getByLabelText(/name/i), { target: { value: "Test Movie" } })
+      const createBtns = screen.getAllByText(/^create$/i)
+      fireEvent.click(createBtns.find(btn => btn.tagName === 'BUTTON')!)
+
+      await waitFor(() => {
+        const sessionCallsAfter = (global.fetch as jest.Mock).mock.calls.filter(
+          ([url]: [unknown]) => typeof url === 'string' && url.includes('/api/auth/session')
+        ).length
+        // undefined = not provided; should fall back to session API on submit
+        expect(sessionCallsAfter).toBeGreaterThan(sessionCallsBefore)
+      })
+    })
+  })
 })

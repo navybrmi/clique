@@ -23,7 +23,6 @@ jest.mock('next/navigation', () => ({
 describe('DeleteRecommendationButton', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    // Reset fetch mock
     global.fetch = jest.fn(() =>
       Promise.resolve(
         new Response(JSON.stringify({}), {
@@ -34,78 +33,37 @@ describe('DeleteRecommendationButton', () => {
     ) as jest.Mock
   })
 
-  it('should render disabled delete button when user is not logged in', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve(
-        new Response(JSON.stringify({ user: null }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      )
-    ) as jest.Mock
-
+  it('should render disabled delete button when no currentUserId provided', () => {
     render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
-
-    await waitFor(() => {
-      const button = screen.getByText('Delete').closest('button')
-      expect(button).toBeDisabled()
-    })
+    const button = screen.getByText('Delete').closest('button')
+    expect(button).toBeDisabled()
   })
 
-  it('should render disabled delete button when user is not the owner', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve(
-        new Response(JSON.stringify({ user: { id: 'different-user-id' } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      )
-    ) as jest.Mock
-
-    render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
-
-    await waitFor(() => {
-      const button = screen.getByText('Delete').closest('button')
-      expect(button).toBeDisabled()
-    })
+  it('should render disabled delete button when currentUserId is null', () => {
+    render(<DeleteRecommendationButton recommendation={mockRecommendation} currentUserId={null} />)
+    const button = screen.getByText('Delete').closest('button')
+    expect(button).toBeDisabled()
   })
 
-  it('should render delete button when user is the owner', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve(
-        new Response(JSON.stringify({ user: { id: 'user-123' } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      )
-    ) as jest.Mock
+  it('should render disabled delete button when user is not the owner', () => {
+    render(<DeleteRecommendationButton recommendation={mockRecommendation} currentUserId="different-user-id" />)
+    const button = screen.getByText('Delete').closest('button')
+    expect(button).toBeDisabled()
+  })
 
-    render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
-    
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument()
-    })
+  it('should render enabled delete button when user is the owner', () => {
+    render(<DeleteRecommendationButton recommendation={mockRecommendation} currentUserId="user-123" />)
+    const button = screen.getByText('Delete').closest('button')
+    expect(button).not.toBeDisabled()
   })
 
   it('should show confirmation dialog when delete button is clicked', async () => {
     const user = userEvent.setup()
-    global.fetch = jest.fn(() =>
-      Promise.resolve(
-        new Response(JSON.stringify({ user: { id: 'user-123' } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      )
-    ) as jest.Mock
 
-    render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
+    render(<DeleteRecommendationButton recommendation={mockRecommendation} currentUserId="user-123" />)
 
-    // Wait for button to be enabled (owner loaded)
-    const deleteButton = await waitFor(() => {
-      const btn = screen.getByText('Delete').closest('button')
-      expect(btn).not.toBeDisabled()
-      return btn!
-    })
+    const deleteButton = screen.getByText('Delete').closest('button')!
+    expect(deleteButton).not.toBeDisabled()
 
     await user.click(deleteButton)
 
@@ -119,36 +77,24 @@ describe('DeleteRecommendationButton', () => {
     const user = userEvent.setup()
     const fetchMock = jest.fn()
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ user: { id: 'user-123' } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      )
-      .mockResolvedValueOnce(
         new Response(JSON.stringify({ message: 'Deleted' }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         })
       )
-    
+
     global.fetch = fetchMock as any
 
-    render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
+    render(<DeleteRecommendationButton recommendation={mockRecommendation} currentUserId="user-123" />)
 
-    // Wait for button to be enabled (owner loaded)
-    const deleteButton = await waitFor(() => {
-      const btn = screen.getByText('Delete').closest('button')
-      expect(btn).not.toBeDisabled()
-      return btn!
-    })
-
+    const deleteButton = screen.getByText('Delete').closest('button')!
     await user.click(deleteButton)
 
     await waitFor(() => {
       expect(screen.getByText('Delete Recommendation')).toBeInTheDocument()
     })
 
-    // Wait for dialog to open, then find all buttons and click the destructive one
+    // Find all buttons and click the destructive one in the dialog
     await waitFor(async () => {
       const allButtons = screen.getAllByRole('button')
       const confirmButton = allButtons.find(button =>
@@ -175,33 +121,20 @@ describe('DeleteRecommendationButton', () => {
   it('should show error message when deletion fails', async () => {
     const user = userEvent.setup()
     const mockAlert = jest.spyOn(window, 'alert').mockImplementation(() => {})
-    
+
     const fetchMock = jest.fn()
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ user: { id: 'user-123' } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      )
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ error: 'Delete failed' }), {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
         })
       )
-    
+
     global.fetch = fetchMock as any
 
-    render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
+    render(<DeleteRecommendationButton recommendation={mockRecommendation} currentUserId="user-123" />)
 
-    // Wait for button to be enabled (owner loaded)
-    const deleteButton = await waitFor(() => {
-      const btn = screen.getByText('Delete').closest('button')
-      expect(btn).not.toBeDisabled()
-      return btn!
-    })
-
-    // Open the dialog
+    const deleteButton = screen.getByText('Delete').closest('button')!
     await user.click(deleteButton)
 
     // Wait for the destructive Delete button to be enabled
@@ -212,7 +145,7 @@ describe('DeleteRecommendationButton', () => {
       )
     })
 
-    await user.click(destructiveButton)
+    await user.click(destructiveButton!)
 
     await waitFor(() => {
       expect(mockAlert).toHaveBeenCalledWith('Delete failed')
@@ -224,27 +157,15 @@ describe('DeleteRecommendationButton', () => {
   it('should handle network errors gracefully', async () => {
     const user = userEvent.setup()
     const mockAlert = jest.spyOn(window, 'alert').mockImplementation(() => {})
-    
+
     const fetchMock = jest.fn()
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ user: { id: 'user-123' } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      )
       .mockRejectedValueOnce(new Error('Network error'))
-    
+
     global.fetch = fetchMock as any
 
-    render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
+    render(<DeleteRecommendationButton recommendation={mockRecommendation} currentUserId="user-123" />)
 
-    // Wait for button to be enabled (owner loaded)
-    const deleteButton = await waitFor(() => {
-      const btn = screen.getByText('Delete').closest('button')
-      expect(btn).not.toBeDisabled()
-      return btn!
-    })
-
+    const deleteButton = screen.getByText('Delete').closest('button')!
     await user.click(deleteButton)
 
     await waitFor(() => {
@@ -259,7 +180,7 @@ describe('DeleteRecommendationButton', () => {
       )
     })
 
-    await user.click(destructiveButton)
+    await user.click(destructiveButton!)
 
     await waitFor(() => {
       expect(mockAlert).toHaveBeenCalledWith('Failed to delete recommendation')
@@ -270,24 +191,10 @@ describe('DeleteRecommendationButton', () => {
 
   it('should close dialog when cancel is clicked', async () => {
     const user = userEvent.setup()
-    global.fetch = jest.fn(() =>
-      Promise.resolve(
-        new Response(JSON.stringify({ user: { id: 'user-123' } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      )
-    ) as jest.Mock
 
-    render(<DeleteRecommendationButton recommendation={mockRecommendation} />)
+    render(<DeleteRecommendationButton recommendation={mockRecommendation} currentUserId="user-123" />)
 
-    // Wait for button to be enabled (owner loaded)
-    const deleteButton = await waitFor(() => {
-      const btn = screen.getByText('Delete').closest('button')
-      expect(btn).not.toBeDisabled()
-      return btn!
-    })
-
+    const deleteButton = screen.getByText('Delete').closest('button')!
     await user.click(deleteButton)
 
     await waitFor(() => {

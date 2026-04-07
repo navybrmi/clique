@@ -18,12 +18,6 @@ jest.mock("next/navigation", () => ({
   useRouter: () => mockRouter,
 }))
 
-const sessionResponse = (userId: string | null) =>
-  new Response(JSON.stringify(userId ? { user: { id: userId } } : { user: null }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  })
-
 const refreshSuccessResponse = (updatedFields = ["name", "genre"]) =>
   new Response(
     JSON.stringify({
@@ -47,34 +41,24 @@ describe("RefreshEntityButton", () => {
 
   // --- Visibility & access ---
 
-  it("renders a disabled button when user is not logged in", async () => {
-    global.fetch = jest.fn().mockResolvedValue(sessionResponse(null)) as jest.Mock
-
+  it("renders a disabled button when no currentUserId provided", () => {
     render(<RefreshEntityButton recommendation={mockRecommendation} />)
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /refresh/i })).toBeDisabled()
-    })
+    expect(screen.getByRole("button", { name: /refresh/i })).toBeDisabled()
   })
 
-  it("renders a disabled button when user is not the owner", async () => {
-    global.fetch = jest.fn().mockResolvedValue(sessionResponse("other-user")) as jest.Mock
-
-    render(<RefreshEntityButton recommendation={mockRecommendation} />)
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /refresh/i })).toBeDisabled()
-    })
+  it("renders a disabled button when currentUserId is null", () => {
+    render(<RefreshEntityButton recommendation={mockRecommendation} currentUserId={null} />)
+    expect(screen.getByRole("button", { name: /refresh/i })).toBeDisabled()
   })
 
-  it("renders an enabled button when user is the owner", async () => {
-    global.fetch = jest.fn().mockResolvedValue(sessionResponse("user-123")) as jest.Mock
+  it("renders a disabled button when user is not the owner", () => {
+    render(<RefreshEntityButton recommendation={mockRecommendation} currentUserId="other-user" />)
+    expect(screen.getByRole("button", { name: /refresh/i })).toBeDisabled()
+  })
 
-    render(<RefreshEntityButton recommendation={mockRecommendation} />)
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /refresh/i })).not.toBeDisabled()
-    })
+  it("renders an enabled button when user is the owner", () => {
+    render(<RefreshEntityButton recommendation={mockRecommendation} currentUserId="user-123" />)
+    expect(screen.getByRole("button", { name: /refresh/i })).not.toBeDisabled()
   })
 
   // --- Loading state ---
@@ -84,15 +68,11 @@ describe("RefreshEntityButton", () => {
     let resolveRefresh!: (value: Response) => void
     const refreshPromise = new Promise<Response>((res) => { resolveRefresh = res })
 
-    global.fetch = jest.fn()
-      .mockResolvedValueOnce(sessionResponse("user-123"))
-      .mockReturnValueOnce(refreshPromise) as jest.Mock
+    global.fetch = jest.fn().mockReturnValueOnce(refreshPromise) as jest.Mock
 
-    render(<RefreshEntityButton recommendation={mockRecommendation} />)
+    render(<RefreshEntityButton recommendation={mockRecommendation} currentUserId="user-123" />)
 
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /refresh/i })).not.toBeDisabled()
-    })
+    expect(screen.getByRole("button", { name: /refresh/i })).not.toBeDisabled()
 
     await user.click(screen.getByRole("button", { name: /refresh/i }))
 
@@ -113,14 +93,9 @@ describe("RefreshEntityButton", () => {
     document.addEventListener(REFRESH_EVENT, eventHandler)
 
     global.fetch = jest.fn()
-      .mockResolvedValueOnce(sessionResponse("user-123"))
       .mockResolvedValueOnce(refreshSuccessResponse(["name", "genre"])) as jest.Mock
 
-    render(<RefreshEntityButton recommendation={mockRecommendation} />)
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /refresh/i })).not.toBeDisabled()
-    })
+    render(<RefreshEntityButton recommendation={mockRecommendation} currentUserId="user-123" />)
 
     await user.click(screen.getByRole("button", { name: /^refresh$/i }))
 
@@ -142,14 +117,9 @@ describe("RefreshEntityButton", () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime })
 
     global.fetch = jest.fn()
-      .mockResolvedValueOnce(sessionResponse("user-123"))
       .mockResolvedValueOnce(refreshSuccessResponse()) as jest.Mock
 
-    render(<RefreshEntityButton recommendation={mockRecommendation} />)
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /refresh/i })).not.toBeDisabled()
-    })
+    render(<RefreshEntityButton recommendation={mockRecommendation} currentUserId="user-123" />)
 
     await user.click(screen.getByRole("button", { name: /^refresh$/i }))
 
@@ -166,14 +136,9 @@ describe("RefreshEntityButton", () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime })
 
     global.fetch = jest.fn()
-      .mockResolvedValueOnce(sessionResponse("user-123"))
       .mockResolvedValueOnce(refreshSuccessResponse()) as jest.Mock
 
-    render(<RefreshEntityButton recommendation={mockRecommendation} />)
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /refresh/i })).not.toBeDisabled()
-    })
+    render(<RefreshEntityButton recommendation={mockRecommendation} currentUserId="user-123" />)
 
     await user.click(screen.getByRole("button", { name: /^refresh$/i }))
 
@@ -199,14 +164,9 @@ describe("RefreshEntityButton", () => {
     const alertMock = jest.spyOn(window, "alert").mockImplementation(() => {})
 
     global.fetch = jest.fn()
-      .mockResolvedValueOnce(sessionResponse("user-123"))
       .mockResolvedValueOnce(refreshErrorResponse("No TMDB ID found")) as jest.Mock
 
-    render(<RefreshEntityButton recommendation={mockRecommendation} />)
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /refresh/i })).not.toBeDisabled()
-    })
+    render(<RefreshEntityButton recommendation={mockRecommendation} currentUserId="user-123" />)
 
     await user.click(screen.getByRole("button", { name: /^refresh$/i }))
 
@@ -222,14 +182,9 @@ describe("RefreshEntityButton", () => {
     const alertMock = jest.spyOn(window, "alert").mockImplementation(() => {})
 
     global.fetch = jest.fn()
-      .mockResolvedValueOnce(sessionResponse("user-123"))
       .mockRejectedValueOnce(new Error("Network error")) as jest.Mock
 
-    render(<RefreshEntityButton recommendation={mockRecommendation} />)
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /refresh/i })).not.toBeDisabled()
-    })
+    render(<RefreshEntityButton recommendation={mockRecommendation} currentUserId="user-123" />)
 
     await user.click(screen.getByRole("button", { name: /^refresh$/i }))
 
@@ -245,14 +200,9 @@ describe("RefreshEntityButton", () => {
     jest.spyOn(window, "alert").mockImplementation(() => {})
 
     global.fetch = jest.fn()
-      .mockResolvedValueOnce(sessionResponse("user-123"))
       .mockResolvedValueOnce(refreshErrorResponse()) as jest.Mock
 
-    render(<RefreshEntityButton recommendation={mockRecommendation} />)
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /refresh/i })).not.toBeDisabled()
-    })
+    render(<RefreshEntityButton recommendation={mockRecommendation} currentUserId="user-123" />)
 
     await user.click(screen.getByRole("button", { name: /^refresh$/i }))
 

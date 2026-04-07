@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2 } from "lucide-react"
@@ -13,6 +13,8 @@ interface AddCommentFormProps {
   recommendationId: string
   /** Callback function when comment is successfully added */
   onCommentAdded?: () => void
+  /** Authenticated user ID resolved server-side. When falsy, shows sign-in prompt. */
+  userId?: string | null
 }
 
 /**
@@ -26,24 +28,12 @@ interface AddCommentFormProps {
  * - Auto-refresh comments after successful submission
  * 
  * @param props - Component props
- * @returns A comment form for authenticated users, or null if not signed in
+ * @returns A comment form for authenticated users, or a sign-in prompt if not authenticated
  */
-export function AddCommentForm({ recommendationId, onCommentAdded }: AddCommentFormProps) {
-  const [session, setSession] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+export function AddCommentForm({ recommendationId, onCommentAdded, userId }: AddCommentFormProps) {
   const [submitting, setSubmitting] = useState(false)
   const [comment, setComment] = useState("")
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetch("/api/auth/session")
-      .then((res) => res.json())
-      .then((data) => {
-        setSession(data)
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
-  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -86,11 +76,7 @@ export function AddCommentForm({ recommendationId, onCommentAdded }: AddCommentF
     }
   }
 
-  if (loading) {
-    return null
-  }
-
-  if (!session?.user) {
+  if (!userId) {
     return (
       <div className="pt-4 border-t">
         <p className="text-sm text-zinc-500 text-center">Sign in to add a comment</p>
