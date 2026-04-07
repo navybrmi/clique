@@ -99,6 +99,23 @@ describe('auth configuration', () => {
       expect(facebookProvider.clientId).toBe('my-fb-app-id')
       expect(facebookProvider.clientSecret).toBe('my-fb-app-secret')
     })
+
+    it('has allowDangerousEmailAccountLinking: true to allow linking with existing accounts', async () => {
+      process.env.FACEBOOK_ID = 'test-fb-id'
+      process.env.FACEBOOK_SECRET = 'test-fb-secret'
+
+      const NextAuth = require('next-auth')
+      require('@/lib/auth')
+
+      const config = NextAuth.mock.calls[NextAuth.mock.calls.length - 1][0]
+      const facebookProvider = config.providers.find(
+        (p: { id: string }) => p.id === 'facebook'
+      )
+
+      // Allows sign-in to link to an existing account created via another provider
+      // (e.g. Google) with the same email, preventing OAuthAccountNotLinked errors.
+      expect(facebookProvider.allowDangerousEmailAccountLinking).toBe(true)
+    })
   })
 
   describe('Google provider', () => {

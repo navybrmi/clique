@@ -5,13 +5,30 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 
-export default async function SignInPage() {
+const ERROR_MESSAGES: Record<string, string> = {
+  OAuthAccountNotLinked:
+    "This email is already associated with another sign-in method. Please use the original provider you signed up with.",
+  OAuthSignin: "Could not start the sign-in flow. Please try again.",
+  OAuthCallback: "Something went wrong during sign-in. Please try again.",
+  Default: "An unexpected error occurred. Please try again.",
+}
+
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>
+}) {
   const session = await auth()
-  
+
   // If already signed in, redirect to home
   if (session) {
     redirect('/')
   }
+
+  const { error } = await searchParams
+  const errorMessage = error
+    ? (ERROR_MESSAGES[error] ?? ERROR_MESSAGES.Default)
+    : null
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black flex items-center justify-center p-4">
@@ -23,6 +40,11 @@ export default async function SignInPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {errorMessage && (
+            <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 dark:bg-red-950 dark:border-red-800 dark:text-red-300">
+              {errorMessage}
+            </div>
+          )}
           <form
             action={async () => {
               "use server"

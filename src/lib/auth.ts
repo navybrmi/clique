@@ -22,6 +22,9 @@ if (process.env.FACEBOOK_ID && process.env.FACEBOOK_SECRET) {
       // causing an InvalidCheck error and a silent redirect back to the sign-in page.
       // Using state-only checks avoids this — state is a URL parameter, not a cookie.
       checks: ["state"],
+      // Allow Facebook sign-in to link to an existing account that was created via
+      // another provider (e.g. Google) with the same email address.
+      allowDangerousEmailAccountLinking: true,
     })
   )
 }
