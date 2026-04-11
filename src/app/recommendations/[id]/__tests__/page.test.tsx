@@ -50,6 +50,14 @@ jest.mock("@/components/refresh-entity-button", () => ({
   RefreshEntityButton: () => <button>Refresh</button>,
 }))
 
+jest.mock("@/components/submitter-info", () => ({
+  SubmitterInfo: ({ name, createdAtIso }: { name: string | null; createdAtIso: string }) => (
+    <p data-testid="submitter-info">
+      Recommended by {name || "Anonymous"} · {createdAtIso}
+    </p>
+  ),
+}))
+
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import RecommendationDetailPage from "../page"
@@ -177,15 +185,13 @@ describe("RecommendationDetailPage — submitter display", () => {
     expect(screen.getByText(/Recommended by Test User/)).toBeInTheDocument()
   })
 
-  it("shows formatted submission date when session is non-null", async () => {
+  it("passes the createdAt ISO string to SubmitterInfo when session is non-null", async () => {
     mockAuth.mockResolvedValue({ user: { id: "user-1" } })
     await renderPage(baseRecommendation)
-    const expectedDate = new Date(baseRecommendation.createdAt).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
-    expect(screen.getByText(new RegExp(expectedDate))).toBeInTheDocument()
+    // The mock renders createdAt as the raw ISO string so we can assert the correct value is passed
+    expect(screen.getByTestId("submitter-info")).toHaveTextContent(
+      baseRecommendation.createdAt.toISOString()
+    )
   })
 
   it("does not show submitter line when session is null", async () => {

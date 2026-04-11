@@ -11,6 +11,7 @@ import { RefreshableEntityDetails } from "@/components/refreshable-entity-detail
 import { CommentsSection } from "@/components/comments-section"
 import { ActionsSidebar } from "@/components/actions-sidebar"
 import { auth } from "@/lib/auth"
+import { SubmitterInfo } from "@/components/submitter-info"
 
 export default async function RecommendationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -106,15 +107,10 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
               link={recommendation.link ?? null}
               afterImage={
                 session ? (
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                    Recommended by {recommendation.user.name || "Anonymous"}
-                    {" · "}
-                    {new Date(recommendation.createdAt).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </p>
+                  <SubmitterInfo
+                    name={recommendation.user.name}
+                    createdAtIso={recommendation.createdAt.toISOString()}
+                  />
                 ) : null
               }
             >
