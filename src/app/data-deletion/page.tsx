@@ -8,13 +8,12 @@ export default function DataDeletionPage() {
 
       <h2>What Data We Store</h2>
       <p>
-        When you sign in with Facebook, we store:
+        When you sign in, we store:
       </p>
       <ul>
         <li>Your name</li>
         <li>Your email address</li>
         <li>Your profile picture</li>
-        <li>Your Facebook user ID</li>
         <li>Recommendations you create</li>
         <li>Comments and upvotes you make</li>
       </ul>
@@ -28,7 +27,6 @@ export default function DataDeletionPage() {
       <ul>
         <li>Your name</li>
         <li>The email address associated with your account</li>
-        <li>Your Facebook user ID (if available)</li>
       </ul>
 
       <h2>What Happens Next</h2>
@@ -41,12 +39,6 @@ export default function DataDeletionPage() {
         <li>All your personal data will be permanently removed from our systems</li>
         <li>You will receive a confirmation email once deletion is complete</li>
       </ol>
-
-      <h2>Automatic Data Removal</h2>
-      <p>
-        Alternatively, if you revoke Clique's access through your Facebook settings,
-        we will automatically remove your data within 90 days.
-      </p>
 
       <h2>Questions</h2>
       <p>
