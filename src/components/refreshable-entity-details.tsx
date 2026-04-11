@@ -81,6 +81,11 @@ interface RefreshableEntityDetailsProps {
    * that should appear immediately below the title.
    */
   children?: React.ReactNode
+  /**
+   * Optional content rendered immediately after the hero image and before
+   * the entity name. Use this slot for submitter/attribution metadata.
+   */
+  afterImage?: React.ReactNode
 }
 
 /**
@@ -97,6 +102,7 @@ export function RefreshableEntityDetails({
   initialImageUrl,
   link,
   children,
+  afterImage,
 }: RefreshableEntityDetailsProps) {
   const [entity, setEntity] = useState<EntityData>(initialEntity)
   const [imageUrl, setImageUrl] = useState<string | null | undefined>(initialImageUrl)
@@ -195,6 +201,9 @@ export function RefreshableEntityDetails({
           />
         </div>
       )}
+
+      {/* Slot for attribution content (submitter name, date) shown after the image */}
+      {afterImage}
 
       {/* Entity name (h1) — highlights when "name" field is refreshed */}
       <div>
