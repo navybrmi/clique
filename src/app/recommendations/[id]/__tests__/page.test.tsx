@@ -200,13 +200,13 @@ describe("RecommendationDetailPage — submitter display", () => {
     expect(screen.getByText(/Recommended by Anonymous/)).toBeInTheDocument()
   })
 
-  it("submitter line appears before the entity h1 in DOM order", async () => {
+  it("submitter line appears after the entity h1 in DOM order (right side of flex row)", async () => {
     mockAuth.mockResolvedValue({ user: { id: "user-1" } })
     await renderPage(baseRecommendation)
     const submitterText = screen.getByText(/Recommended by Test User/)
     const heading = screen.getByRole("heading", { name: /YGF Malatang/ })
     expect(
-      submitterText.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING
+      heading.compareDocumentPosition(submitterText) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
   })
 })

@@ -202,14 +202,12 @@ export function RefreshableEntityDetails({
         </div>
       )}
 
-      {/* Slot for attribution content (submitter name, date) shown after the image */}
-      {afterImage}
-
-      {/* Entity name (h1) — highlights when "name" field is refreshed */}
-      <div>
+      {/* Entity name (h1) with optional trailing content (e.g. submitter) on the right */}
+      <div className="flex items-start justify-between gap-4">
         <h1 className={`text-4xl font-bold tracking-tight ${hl("name")}`}>
           {entity.name}
         </h1>
+        {afterImage && <div className="shrink-0 pt-2">{afterImage}</div>}
       </div>
 
       {/* Slot for recommendation metadata (category, rating, tags) */}

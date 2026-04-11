@@ -287,7 +287,7 @@ describe("RefreshableEntityDetails", () => {
     expect(screen.queryByTestId("after-image-slot")).not.toBeInTheDocument()
   })
 
-  it("renders afterImage content after the hero image and before the entity name", () => {
+  it("renders afterImage content after the hero image and after the entity name (right side of flex row)", () => {
     render(
       <RefreshableEntityDetails
         initialEntity={movieEntity}
@@ -300,11 +300,13 @@ describe("RefreshableEntityDetails", () => {
     const afterImageContent = screen.getByTestId("after-image-slot")
     const heading = screen.getByRole("heading", { level: 1 })
 
+    // afterImage appears after the hero image in DOM order
     expect(
       mainImage.compareDocumentPosition(afterImageContent) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
+    // afterImage appears after the h1 in DOM order (right side of the flex row)
     expect(
-      afterImageContent.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING
+      heading.compareDocumentPosition(afterImageContent) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
   })
 
