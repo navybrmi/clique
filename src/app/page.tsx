@@ -187,9 +187,11 @@ export default async function Home() {
                           {rec._count.comments}
                         </span>
                       </div>
-                      <span className="text-xs">
-                        by {rec.user.name || "Anonymous"}
-                      </span>
+                      {session && (
+                        <span className="text-xs">
+                          by {rec.user.name || "Anonymous"}
+                        </span>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

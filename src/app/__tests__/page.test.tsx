@@ -33,11 +33,14 @@ jest.mock('@/lib/recommendations', () => ({
 
 // Mock auth so tests don't pull in next-auth ESM module
 jest.mock('@/lib/auth', () => ({
-  auth: jest.fn().mockResolvedValue(null),
+  auth: jest.fn(),
 }))
 
 import { getRecommendations } from '@/lib/recommendations'
+import { auth } from '@/lib/auth'
 import HomePage from '../page'
+
+const mockAuth = auth as jest.Mock
 
 const mockRestaurantRec = {
   id: 'rec-restaurant-1',
@@ -97,6 +100,10 @@ const mockRecWithImage = {
 }
 
 describe('HomePage - Server Component', () => {
+  beforeEach(() => {
+    mockAuth.mockResolvedValue(null)
+  })
+
   afterEach(() => {
     jest.clearAllMocks()
   })
@@ -192,11 +199,43 @@ describe('HomePage - Server Component', () => {
     expect(screen.getByText('+2 more')).toBeInTheDocument()
   })
 
-  it('shows Anonymous when user has no name', async () => {
+  it('shows Anonymous when user has no name and session is non-null', async () => {
+    mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
     const recAnon = { ...mockMovieRec, user: { name: null } }
     ;(getRecommendations as jest.Mock).mockResolvedValue([recAnon])
     render(await HomePage())
 
     expect(screen.getByText('by Anonymous')).toBeInTheDocument()
+  })
+})
+
+describe('HomePage - submitter name auth gating', () => {
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('shows "by [name]" on cards when session is non-null', async () => {
+    mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
+    ;(getRecommendations as jest.Mock).mockResolvedValue([mockMovieRec])
+    render(await HomePage())
+
+    expect(screen.getByText('by Test User')).toBeInTheDocument()
+  })
+
+  it('does not show "by [name]" on cards when session is null', async () => {
+    mockAuth.mockResolvedValue(null)
+    ;(getRecommendations as jest.Mock).mockResolvedValue([mockMovieRec])
+    render(await HomePage())
+
+    expect(screen.queryByText(/by Test User/)).not.toBeInTheDocument()
+  })
+
+  it('does not show "by Anonymous" on cards when session is null', async () => {
+    mockAuth.mockResolvedValue(null)
+    const recAnon = { ...mockMovieRec, user: { name: null } }
+    ;(getRecommendations as jest.Mock).mockResolvedValue([recAnon])
+    render(await HomePage())
+
+    expect(screen.queryByText(/by Anonymous/)).not.toBeInTheDocument()
   })
 })

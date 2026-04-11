@@ -104,6 +104,19 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
               }}
               initialImageUrl={recommendation.imageUrl ?? null}
               link={recommendation.link ?? null}
+              afterImage={
+                session ? (
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                    Recommended by {recommendation.user.name || "Anonymous"}
+                    {" · "}
+                    {new Date(recommendation.createdAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </p>
+                ) : null
+              }
             >
               {/* Category badge + rating — shown directly below the entity name */}
               <div className="mb-4 flex items-center gap-3">

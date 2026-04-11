@@ -50,9 +50,11 @@ jest.mock("@/components/refresh-entity-button", () => ({
   RefreshEntityButton: () => <button>Refresh</button>,
 }))
 
+import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import RecommendationDetailPage from "../page"
 
+const mockAuth = auth as jest.Mock
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 
 const baseRecommendation = {
@@ -61,6 +63,7 @@ const baseRecommendation = {
   imageUrl: null,
   link: null,
   tags: ["Affordable prices", "Fresh ingredients"],
+  createdAt: new Date("2026-01-05T00:00:00.000Z"),
   user: { id: "user-1", name: "Test User", image: null },
   entity: {
     name: "YGF Malatang",
@@ -160,5 +163,50 @@ describe("RecommendationDetailPage — layout order", () => {
       RecommendationDetailPage({ params: Promise.resolve({ id: "missing" }) })
     ).rejects.toThrow("NEXT_NOT_FOUND")
     expect(notFound).toHaveBeenCalled()
+  })
+})
+
+describe("RecommendationDetailPage — submitter display", () => {
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it("shows submitter name when session is non-null", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } })
+    await renderPage(baseRecommendation)
+    expect(screen.getByText(/Recommended by Test User/)).toBeInTheDocument()
+  })
+
+  it("shows formatted submission date when session is non-null", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } })
+    await renderPage(baseRecommendation)
+    const expectedDate = new Date(baseRecommendation.createdAt).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+    expect(screen.getByText(new RegExp(expectedDate))).toBeInTheDocument()
+  })
+
+  it("does not show submitter line when session is null", async () => {
+    mockAuth.mockResolvedValue(null)
+    await renderPage(baseRecommendation)
+    expect(screen.queryByText(/Recommended by/)).not.toBeInTheDocument()
+  })
+
+  it("shows 'Recommended by Anonymous' when user name is null and session is non-null", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } })
+    await renderPage({ ...baseRecommendation, user: { id: "user-1", name: null, image: null } })
+    expect(screen.getByText(/Recommended by Anonymous/)).toBeInTheDocument()
+  })
+
+  it("submitter line appears after the entity h1 in DOM order (right side of flex row)", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } })
+    await renderPage(baseRecommendation)
+    const submitterText = screen.getByText(/Recommended by Test User/)
+    const heading = screen.getByRole("heading", { name: /YGF Malatang/ })
+    expect(
+      heading.compareDocumentPosition(submitterText) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
   })
 })

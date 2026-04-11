@@ -269,6 +269,47 @@ describe("RefreshableEntityDetails", () => {
     expect(screen.getByText("Sci-Fi")).toBeInTheDocument()
   })
 
+  // --- afterImage slot ---
+
+  it("renders afterImage content when provided", () => {
+    render(
+      <RefreshableEntityDetails
+        initialEntity={movieEntity}
+        afterImage={<span data-testid="after-image-slot">submitter info</span>}
+      />
+    )
+    expect(screen.getByTestId("after-image-slot")).toBeInTheDocument()
+    expect(screen.getByTestId("after-image-slot")).toHaveTextContent("submitter info")
+  })
+
+  it("does not render extra content when afterImage is omitted", () => {
+    render(<RefreshableEntityDetails initialEntity={movieEntity} />)
+    expect(screen.queryByTestId("after-image-slot")).not.toBeInTheDocument()
+  })
+
+  it("renders afterImage content after the hero image and after the entity name (right side of flex row)", () => {
+    render(
+      <RefreshableEntityDetails
+        initialEntity={movieEntity}
+        initialImageUrl="https://example.com/poster.jpg"
+        afterImage={<span data-testid="after-image-slot">submitter info</span>}
+      />
+    )
+    const images = screen.getAllByRole("img")
+    const mainImage = images.find((img) => img.getAttribute("alt") === "Inception")!
+    const afterImageContent = screen.getByTestId("after-image-slot")
+    const heading = screen.getByRole("heading", { level: 1 })
+
+    // afterImage appears after the hero image in DOM order
+    expect(
+      mainImage.compareDocumentPosition(afterImageContent) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+    // afterImage appears after the h1 in DOM order (right side of the flex row)
+    expect(
+      heading.compareDocumentPosition(afterImageContent) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
   // --- Event listener cleanup ---
 
   it("removes the event listener on unmount", () => {
