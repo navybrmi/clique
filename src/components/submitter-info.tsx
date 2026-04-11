@@ -11,12 +11,13 @@
  */
 export function SubmitterInfo({
   name,
-  createdAt,
+  createdAtIso,
 }: {
   name: string | null
-  createdAt: string
+  /** ISO-8601 timestamp string (e.g. from `Date.toISOString()`). Must include timezone info. */
+  createdAtIso: string
 }) {
-  const formatted = new Date(createdAt).toLocaleDateString("en-US", {
+  const formatted = new Date(createdAtIso).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",

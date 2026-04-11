@@ -51,9 +51,9 @@ jest.mock("@/components/refresh-entity-button", () => ({
 }))
 
 jest.mock("@/components/submitter-info", () => ({
-  SubmitterInfo: ({ name, createdAt }: { name: string | null; createdAt: string }) => (
+  SubmitterInfo: ({ name, createdAtIso }: { name: string | null; createdAtIso: string }) => (
     <p data-testid="submitter-info">
-      Recommended by {name || "Anonymous"} · {createdAt}
+      Recommended by {name || "Anonymous"} · {createdAtIso}
     </p>
   ),
 }))

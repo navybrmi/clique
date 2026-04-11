@@ -109,7 +109,7 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
                 session ? (
                   <SubmitterInfo
                     name={recommendation.user.name}
-                    createdAt={recommendation.createdAt.toISOString()}
+                    createdAtIso={recommendation.createdAt.toISOString()}
                   />
                 ) : null
               }
