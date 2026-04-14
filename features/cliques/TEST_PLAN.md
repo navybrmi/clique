@@ -178,22 +178,21 @@
 **`RecommendationForm` — Entity name conflict**
 98. When the API returns a 409 conflict, shows a prompt: "A recommendation for [name] already exists. Add it to your Clique instead?"
 99. Clicking "Add to Clique" calls POST `/api/cliques/:id/recommendations` with the existing recommendation ID and closes the form
-100. Clicking "Create Anyway" re-submits the form ignoring the conflict (if we allow this — otherwise not applicable)
 
 **`BookmarkToCliqueDialog`**
-101. Renders a list of the user's cliques with checkboxes
-102. Submit calls POST `/api/cliques/:id/recommendations` for each selected clique
-103. Shows success confirmation after all requests complete
-104. Shows error if the user belongs to no cliques
+100. Renders a list of the user's cliques with checkboxes
+101. Submit calls POST `/api/cliques/:id/recommendations` for each selected clique
+102. Shows success confirmation after all requests complete
+103. Shows error if the user belongs to no cliques
 
 ---
 
 ## PR 9: Detail Page Clique Context (Unit Tests)
 
 **`/recommendations/[id]` page**
-105. When `?cliqueId` is absent: does not render a Clique context banner
-106. When `?cliqueId` is present and user is a member: renders "Viewing from [Clique Name]" banner
-107. When `?cliqueId` is present but user is not a member (or clique doesn't exist): banner is not rendered (graceful fallback)
+104. When `?cliqueId` is absent: does not render a Clique context banner
+105. When `?cliqueId` is present and user is a member: renders "Viewing from [Clique Name]" banner
+106. When `?cliqueId` is present but user is not a member (or clique doesn't exist): banner is not rendered (graceful fallback)
 
 ---
 

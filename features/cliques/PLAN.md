@@ -19,7 +19,7 @@
 
 - Clique feed: `/?cliqueId=<id>` query parameter on the home page (preserves existing URL structure, server-side rendering of correct feed)
 - Clique context on detail page: `?cliqueId=<id>` passed through from feed links
-- Invite acceptance: `/invite/[token]`
+- Invite acceptance: `/invite/<token>`
 
 ### Invite Tokens
 
