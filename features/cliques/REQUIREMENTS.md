@@ -2,7 +2,7 @@
 
 ## Overview and Motivation
 
-Clique's core value proposition is trusted recommendations from people you know. Right now all recommendations are anonymous in the public feed, and there is no way to group recommendations by social circle. This feature introduces **Cliques** — named friend groups that let members share, discover, and curate recommendations together. Users can form their Clique, invite friends, and see a private feed of only the recommendations their Clique has added. Public recommendations remain available to everyone, but social context (who submitted, who added) is only surfaced within a Clique.
+Clique's core value proposition is trusted recommendations from people you know. Right now recommendations are publicly available and submitter attribution is visible to authenticated users, but there is no way to group recommendations by social circle. This feature introduces **Cliques** — named friend groups that let members share, discover, and curate recommendations together. Users can form their Clique, invite friends, and see a private feed of only the recommendations their Clique has added. Public recommendations remain available to everyone; submitter visibility on the public feed is left as-is for now (see requirement #19), but richer social context — who submitted, who added — is surfaced within a Clique.
 
 ## Functional Requirements
 

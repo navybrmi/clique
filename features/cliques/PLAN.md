@@ -49,7 +49,7 @@ Both 10-Clique and 50-member limits must be enforced at the API layer using a co
 | `src/types/clique.ts` | Shared TypeScript types for Clique, CliqueMember, CliqueInvite, CliqueRecommendation, Notification |
 | `src/app/api/cliques/route.ts` | GET (list user's cliques), POST (create clique) |
 | `src/app/api/cliques/[id]/route.ts` | GET (clique details + members), DELETE (delete clique) |
-| `src/app/api/cliques/[id]/members/route.ts` | DELETE (remove member) |
+| `src/app/api/cliques/[id]/members/[userId]/route.ts` | DELETE (remove member by userId path param) |
 | `src/app/api/cliques/[id]/invites/route.ts` | POST (create invite — link or email/username), GET (list invites) |
 | `src/app/api/cliques/[id]/invites/[inviteId]/route.ts` | DELETE (revoke invite) |
 | `src/app/api/invites/[token]/route.ts` | GET (look up invite), POST (accept invite) |
@@ -85,8 +85,8 @@ Both 10-Clique and 50-member limits must be enforced at the API layer using a co
 | `prisma/schema.prisma` | Add Clique, CliqueMember, CliqueInvite, CliqueRecommendation, Notification models and enums |
 | `src/app/page.tsx` | Add `cliqueId` query param handling; render clique feed or public feed; include sidebar wrapper; pass `cliqueId` to recommendation card links |
 | `src/app/recommendations/[id]/page.tsx` | Read `cliqueId` from search params; show active Clique name when present |
-| `src/app/api/recommendations/route.ts` | During POST: check for entity name conflict in selected cliques; after creating recommendation, create CliqueRecommendation rows for selected cliques |
-| `src/components/recommendation-form.tsx` | Add Clique selector (checkboxes for user's cliques); add conflict-resolution prompt (show existing recommendation with "Add to Clique" button) |
+| `src/app/api/recommendations/route.ts` | During POST: when adding the new recommendation to one or more cliques, check for an exact entity-name conflict among existing public recommendations; after creating recommendation, create CliqueRecommendation rows for selected cliques |
+| `src/components/recommendation-form.tsx` | Add Clique selector (checkboxes for user's cliques); add conflict-resolution prompt for an existing public recommendation with the same exact entity name (show existing recommendation with "Add to Clique" button) |
 | `src/components/header.tsx` | Add notification bell component |
 | `src/lib/recommendations.ts` | Update recommendation queries/types as needed to support clique feed consumption; `getCliqueFeed(cliqueId, currentUserId)` is canonically implemented in `src/lib/clique-service.ts` |
 
@@ -190,7 +190,7 @@ notifications        Notification[]
 | POST | `/api/cliques` | required | Create a new clique. Body: `{ name }`. Enforces 10-clique limit. |
 | GET | `/api/cliques/:id` | required, member only | Get clique details + members |
 | DELETE | `/api/cliques/:id` | required, creator only | Delete clique; CliqueRecommendation rows cascade deleted, underlying recommendations remain |
-| DELETE | `/api/cliques/:id/members` | required, creator only | Remove a member. Body: `{ userId }` |
+| DELETE | `/api/cliques/:id/members/:userId` | required, creator only | Remove the member identified by `userId` path param |
 
 ### Invites
 
@@ -244,10 +244,10 @@ notifications        Notification[]
 **Files (6):**
 - `src/app/api/cliques/route.ts`
 - `src/app/api/cliques/[id]/route.ts`
-- `src/app/api/cliques/[id]/members/route.ts`
+- `src/app/api/cliques/[id]/members/[userId]/route.ts`
 - `src/app/api/cliques/__tests__/route.test.ts`
 - `src/app/api/cliques/[id]/__tests__/route.test.ts`
-- `src/app/api/cliques/[id]/members/__tests__/route.test.ts`
+- `src/app/api/cliques/[id]/members/[userId]/__tests__/route.test.ts`
 
 ---
 

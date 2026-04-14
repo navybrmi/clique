@@ -32,11 +32,11 @@
 15. Deletes the clique and all CliqueRecommendation associations; underlying Recommendation rows remain
 16. Returns 404 for a non-existent clique ID
 
-**`DELETE /api/cliques/:id/members`**
+**`DELETE /api/cliques/:id/members/:userId`**
 17. Returns 401 when unauthenticated
 18. Returns 403 when the requester is not the creator
-19. Returns 404 when the target userId is not a member
-20. Successfully removes the member; that user can no longer access the clique feed
+19. Returns 404 when the `:userId` path param does not identify a current clique member
+20. Successfully removes the member identified by `:userId`; that user can no longer access the clique feed
 
 ---
 
@@ -138,7 +138,7 @@
 **`CliqueManagementDialog`**
 76. Renders the list of current members with names
 77. "Remove" button is only shown to the creator (not regular members)
-78. Clicking "Remove" calls DELETE `/api/cliques/:id/members` and removes the row optimistically
+78. Clicking "Remove" calls DELETE `/api/cliques/:id/members/:userId` and removes the row optimistically
 79. "Delete Clique" button only shown to creator
 80. Clicking "Delete Clique" shows a confirmation prompt before calling DELETE `/api/cliques/:id`
 
