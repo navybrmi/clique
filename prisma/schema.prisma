@@ -309,7 +309,6 @@ model CliqueInvite {
   createdBy User   @relation("InvitesCreated", fields: [createdById], references: [id])
 
   @@index([cliqueId])
-  @@index([token])
 }
 
 // CliqueRecommendation model - tracks which recommendations are added to which Cliques

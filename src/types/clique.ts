@@ -2,7 +2,6 @@ import type {
   Clique as PrismaClique,
   CliqueMember as PrismaCliqueMember,
   CliqueInvite as PrismaCliqueInvite,
-  CliqueRecommendation as PrismaCliqueRecommendation,
   Notification as PrismaNotification,
   CliqueInviteStatus,
   NotificationType,
