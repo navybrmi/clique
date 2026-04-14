@@ -28,6 +28,11 @@ model User {
   recommendations Recommendation[]
   comments      Comment[]
   upvotes       UpVote[]
+  cliquesCreated       Clique[]              @relation("CliquesCreated")
+  cliqueMembers        CliqueMember[]
+  invitesCreated       CliqueInvite[]        @relation("InvitesCreated")
+  cliqueRecommendations CliqueRecommendation[]
+  notifications        Notification[]
 }
 
 // NextAuth.js models
@@ -124,6 +129,7 @@ model Recommendation {
 
   comments Comment[]
   upvotes  UpVote[]
+  cliqueRecommendations CliqueRecommendation[]
 
   @@index([userId])
   @@index([entityId])
@@ -245,4 +251,93 @@ model UpVote {
   @@unique([userId, recommendationId])
   @@index([userId])
   @@index([recommendationId])
+}
+
+// Clique enums
+enum CliqueInviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
+enum NotificationType {
+  CLIQUE_INVITE
+}
+
+// Clique model - a named friend group
+model Clique {
+  id        String   @id @default(cuid())
+  name      String
+  creatorId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creator         User                   @relation("CliquesCreated", fields: [creatorId], references: [id])
+  members         CliqueMember[]
+  invites         CliqueInvite[]
+  recommendations CliqueRecommendation[]
+
+  @@index([creatorId])
+}
+
+// CliqueMember model - tracks membership in a Clique
+model CliqueMember {
+  cliqueId String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  clique Clique @relation(fields: [cliqueId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([cliqueId, userId])
+  @@index([userId])
+}
+
+// CliqueInvite model - single-use invite links and user invites
+model CliqueInvite {
+  id          String             @id @default(cuid())
+  token       String             @unique
+  cliqueId    String
+  createdById String
+  email       String?
+  status      CliqueInviteStatus @default(PENDING)
+  expiresAt   DateTime
+  createdAt   DateTime           @default(now())
+
+  clique    Clique @relation(fields: [cliqueId], references: [id], onDelete: Cascade)
+  createdBy User   @relation("InvitesCreated", fields: [createdById], references: [id])
+
+  @@index([cliqueId])
+}
+
+// CliqueRecommendation model - tracks which recommendations are added to which Cliques
+model CliqueRecommendation {
+  cliqueId         String
+  recommendationId String
+  addedById        String
+  addedAt          DateTime @default(now())
+
+  clique         Clique         @relation(fields: [cliqueId], references: [id], onDelete: Cascade)
+  recommendation Recommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  addedBy        User           @relation(fields: [addedById], references: [id])
+
+  @@id([cliqueId, recommendationId])
+  @@index([recommendationId])
+  @@index([addedById])
+}
+
+// Notification model - in-app notifications for users
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  payload   Json
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([createdAt])
 }
