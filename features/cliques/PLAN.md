@@ -225,6 +225,20 @@ notifications        Notification[]
 
 ---
 
+## Design Considerations
+
+The following points should be considered during implementation:
+
+1. **`CliqueInvite.email` field ambiguity**: The `email` field is nullable and only populated for user-type invites. When inviting by username, there may be no email to store. Consider whether this field should be renamed to `emailOrUsername` to match the API contract, or whether it strictly stores the resolved email address for sending the notification. The current name may cause confusion during implementation.
+
+2. **`Notification.payload` type safety**: Using an untyped `Json` field is flexible but loses type safety. During implementation, consider defining a discriminated union type in `src/types/clique.ts` for notification payloads (keyed by `NotificationType`) to catch payload shape errors at compile time rather than runtime.
+
+3. **No pagination on clique feed**: `GET /api/cliques/:id/recommendations` has no pagination parameters documented. The public feed presumably has pagination — the clique feed should match. Add `?page` or cursor-based pagination to the endpoint during implementation.
+
+4. **`onDelete: Cascade` on `CliqueRecommendation` → `Recommendation`**: If a `Recommendation` is deleted, all `CliqueRecommendation` rows referencing it should also be cleaned up. The current schema only cascades from `Clique` deletion. Consider adding `onDelete: Cascade` on the `recommendation` relation in `CliqueRecommendation`, or document that recommendation deletion requires manual cleanup.
+
+---
+
 ## PR Breakdown
 
 ### PR 1: Schema & Migration
