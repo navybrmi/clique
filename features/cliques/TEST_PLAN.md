@@ -231,7 +231,7 @@
 
 ## Coverage Targets
 
-> **Note:** The `src/lib/clique-service.ts` and `src/lib/invite-service.ts` targets below require a Jest coverage config update to be enforceable in CI. The current `collectCoverageFrom` in both Jest configs only collects from `src/app/api/**`; the integration config must be expanded to include `src/lib/**` before these file-level thresholds can be measured. This config change is part of PR 4.
+> **Note:** The `src/lib/clique-service.ts` and `src/lib/invite-service.ts` targets below require Jest coverage config updates to be enforceable in CI. Currently, `jest.config.js` collects coverage from `src/components/**` and explicitly excludes `src/lib/**`, while `jest.integration.config.js` collects coverage from `src/app/api/**` only. To measure file-level coverage for these two service files, `jest.integration.config.js` must be expanded to include `src/lib/**`. This config change is scoped to PR 4.
 
 | Layer | Statements | Branches | Functions | Lines |
 |-------|-----------|----------|-----------|-------|
