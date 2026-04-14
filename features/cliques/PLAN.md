@@ -31,7 +31,13 @@ Use Resend (transactional email provider) for invite notification emails. Add `R
 
 ### Limits Enforcement
 
-Both 10-Clique and 50-member limits enforced at the API layer (not just UI) using database count queries before insert.
+Both 10-Clique and 50-member limits must be enforced at the API layer using a concurrency-safe database transaction, not a standalone "count query before insert" (which is race-prone: two concurrent requests can both pass the count check and exceed the limit).
+
+**Required enforcement strategy:**
+- **Create clique (`POST /api/cliques`)**: run in a DB transaction, acquire a PostgreSQL transaction-scoped advisory lock keyed by `creatorId`, then count that user's cliques and insert only if the count is `< 10`.
+- **Accept invite / add member (`POST /api/invites/:token`)**: run in a DB transaction, acquire a PostgreSQL transaction-scoped advisory lock keyed by `cliqueId`, then count members and insert only if the count is `< 50`.
+- The count check and insert must happen in the same transaction while the lock is held, so concurrent requests cannot both pass the check.
+- If the limit has been reached, return 409 and do not create the row.
 
 ---
 
@@ -78,10 +84,10 @@ Both 10-Clique and 50-member limits enforced at the API layer (not just UI) usin
 | `prisma/schema.prisma` | Add Clique, CliqueMember, CliqueInvite, CliqueRecommendation, Notification models and enums |
 | `src/app/page.tsx` | Add `cliqueId` query param handling; render clique feed or public feed; include sidebar wrapper; pass `cliqueId` to recommendation card links |
 | `src/app/recommendations/[id]/page.tsx` | Read `cliqueId` from search params; show active Clique name when present |
-| `src/app/api/recommendations/route.ts` | During POST: check for entity name conflict in selected cliques; after creating recommendation, create CliqueRecommendation rows for selected cliques; send notification if entity name conflict |
+| `src/app/api/recommendations/route.ts` | During POST: check for entity name conflict in selected cliques; after creating recommendation, create CliqueRecommendation rows for selected cliques |
 | `src/components/recommendation-form.tsx` | Add Clique selector (checkboxes for user's cliques); add conflict-resolution prompt (show existing recommendation with "Add to Clique" button) |
 | `src/components/header.tsx` | Add notification bell component |
-| `src/lib/recommendations.ts` | Add `getCliqueFeed(cliqueId, currentUserId)` function |
+| `src/lib/recommendations.ts` | Update recommendation queries/types as needed to support clique feed consumption; `getCliqueFeed(cliqueId, currentUserId)` is canonically implemented in `src/lib/clique-service.ts` |
 
 ---
 
@@ -265,8 +271,8 @@ notifications        Notification[]
 **Files (5):**
 - `src/app/api/cliques/[id]/recommendations/route.ts`
 - `src/app/api/cliques/[id]/recommendations/__tests__/route.test.ts`
-- `src/lib/clique-service.ts`
-- `src/lib/recommendations.ts` (add `getCliqueFeed`)
+- `src/lib/clique-service.ts` (`getCliqueFeed` canonical location)
+- `src/lib/recommendations.ts` (supporting query/type updates only)
 
 ---
 
