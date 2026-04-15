@@ -24,6 +24,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const currentUserId = session.user.id
     const { id, userId } = await params
 
     const clique = await prisma.clique.findUnique({
@@ -35,7 +36,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Clique not found" }, { status: 404 })
     }
 
-    if (clique.creatorId !== session.user.id) {
+    if (clique.creatorId !== currentUserId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 

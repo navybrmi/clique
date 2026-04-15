@@ -19,10 +19,11 @@ export async function GET(): Promise<NextResponse<CliqueWithMemberCount[] | { er
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const userId = session.user.id
     const cliques = await prisma.clique.findMany({
       where: {
         members: {
-          some: { userId: session.user.id },
+          some: { userId },
         },
       },
       include: {

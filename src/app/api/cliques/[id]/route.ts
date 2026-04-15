@@ -24,6 +24,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const userId = session.user.id
     const { id } = await params
 
     const clique = await prisma.clique.findUnique({
@@ -51,7 +52,7 @@ export async function GET(
 
     // Check membership
     const isMember = clique.members.some(
-      (m) => m.userId === session.user.id
+      (m) => m.userId === userId
     )
     if (!isMember) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
@@ -90,6 +91,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const userId = session.user.id
     const { id } = await params
 
     const clique = await prisma.clique.findUnique({
@@ -101,7 +103,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Clique not found" }, { status: 404 })
     }
 
-    if (clique.creatorId !== session.user.id) {
+    if (clique.creatorId !== userId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
