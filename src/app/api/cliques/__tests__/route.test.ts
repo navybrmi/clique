@@ -14,7 +14,7 @@ jest.mock("@/lib/prisma", () => ({
       count: jest.fn(),
     },
     $transaction: jest.fn(),
-    $queryRawUnsafe: jest.fn(),
+    $queryRaw: jest.fn(),
   },
 }))
 
@@ -177,7 +177,7 @@ describe("POST /api/cliques", () => {
     // Mock $transaction to execute the callback with a mock tx
     ;(prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
       const tx = {
-        $queryRawUnsafe: jest.fn().mockResolvedValue(undefined),
+        $queryRaw: jest.fn().mockResolvedValue(undefined),
         cliqueMember: { count: jest.fn().mockResolvedValue(0) },
         clique: { create: jest.fn().mockResolvedValue(createdClique) },
       }
@@ -238,7 +238,7 @@ describe("POST /api/cliques", () => {
 
     ;(prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
       const tx = {
-        $queryRawUnsafe: jest.fn().mockResolvedValue(undefined),
+        $queryRaw: jest.fn().mockResolvedValue(undefined),
         cliqueMember: { count: jest.fn().mockResolvedValue(10) },
         clique: { create: jest.fn() },
       }
@@ -271,7 +271,7 @@ describe("POST /api/cliques", () => {
 
     ;(prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
       const tx = {
-        $queryRawUnsafe: jest.fn().mockResolvedValue(undefined),
+        $queryRaw: jest.fn().mockResolvedValue(undefined),
         cliqueMember: { count: jest.fn().mockResolvedValue(0) },
         clique: {
           create: jest.fn().mockResolvedValue(createdClique),
@@ -300,7 +300,7 @@ describe("POST /api/cliques", () => {
     let capturedLockCall: unknown[] = []
     ;(prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
       const tx = {
-        $queryRawUnsafe: jest.fn().mockImplementation((...args: unknown[]) => {
+        $queryRaw: jest.fn().mockImplementation((...args: unknown[]) => {
           capturedLockCall = args
           return Promise.resolve(undefined)
         }),
@@ -324,7 +324,8 @@ describe("POST /api/cliques", () => {
 
     await POST(request)
 
-    expect(capturedLockCall[0]).toBe("SELECT pg_advisory_xact_lock($1)")
+    expect(Array.isArray(capturedLockCall[0])).toBe(true)
+    expect((capturedLockCall[0] as string[])[0]).toContain("pg_advisory_xact_lock")
     expect(typeof capturedLockCall[1]).toBe("number")
   })
 

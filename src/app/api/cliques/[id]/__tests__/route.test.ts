@@ -10,6 +10,9 @@ jest.mock("@/lib/prisma", () => ({
       findUnique: jest.fn(),
       delete: jest.fn(),
     },
+    cliqueMember: {
+      findUnique: jest.fn(),
+    },
   },
 }))
 
@@ -40,6 +43,7 @@ describe("GET /api/cliques/[id]", () => {
     ;(auth as jest.Mock).mockResolvedValue({
       user: { id: "user1" },
     })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue(null)
     ;(prisma.clique.findUnique as jest.Mock).mockResolvedValue(null)
 
     const request = new NextRequest("http://localhost/api/cliques/nonexistent")
@@ -56,16 +60,8 @@ describe("GET /api/cliques/[id]", () => {
     ;(auth as jest.Mock).mockResolvedValue({
       user: { id: "user1" },
     })
-    ;(prisma.clique.findUnique as jest.Mock).mockResolvedValue({
-      id: "clique1",
-      name: "Secret Club",
-      creatorId: "user2",
-      members: [
-        { cliqueId: "clique1", userId: "user2", user: { id: "user2", name: "Owner", image: null, email: "owner@test.com" } },
-      ],
-      creator: { id: "user2", name: "Owner", image: null },
-      _count: { members: 1 },
-    })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue(null)
+    ;(prisma.clique.findUnique as jest.Mock).mockResolvedValue({ id: "clique1" })
 
     const request = new NextRequest("http://localhost/api/cliques/clique1")
     const response = await GET(request, {
@@ -81,7 +77,7 @@ describe("GET /api/cliques/[id]", () => {
     ;(auth as jest.Mock).mockResolvedValue({
       user: { id: "user1" },
     })
-    ;(prisma.clique.findUnique as jest.Mock).mockRejectedValue(
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockRejectedValue(
       new Error("Database error")
     )
 
@@ -126,6 +122,10 @@ describe("GET /api/cliques/[id]", () => {
       ],
       _count: { members: 2 },
     }
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({
+      cliqueId: "clique1",
+      userId: "user1",
+    })
     ;(prisma.clique.findUnique as jest.Mock).mockResolvedValue(mockClique)
 
     const request = new NextRequest("http://localhost/api/cliques/clique1")
