@@ -137,6 +137,26 @@ describe("PATCH /api/notifications", () => {
     })
   })
 
+  it("should treat missing ids as mark-all when body is not valid JSON", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.notification.updateMany as jest.Mock).mockResolvedValue({ count: 3 })
+
+    const req = new NextRequest("http://localhost/api/notifications", {
+      method: "PATCH",
+      // No body — request.json() will throw, caught by .catch(() => ({}))
+    })
+    const res = await PATCH(req)
+    const data = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(data).toEqual({ updated: 3 })
+    // Should have called updateMany with no id filter (mark-all)
+    expect(prisma.notification.updateMany).toHaveBeenCalledWith({
+      where: { userId: "user1" },
+      data: { read: true },
+    })
+  })
+
   it("should handle database errors", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
     ;(prisma.notification.updateMany as jest.Mock).mockRejectedValue(new Error("DB error"))
