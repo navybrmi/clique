@@ -77,6 +77,29 @@ describe("GET /api/cliques/[id]", () => {
     expect(data).toEqual({ error: "Forbidden" })
   })
 
+  it("should handle database errors", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({
+      user: { id: "user1" },
+    })
+    ;(prisma.clique.findUnique as jest.Mock).mockRejectedValue(
+      new Error("Database error")
+    )
+
+    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation()
+
+    const request = new NextRequest("http://localhost/api/cliques/clique1")
+    const response = await GET(request, {
+      params: Promise.resolve({ id: "clique1" }),
+    })
+    const data = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(data).toEqual({ error: "Failed to fetch clique" })
+    expect(consoleErrorSpy).toHaveBeenCalled()
+
+    consoleErrorSpy.mockRestore()
+  })
+
   it("should return clique details with members for a valid member", async () => {
     ;(auth as jest.Mock).mockResolvedValue({
       user: { id: "user1" },
@@ -175,6 +198,34 @@ describe("DELETE /api/cliques/[id]", () => {
 
     expect(response.status).toBe(403)
     expect(data).toEqual({ error: "Forbidden" })
+  })
+
+  it("should handle database errors during deletion", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({
+      user: { id: "user1" },
+    })
+    ;(prisma.clique.findUnique as jest.Mock).mockResolvedValue({
+      creatorId: "user1",
+    })
+    ;(prisma.clique.delete as jest.Mock).mockRejectedValue(
+      new Error("Database error")
+    )
+
+    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation()
+
+    const request = new NextRequest("http://localhost/api/cliques/clique1", {
+      method: "DELETE",
+    })
+    const response = await DELETE(request, {
+      params: Promise.resolve({ id: "clique1" }),
+    })
+    const data = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(data).toEqual({ error: "Failed to delete clique" })
+    expect(consoleErrorSpy).toHaveBeenCalled()
+
+    consoleErrorSpy.mockRestore()
   })
 
   it("should delete the clique when requester is the creator", async () => {

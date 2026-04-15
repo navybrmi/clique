@@ -96,6 +96,26 @@ describe("GET /api/cliques", () => {
     })
   })
 
+  it("should handle database errors", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({
+      user: { id: "user1" },
+    })
+    ;(prisma.clique.findMany as jest.Mock).mockRejectedValue(
+      new Error("Database error")
+    )
+
+    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation()
+
+    const response = await GET()
+    const data = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(data).toEqual({ error: "Failed to fetch cliques" })
+    expect(consoleErrorSpy).toHaveBeenCalled()
+
+    consoleErrorSpy.mockRestore()
+  })
+
   it("should not return cliques the user does not belong to", async () => {
     ;(auth as jest.Mock).mockResolvedValue({
       user: { id: "user1" },
@@ -306,5 +326,31 @@ describe("POST /api/cliques", () => {
 
     expect(capturedLockCall[0]).toBe("SELECT pg_advisory_xact_lock($1)")
     expect(typeof capturedLockCall[1]).toBe("number")
+  })
+
+  it("should handle database errors during creation", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({
+      user: { id: "user1" },
+    })
+
+    ;(prisma.$transaction as jest.Mock).mockRejectedValue(
+      new Error("Database error")
+    )
+
+    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation()
+
+    const request = new NextRequest("http://localhost/api/cliques", {
+      method: "POST",
+      body: JSON.stringify({ name: "Test" }),
+    })
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(data).toEqual({ error: "Failed to create clique" })
+    expect(consoleErrorSpy).toHaveBeenCalled()
+
+    consoleErrorSpy.mockRestore()
   })
 })

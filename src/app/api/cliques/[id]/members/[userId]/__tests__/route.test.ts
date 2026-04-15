@@ -104,6 +104,32 @@ describe("DELETE /api/cliques/[id]/members/[userId]", () => {
     expect(data).toEqual({ error: "Member not found" })
   })
 
+  it("should handle database errors", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({
+      user: { id: "user1" },
+    })
+    ;(prisma.clique.findUnique as jest.Mock).mockRejectedValue(
+      new Error("Database error")
+    )
+
+    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation()
+
+    const request = new NextRequest(
+      "http://localhost/api/cliques/clique1/members/user2",
+      { method: "DELETE" }
+    )
+    const response = await DELETE(request, {
+      params: Promise.resolve({ id: "clique1", userId: "user2" }),
+    })
+    const data = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(data).toEqual({ error: "Failed to remove member" })
+    expect(consoleErrorSpy).toHaveBeenCalled()
+
+    consoleErrorSpy.mockRestore()
+  })
+
   it("should successfully remove a member", async () => {
     ;(auth as jest.Mock).mockResolvedValue({
       user: { id: "user1" },
