@@ -2,6 +2,18 @@ import crypto from "crypto"
 import { Resend } from "resend"
 
 /**
+ * Escapes HTML special characters to prevent injection in email templates.
+ */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;")
+}
+
+/**
  * Generates a cryptographically random 64-character hex invite token.
  */
 export function generateInviteToken(): string {
@@ -37,15 +49,16 @@ export async function sendInviteEmail({
 
   const resend = new Resend(apiKey)
   const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/invite/${inviteToken}`
-  const fromName = inviterName ?? "Someone"
+  const fromName = escapeHtml(inviterName ?? "Someone")
+  const safecliqueName = escapeHtml(cliqueName)
 
   await resend.emails.send({
     from: "Clique <noreply@clique.app>",
     to: toEmail,
-    subject: `${fromName} invited you to join "${cliqueName}" on Clique`,
+    subject: `${fromName} invited you to join "${safecliqueName}" on Clique`,
     html: `
       <p>Hi,</p>
-      <p><strong>${fromName}</strong> has invited you to join the clique <strong>${cliqueName}</strong> on Clique.</p>
+      <p><strong>${fromName}</strong> has invited you to join the clique <strong>${safecliqueName}</strong> on Clique.</p>
       <p><a href="${inviteUrl}">Click here to accept the invite</a></p>
       <p>This invite link expires in 1 year.</p>
     `,

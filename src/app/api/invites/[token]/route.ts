@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
+import { LimitExceededError, hashStringToInt } from "@/lib/clique-utils"
 import type { CliqueInviteLookup } from "@/types/clique"
 
 /**
  * GET /api/invites/[token]
  *
  * Public endpoint to look up an invite by token.
- * Returns minimal info: clique name, status, and expiry.
+ * Returns minimal info: clique name, status, and expiry. No auth required.
  *
- * @returns {Promise<NextResponse>} Invite lookup result
+ * @returns {Promise<NextResponse>} Invite lookup result (no internal IDs)
  * @throws {404} If token not found
  * @throws {500} If database query fails
  */
@@ -32,7 +33,6 @@ export async function GET(
     }
 
     const result: CliqueInviteLookup = {
-      id: invite.id,
       cliqueName: invite.clique.name,
       status: invite.status,
       expiresAt: invite.expiresAt,
@@ -54,8 +54,13 @@ export async function GET(
  * Accepts an invite. The current user is added as a clique member and the
  * invite is marked ACCEPTED (single-use).
  *
- * Enforces the 50-member limit using a PostgreSQL advisory lock to prevent
- * race conditions. Also enforces the 10-clique limit on the accepting user.
+ * Enforces both the 50-member limit (per-clique) and the 10-clique limit
+ * (per-user) using PostgreSQL advisory locks to prevent race conditions.
+ * Both checks happen inside the transaction while locks are held.
+ *
+ * Invite status is re-verified inside the transaction with an atomic
+ * conditional update (`updateMany` where status=PENDING) to ensure
+ * single-use even under concurrent requests.
  *
  * @returns {Promise<NextResponse>} Success message with cliqueId
  * @throws {401} If unauthenticated
@@ -102,9 +107,15 @@ export async function POST(
     const cliqueId = invite.cliqueId
 
     await prisma.$transaction(async (tx) => {
-      // Advisory lock keyed by cliqueId hash to serialize concurrent accepts
-      const lockKey = hashStringToInt(cliqueId)
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${lockKey})`
+      // Acquire advisory locks for both the user and the clique.
+      // The user lock (acquired first, consistent with POST /api/cliques)
+      // serializes the per-user 10-clique check; the clique lock serializes
+      // the 50-member check. Consistent ordering prevents deadlocks.
+      const userLockKey = hashStringToInt(userId)
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${userLockKey})`
+
+      const cliqueLockKey = hashStringToInt(cliqueId)
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${cliqueLockKey})`
 
       // Check 50-member limit
       const memberCount = await tx.cliqueMember.count({ where: { cliqueId } })
@@ -118,12 +129,18 @@ export async function POST(
         throw new LimitExceededError("You can belong to a maximum of 10 cliques")
       }
 
-      // Add member and mark invite accepted
-      await tx.cliqueMember.create({ data: { cliqueId, userId } })
-      await tx.cliqueInvite.update({
-        where: { id: invite.id },
+      // Atomically mark invite as ACCEPTED — only succeeds if still PENDING.
+      // This is the authoritative single-use enforcement under concurrent requests.
+      const updated = await tx.cliqueInvite.updateMany({
+        where: { id: invite.id, status: "PENDING" },
         data: { status: "ACCEPTED" },
       })
+
+      if (updated.count === 0) {
+        throw new LimitExceededError("Invite has already been accepted or revoked")
+      }
+
+      await tx.cliqueMember.create({ data: { cliqueId, userId } })
     })
 
     return NextResponse.json({ message: "Invite accepted", cliqueId })
@@ -137,20 +154,4 @@ export async function POST(
       { status: 500 }
     )
   }
-}
-
-class LimitExceededError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = "LimitExceededError"
-  }
-}
-
-function hashStringToInt(str: string): number {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i)
-    hash = ((hash << 5) - hash + char) | 0
-  }
-  return hash
 }

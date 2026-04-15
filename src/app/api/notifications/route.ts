@@ -67,10 +67,21 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
 
     const userId = session.user.id
     const body = await request.json().catch(() => ({}))
-    const { ids } = body as { ids?: string[] }
+    const { ids } = body as { ids?: unknown }
 
-    const where = ids?.length
-      ? { userId, id: { in: ids } }
+    if (
+      ids !== undefined &&
+      (!Array.isArray(ids) || !(ids as unknown[]).every((id) => typeof id === "string"))
+    ) {
+      return NextResponse.json(
+        { error: "ids must be an array of strings" },
+        { status: 400 }
+      )
+    }
+
+    const validIds = ids as string[] | undefined
+    const where = validIds?.length
+      ? { userId, id: { in: validIds } }
       : { userId }
 
     const result = await prisma.notification.updateMany({

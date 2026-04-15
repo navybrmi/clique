@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import type { CliqueWithMemberCount } from "@/types/clique"
+import { LimitExceededError, hashStringToInt } from "@/lib/clique-utils"
 
 /**
  * GET /api/cliques
@@ -127,21 +128,3 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-class LimitExceededError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = "LimitExceededError"
-  }
-}
-
-/**
- * Converts a string to a stable 32-bit integer for use as a PostgreSQL advisory lock key.
- */
-function hashStringToInt(str: string): number {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i)
-    hash = ((hash << 5) - hash + char) | 0
-  }
-  return hash
-}

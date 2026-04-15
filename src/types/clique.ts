@@ -46,7 +46,6 @@ export interface CliqueInviteWithCreator extends PrismaCliqueInvite {
 
 /** Clique invite lookup result (public-facing, minimal info) */
 export interface CliqueInviteLookup {
-  id: string
   cliqueName: string
   status: CliqueInviteStatus
   expiresAt: Date

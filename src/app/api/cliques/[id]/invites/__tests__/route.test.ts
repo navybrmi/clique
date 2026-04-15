@@ -17,12 +17,12 @@ jest.mock("@/lib/prisma", () => ({
       create: jest.fn(),
     },
     user: {
-      findFirst: jest.fn(),
       findUnique: jest.fn(),
     },
     notification: {
       create: jest.fn(),
     },
+    $transaction: jest.fn(),
   },
 }))
 
@@ -210,7 +210,7 @@ describe("POST /api/cliques/[id]/invites (link type)", () => {
 describe("POST /api/cliques/[id]/invites (user type)", () => {
   afterEach(() => jest.clearAllMocks())
 
-  it("should return 400 when emailOrUsername is missing", async () => {
+  it("should return 400 when email is missing", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
     ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1", userId: "user1" })
 
@@ -222,17 +222,32 @@ describe("POST /api/cliques/[id]/invites (user type)", () => {
     const data = await res.json()
 
     expect(res.status).toBe(400)
-    expect(data.error).toContain("emailOrUsername")
+    expect(data.error).toContain("email")
+  })
+
+  it("should return 400 when email is not a valid address", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1", userId: "user1" })
+
+    const req = new NextRequest("http://localhost/api/cliques/clique1/invites", {
+      method: "POST",
+      body: JSON.stringify({ type: "user", email: "not-an-email" }),
+    })
+    const res = await POST(req, { params: Promise.resolve({ id: "clique1" }) })
+    const data = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(data.error).toContain("valid email")
   })
 
   it("should return 404 when no matching user found", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
     ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1", userId: "user1" })
-    ;(prisma.user.findFirst as jest.Mock).mockResolvedValue(null)
+    ;(prisma.user.findUnique as jest.Mock).mockResolvedValueOnce(null)
 
     const req = new NextRequest("http://localhost/api/cliques/clique1/invites", {
       method: "POST",
-      body: JSON.stringify({ type: "user", emailOrUsername: "unknown@test.com" }),
+      body: JSON.stringify({ type: "user", email: "unknown@test.com" }),
     })
     const res = await POST(req, { params: Promise.resolve({ id: "clique1" }) })
 
@@ -242,9 +257,11 @@ describe("POST /api/cliques/[id]/invites (user type)", () => {
   it("should create invite and send in-app notification to invitee", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
     ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1", userId: "user1" })
-    ;(prisma.user.findFirst as jest.Mock).mockResolvedValue({ id: "user2", name: "Bob", email: "bob@test.com" })
+    // First findUnique call: invitee; second: inviter
+    ;(prisma.user.findUnique as jest.Mock)
+      .mockResolvedValueOnce({ id: "user2", name: "Bob", email: "bob@test.com" })
+      .mockResolvedValueOnce({ name: "Alice" })
     ;(prisma.clique.findUnique as jest.Mock).mockResolvedValue({ name: "Movie Buffs" })
-    ;(prisma.user.findUnique as jest.Mock).mockResolvedValue({ name: "Alice" })
     ;(prisma.cliqueInvite.create as jest.Mock).mockResolvedValue({
       id: "inv1",
       token: "a".repeat(64),
@@ -252,10 +269,17 @@ describe("POST /api/cliques/[id]/invites (user type)", () => {
       createdBy: { id: "user1", name: "Alice" },
     })
     ;(prisma.notification.create as jest.Mock).mockResolvedValue({})
+    ;(prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
+      const tx = {
+        cliqueInvite: { create: prisma.cliqueInvite.create },
+        notification: { create: prisma.notification.create },
+      }
+      return cb(tx)
+    })
 
     const req = new NextRequest("http://localhost/api/cliques/clique1/invites", {
       method: "POST",
-      body: JSON.stringify({ type: "user", emailOrUsername: "bob@test.com" }),
+      body: JSON.stringify({ type: "user", email: "bob@test.com" }),
     })
     const res = await POST(req, { params: Promise.resolve({ id: "clique1" }) })
 
@@ -273,9 +297,11 @@ describe("POST /api/cliques/[id]/invites (user type)", () => {
   it("should send an email via invite service to the invitee", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
     ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1", userId: "user1" })
-    ;(prisma.user.findFirst as jest.Mock).mockResolvedValue({ id: "user2", name: "Bob", email: "bob@test.com" })
+    // First findUnique call: invitee; second: inviter
+    ;(prisma.user.findUnique as jest.Mock)
+      .mockResolvedValueOnce({ id: "user2", name: "Bob", email: "bob@test.com" })
+      .mockResolvedValueOnce({ name: "Alice" })
     ;(prisma.clique.findUnique as jest.Mock).mockResolvedValue({ name: "Movie Buffs" })
-    ;(prisma.user.findUnique as jest.Mock).mockResolvedValue({ name: "Alice" })
     ;(prisma.cliqueInvite.create as jest.Mock).mockResolvedValue({
       id: "inv1",
       token: "a".repeat(64),
@@ -283,10 +309,17 @@ describe("POST /api/cliques/[id]/invites (user type)", () => {
       createdBy: { id: "user1", name: "Alice" },
     })
     ;(prisma.notification.create as jest.Mock).mockResolvedValue({})
+    ;(prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
+      const tx = {
+        cliqueInvite: { create: prisma.cliqueInvite.create },
+        notification: { create: prisma.notification.create },
+      }
+      return cb(tx)
+    })
 
     const req = new NextRequest("http://localhost/api/cliques/clique1/invites", {
       method: "POST",
-      body: JSON.stringify({ type: "user", emailOrUsername: "bob@test.com" }),
+      body: JSON.stringify({ type: "user", email: "bob@test.com" }),
     })
     await POST(req, { params: Promise.resolve({ id: "clique1" }) })
 

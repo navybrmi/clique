@@ -118,6 +118,34 @@ describe("PATCH /api/notifications", () => {
     })
   })
 
+  it("should return 400 when ids is not an array of strings", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+
+    const req = new NextRequest("http://localhost/api/notifications", {
+      method: "PATCH",
+      body: JSON.stringify({ ids: "not-an-array" }),
+    })
+    const res = await PATCH(req)
+    const data = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(data.error).toContain("array of strings")
+  })
+
+  it("should return 400 when ids contains non-string elements", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+
+    const req = new NextRequest("http://localhost/api/notifications", {
+      method: "PATCH",
+      body: JSON.stringify({ ids: [1, 2, 3] }),
+    })
+    const res = await PATCH(req)
+    const data = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(data.error).toContain("array of strings")
+  })
+
   it("should mark only specified notification IDs as read", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
     ;(prisma.notification.updateMany as jest.Mock).mockResolvedValue({ count: 2 })

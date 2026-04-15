@@ -7,7 +7,7 @@ jest.mock("@/lib/prisma", () => ({
   prisma: {
     cliqueInvite: {
       findUnique: jest.fn(),
-      update: jest.fn(),
+      updateMany: jest.fn(),
     },
     cliqueMember: {
       count: jest.fn(),
@@ -42,7 +42,7 @@ describe("GET /api/invites/[token]", () => {
     expect(res.status).toBe(200)
     expect(data.cliqueName).toBe("Movie Buffs")
     expect(data.status).toBe("PENDING")
-    expect(data.id).toBe("inv1")
+    expect(data.id).toBeUndefined()
   })
 
   it("should return 404 for an unknown token", async () => {
@@ -182,7 +182,7 @@ describe("POST /api/invites/[token]", () => {
           count: jest.fn().mockResolvedValue(50),
           create: jest.fn(),
         },
-        cliqueInvite: { update: jest.fn() },
+        cliqueInvite: { updateMany: jest.fn() },
       }
       return cb(tx)
     })
@@ -212,7 +212,7 @@ describe("POST /api/invites/[token]", () => {
             .mockResolvedValueOnce(10), // user's clique count
           create: jest.fn(),
         },
-        cliqueInvite: { update: jest.fn() },
+        cliqueInvite: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
       }
       return cb(tx)
     })
@@ -240,7 +240,7 @@ describe("POST /api/invites/[token]", () => {
           count: jest.fn().mockResolvedValue(3),
           create: jest.fn().mockResolvedValue({}),
         },
-        cliqueInvite: { update: jest.fn().mockResolvedValue({}) },
+        cliqueInvite: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
       }
       return cb(tx)
     })
@@ -266,6 +266,35 @@ describe("POST /api/invites/[token]", () => {
     const res = await POST(req, { params: Promise.resolve({ token: "acceptedtoken" }) })
 
     expect(res.status).toBe(409)
+  })
+
+  it("should return 409 when concurrent request wins the updateMany race", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.cliqueInvite.findUnique as jest.Mock).mockResolvedValue({
+      id: "inv1",
+      cliqueId: "clique1",
+      status: "PENDING",
+      expiresAt: new Date("2027-01-01"),
+    })
+    ;(prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
+      const tx = {
+        $queryRaw: jest.fn().mockResolvedValue(undefined),
+        cliqueMember: {
+          count: jest.fn().mockResolvedValue(3),
+          create: jest.fn(),
+        },
+        // Simulate another request winning the race: count === 0
+        cliqueInvite: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      }
+      return cb(tx)
+    })
+
+    const req = new NextRequest("http://localhost/api/invites/racetoken", { method: "POST" })
+    const res = await POST(req, { params: Promise.resolve({ token: "racetoken" }) })
+    const data = await res.json()
+
+    expect(res.status).toBe(409)
+    expect(data.error).toContain("already been accepted")
   })
 
   it("should handle database errors", async () => {

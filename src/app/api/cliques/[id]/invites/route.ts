@@ -105,30 +105,33 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { type, emailOrUsername } = body
+    const { type, email } = body
 
     if (type === "user") {
-      if (!emailOrUsername || typeof emailOrUsername !== "string") {
+      if (!email || typeof email !== "string") {
         return NextResponse.json(
-          { error: "emailOrUsername is required for user invites" },
+          { error: "email is required for user invites" },
           { status: 400 }
         )
       }
 
-      // Look up user by email or name
-      const invitee = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { email: emailOrUsername },
-            { name: emailOrUsername },
-          ],
-        },
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email)) {
+        return NextResponse.json(
+          { error: "email must be a valid email address" },
+          { status: 400 }
+        )
+      }
+
+      // Look up user by email only
+      const invitee = await prisma.user.findUnique({
+        where: { email },
         select: { id: true, name: true, email: true },
       })
 
       if (!invitee) {
         return NextResponse.json(
-          { error: "No user found with that email or username" },
+          { error: "No user found with that email" },
           { status: 404 }
         )
       }
@@ -145,44 +148,52 @@ export async function POST(
       const token = generateInviteToken()
       const expiresAt = getInviteExpiry()
 
-      const invite = await prisma.cliqueInvite.create({
-        data: {
-          token,
-          cliqueId: id,
-          createdById: userId,
-          // Store the resolved email for audit trail; field is optional
-          email: invitee.email,
-          status: "PENDING",
-          expiresAt,
-        },
-        include: {
-          createdBy: { select: { id: true, name: true } },
-        },
-      })
-
-      // Send in-app notification
-      await prisma.notification.create({
-        data: {
-          userId: invitee.id,
-          type: "CLIQUE_INVITE",
-          payload: {
-            type: "CLIQUE_INVITE",
+      // Atomically create invite and notification together
+      const invite = await prisma.$transaction(async (tx) => {
+        const inv = await tx.cliqueInvite.create({
+          data: {
+            token,
             cliqueId: id,
-            cliqueName: clique?.name ?? "",
-            invitedById: userId,
-            invitedByName: inviter?.name ?? null,
-            inviteToken: token,
+            createdById: userId,
+            // Store the resolved email for audit trail; field is optional
+            email: invitee.email,
+            status: "PENDING",
+            expiresAt,
           },
-        },
+          include: {
+            createdBy: { select: { id: true, name: true } },
+          },
+        })
+
+        await tx.notification.create({
+          data: {
+            userId: invitee.id,
+            type: "CLIQUE_INVITE",
+            payload: {
+              type: "CLIQUE_INVITE",
+              cliqueId: id,
+              cliqueName: clique?.name ?? "",
+              invitedById: userId,
+              invitedByName: inviter?.name ?? null,
+              inviteToken: token,
+            },
+          },
+        })
+
+        return inv
       })
 
-      // Send email (best-effort; does not throw if RESEND_API_KEY is absent)
-      await sendInviteEmail({
-        toEmail: invitee.email,
-        inviterName: inviter?.name ?? null,
-        cliqueName: clique?.name ?? "",
-        inviteToken: token,
-      })
+      // Send email best-effort — failure must not roll back the invite
+      try {
+        await sendInviteEmail({
+          toEmail: invitee.email,
+          inviterName: inviter?.name ?? null,
+          cliqueName: clique?.name ?? "",
+          inviteToken: token,
+        })
+      } catch (emailError) {
+        console.error("Failed to send invite email:", emailError)
+      }
 
       return NextResponse.json(invite, { status: 201 })
     }
