@@ -130,6 +130,30 @@ describe("DELETE /api/cliques/[id]/members/[userId]", () => {
     consoleErrorSpy.mockRestore()
   })
 
+  it("should return 400 when creator tries to remove themselves", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({
+      user: { id: "user1" },
+    })
+    ;(prisma.clique.findUnique as jest.Mock).mockResolvedValue({
+      creatorId: "user1",
+    })
+
+    const request = new NextRequest(
+      "http://localhost/api/cliques/clique1/members/user1",
+      { method: "DELETE" }
+    )
+    const response = await DELETE(request, {
+      params: Promise.resolve({ id: "clique1", userId: "user1" }),
+    })
+    const data = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(data).toEqual({
+      error: "Cannot remove the clique creator. Delete the clique instead.",
+    })
+    expect(prisma.cliqueMember.delete).not.toHaveBeenCalled()
+  })
+
   it("should successfully remove a member", async () => {
     ;(auth as jest.Mock).mockResolvedValue({
       user: { id: "user1" },
