@@ -28,10 +28,10 @@ export async function GET(): Promise<NextResponse<TypedNotification[] | { error:
       take: 50,
     })
 
-    // Cast payload to typed union
+    // Cast payload through unknown to satisfy TypeScript's type narrowing
     const typed = notifications.map((n) => ({
       ...n,
-      payload: n.payload as NotificationPayload,
+      payload: n.payload as unknown as NotificationPayload,
     })) as TypedNotification[]
 
     return NextResponse.json(typed)
