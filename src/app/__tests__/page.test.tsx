@@ -4,26 +4,65 @@ import { render, screen } from '@testing-library/react'
 
 // Mock next/link
 jest.mock('next/link', () => {
-  return ({ children, href }: { children: React.ReactNode; href: string }) => (
-    <a href={href}>{children}</a>
-  )
+  function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
+    return <a href={href}>{children}</a>
+  }
+
+  MockLink.displayName = 'MockLink'
+  return MockLink
 })
 
 // Mock next/image
 jest.mock('next/image', () => {
-  return ({ src, alt, priority }: { src: string; alt: string; priority?: boolean }) => (
-    <img src={src} alt={alt} data-priority={priority ? 'true' : undefined} />
-  )
+  function MockImage({
+    src,
+    alt,
+    priority,
+  }: {
+    src: string
+    alt: string
+    priority?: boolean
+  }) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={src} alt={alt} data-priority={priority ? 'true' : undefined} />
+  }
+
+  MockImage.displayName = 'MockImage'
+  return MockImage
 })
 
 // Mock Header to isolate page tests from session fetching
 jest.mock('@/components/header', () => ({
-  Header: () => <header data-testid="mock-header" />,
+  Header: function MockHeader() {
+    return <header data-testid="mock-header" />
+  },
 }))
 
 // Mock AddRecommendationTrigger to isolate page tests from dynamic imports
 jest.mock('@/components/add-recommendation-trigger', () => ({
-  AddRecommendationTrigger: () => <div data-testid="mock-trigger" />,
+  AddRecommendationTrigger: function MockAddRecommendationTrigger() {
+    return <div data-testid="mock-trigger" />
+  },
+}))
+
+jest.mock('@/components/add-to-cliques-dialog', () => ({
+  AddToCliquesDialog: function MockAddToCliquesDialog({
+    recommendationId,
+  }: {
+    recommendationId: string
+  }) {
+    return <div data-testid="mock-add-to-clique">{recommendationId}</div>
+  },
+}))
+
+jest.mock('@/components/clique-sidebar-wrapper', () => ({
+  CliqueSidebarWrapper: function MockCliqueSidebarWrapper({
+    activeCliqueId,
+  }: {
+    activeCliqueId?: string
+  }) {
+    return <aside data-testid="mock-clique-sidebar">{activeCliqueId ?? 'public'}</aside>
+  },
 }))
 
 // Mock getRecommendations so tests don't hit the database
@@ -31,16 +70,44 @@ jest.mock('@/lib/recommendations', () => ({
   getRecommendations: jest.fn(),
 }))
 
+jest.mock('@/lib/clique-service', () => ({
+  getCliqueFeed: jest.fn(),
+}))
+
 // Mock auth so tests don't pull in next-auth ESM module
 jest.mock('@/lib/auth', () => ({
   auth: jest.fn(),
 }))
 
+jest.mock('@/lib/prisma', () => ({
+  prisma: {
+    clique: {
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+    },
+    cliqueRecommendation: {
+      findMany: jest.fn(),
+    },
+    cliqueMember: {
+      findMany: jest.fn(),
+    },
+    $queryRaw: jest.fn(),
+  },
+  getPrismaClient: jest.fn(),
+}))
+
 import { getRecommendations } from '@/lib/recommendations'
+import { getCliqueFeed } from '@/lib/clique-service'
 import { auth } from '@/lib/auth'
+import { prisma, getPrismaClient } from '@/lib/prisma'
 import HomePage from '../page'
 
 const mockAuth = auth as jest.Mock
+const mockGetCliqueFeed = getCliqueFeed as jest.Mock
+const mockFindFirstClique = prisma.clique.findFirst as jest.Mock
+const mockFindUniqueClique = prisma.clique.findUnique as jest.Mock
+const mockQueryRaw = prisma.$queryRaw as jest.Mock
+const mockGetPrismaClient = getPrismaClient as jest.Mock
 
 const mockRestaurantRec = {
   id: 'rec-restaurant-1',
@@ -99,9 +166,53 @@ const mockRecWithImage = {
   _count: { upvotes: 3, comments: 1 },
 }
 
+const mockCliqueFeedItem = {
+  id: 'rec-clique-1',
+  recommendationId: 'rec-clique-1',
+  addedAt: new Date('2026-04-15T00:00:00Z'),
+  submitterName: 'Clique Submitter',
+  addedByName: 'Clique Submitter',
+  recommendation: {
+    id: 'rec-clique-1',
+    tags: ['Shared pick'],
+    link: null,
+    imageUrl: null,
+    rating: 9,
+    createdAt: new Date('2026-04-15T00:00:00Z'),
+    entity: {
+      id: 'entity-1',
+      name: 'Private Movie',
+      category: { id: 'cat-1', name: 'MOVIE', displayName: 'Movie' },
+      restaurant: null,
+      movie: {
+        director: 'Pat Director',
+        year: 2026,
+        genre: 'Drama',
+        duration: '2h 3m',
+      },
+      fashion: null,
+      household: null,
+      other: null,
+    },
+    _count: { upvotes: 4, comments: 1 },
+  },
+}
+
+async function renderHomePage(searchParams?: { cliqueId?: string | string[] }) {
+  const jsx = await HomePage(
+    searchParams ? { searchParams: Promise.resolve(searchParams) } : undefined
+  )
+  render(jsx)
+}
+
 describe('HomePage - Server Component', () => {
   beforeEach(() => {
+    mockGetPrismaClient.mockReturnValue(prisma)
     mockAuth.mockResolvedValue(null)
+    mockGetCliqueFeed.mockResolvedValue([])
+    mockFindFirstClique.mockResolvedValue(null)
+    mockFindUniqueClique.mockResolvedValue(null)
+    mockQueryRaw.mockResolvedValue([])
   })
 
   afterEach(() => {
@@ -110,8 +221,7 @@ describe('HomePage - Server Component', () => {
 
   it('renders recommendation cards with server-fetched data (no fetch call)', async () => {
     ;(getRecommendations as jest.Mock).mockResolvedValue([mockRestaurantRec, mockMovieRec])
-    const jsx = await HomePage()
-    render(jsx)
+    await renderHomePage()
 
     expect(screen.getAllByText('SAJJ Mediterranean').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Inception').length).toBeGreaterThan(0)
@@ -124,7 +234,7 @@ describe('HomePage - Server Component', () => {
 
   it('displays restaurant cuisine, location, and price range', async () => {
     ;(getRecommendations as jest.Mock).mockResolvedValue([mockRestaurantRec])
-    render(await HomePage())
+    await renderHomePage()
 
     expect(screen.getByText(/Cuisine: Mediterranean/)).toBeInTheDocument()
     expect(screen.getByText(/145 S Frances St, Sunnyvale, CA/)).toBeInTheDocument()
@@ -133,7 +243,7 @@ describe('HomePage - Server Component', () => {
 
   it('displays movie details on movie cards', async () => {
     ;(getRecommendations as jest.Mock).mockResolvedValue([mockMovieRec])
-    render(await HomePage())
+    await renderHomePage()
 
     expect(screen.getByText(/Director: Christopher Nolan/)).toBeInTheDocument()
     expect(screen.getByText(/Genre: Sci-Fi/)).toBeInTheDocument()
@@ -141,7 +251,7 @@ describe('HomePage - Server Component', () => {
 
   it('does not show restaurant fields on movie cards', async () => {
     ;(getRecommendations as jest.Mock).mockResolvedValue([mockMovieRec])
-    render(await HomePage())
+    await renderHomePage()
 
     expect(screen.queryByText(/Cuisine:/)).not.toBeInTheDocument()
     expect(screen.queryByText(/145 S Frances St/)).not.toBeInTheDocument()
@@ -149,7 +259,7 @@ describe('HomePage - Server Component', () => {
 
   it('renders empty state when no recommendations exist', async () => {
     ;(getRecommendations as jest.Mock).mockResolvedValue([])
-    render(await HomePage())
+    await renderHomePage()
 
     expect(
       screen.getByText('No recommendations yet. Be the first to add one!')
@@ -157,9 +267,18 @@ describe('HomePage - Server Component', () => {
     expect(screen.queryByRole('link', { name: /SAJJ/i })).not.toBeInTheDocument()
   })
 
+  it('spans empty feed content across both columns for authenticated users', async () => {
+    mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
+    ;(getRecommendations as jest.Mock).mockResolvedValue([])
+
+    await renderHomePage()
+
+    expect(screen.getByTestId('feed-content-container')).toHaveClass('lg:col-span-2')
+  })
+
   it('renders the AddRecommendationTrigger', async () => {
     ;(getRecommendations as jest.Mock).mockResolvedValue([])
-    render(await HomePage())
+    await renderHomePage()
 
     expect(screen.getByTestId('mock-trigger')).toBeInTheDocument()
   })
@@ -169,7 +288,7 @@ describe('HomePage - Server Component', () => {
       mockRecWithImage,
       { ...mockRecWithImage, id: 'rec-image-2', entity: { ...mockRecWithImage.entity, name: 'Second' } },
     ])
-    render(await HomePage())
+    await renderHomePage()
 
     const images = screen.getAllByRole('img')
     const priorityImages = images.filter((img) => img.getAttribute('data-priority') === 'true')
@@ -179,7 +298,7 @@ describe('HomePage - Server Component', () => {
 
   it('renders a category emoji placeholder when there is no image', async () => {
     ;(getRecommendations as jest.Mock).mockResolvedValue([mockMovieRec])
-    render(await HomePage())
+    await renderHomePage()
 
     expect(screen.getByText('🎬')).toBeInTheDocument()
   })
@@ -190,7 +309,7 @@ describe('HomePage - Server Component', () => {
       tags: ['Tag1', 'Tag2', 'Tag3', 'Tag4', 'Tag5'],
     }
     ;(getRecommendations as jest.Mock).mockResolvedValue([recWithManyTags])
-    render(await HomePage())
+    await renderHomePage()
 
     expect(screen.getByText('Tag1')).toBeInTheDocument()
     expect(screen.getByText('Tag2')).toBeInTheDocument()
@@ -203,9 +322,62 @@ describe('HomePage - Server Component', () => {
     mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
     const recAnon = { ...mockMovieRec, user: { name: null } }
     ;(getRecommendations as jest.Mock).mockResolvedValue([recAnon])
-    render(await HomePage())
+    await renderHomePage()
 
     expect(screen.getByText('by Anonymous')).toBeInTheDocument()
+    expect(screen.getByTestId('mock-clique-sidebar')).toBeInTheDocument()
+  })
+
+  it('renders the clique sidebar for authenticated users', async () => {
+    mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
+    ;(getRecommendations as jest.Mock).mockResolvedValue([mockMovieRec])
+
+    await renderHomePage()
+
+    expect(screen.getByTestId('mock-clique-sidebar')).toHaveTextContent('public')
+  })
+
+  it('renders add-to-clique actions for authenticated users on the public feed', async () => {
+    mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
+    ;(getRecommendations as jest.Mock).mockResolvedValue([mockMovieRec, mockRestaurantRec])
+
+    await renderHomePage()
+
+    expect(screen.getAllByTestId('mock-add-to-clique')).toHaveLength(2)
+  })
+
+  it('renders a clique feed and preserves cliqueId in recommendation links', async () => {
+    mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
+    mockFindFirstClique.mockResolvedValue({ id: 'clique-1', name: 'Weekend Crew' })
+    mockGetCliqueFeed.mockResolvedValue([mockCliqueFeedItem])
+
+    await renderHomePage({ cliqueId: 'clique-1' })
+
+    expect(mockGetCliqueFeed).toHaveBeenCalledWith('clique-1', 'user-1')
+    expect(screen.getByText('Viewing Weekend Crew')).toBeInTheDocument()
+    expect(screen.getByText('Submitted by Clique Submitter')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Private Movie/i })).toHaveAttribute(
+      'href',
+      '/recommendations/rec-clique-1?cliqueId=clique-1'
+    )
+    expect(screen.getByTestId('mock-clique-sidebar')).toHaveTextContent('clique-1')
+    expect(screen.queryByTestId('mock-add-to-clique')).not.toBeInTheDocument()
+  })
+
+  it('shows an explicit access error state for an inaccessible cliqueId', async () => {
+    mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
+    mockFindFirstClique.mockResolvedValue(null)
+    mockFindUniqueClique.mockResolvedValue({ name: 'Secret Squad' })
+
+    await renderHomePage({ cliqueId: 'clique-9' })
+
+    expect(screen.getByText('Unable to open this clique feed')).toBeInTheDocument()
+    expect(screen.getByText('You do not have access to this clique feed.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Back to Public Feed' })).toHaveAttribute(
+      'href',
+      '/'
+    )
+    expect(getRecommendations).not.toHaveBeenCalled()
   })
 })
 
@@ -217,7 +389,7 @@ describe('HomePage - submitter name auth gating', () => {
   it('shows "by [name]" on cards when session is non-null', async () => {
     mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
     ;(getRecommendations as jest.Mock).mockResolvedValue([mockMovieRec])
-    render(await HomePage())
+    await renderHomePage()
 
     expect(screen.getByText('by Test User')).toBeInTheDocument()
   })
@@ -225,7 +397,7 @@ describe('HomePage - submitter name auth gating', () => {
   it('does not show "by [name]" on cards when session is null', async () => {
     mockAuth.mockResolvedValue(null)
     ;(getRecommendations as jest.Mock).mockResolvedValue([mockMovieRec])
-    render(await HomePage())
+    await renderHomePage()
 
     expect(screen.queryByText(/by Test User/)).not.toBeInTheDocument()
   })
@@ -234,8 +406,18 @@ describe('HomePage - submitter name auth gating', () => {
     mockAuth.mockResolvedValue(null)
     const recAnon = { ...mockMovieRec, user: { name: null } }
     ;(getRecommendations as jest.Mock).mockResolvedValue([recAnon])
-    render(await HomePage())
+    await renderHomePage()
 
     expect(screen.queryByText(/by Anonymous/)).not.toBeInTheDocument()
+  })
+
+  it('does not render the clique sidebar when unauthenticated', async () => {
+    mockAuth.mockResolvedValue(null)
+    ;(getRecommendations as jest.Mock).mockResolvedValue([mockMovieRec])
+
+    await renderHomePage()
+
+    expect(screen.queryByTestId('mock-clique-sidebar')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('mock-add-to-clique')).not.toBeInTheDocument()
   })
 })

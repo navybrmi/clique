@@ -22,6 +22,7 @@ jest.mock('next/dynamic', () => (fn: () => Promise<{ default: React.ComponentTyp
       data-testid="mock-dialog"
       data-show-login-alert={String(props.showLoginAlert)}
       data-user-id={props.userId ?? ''}
+      data-current-clique-id={props.currentCliqueId ?? ''}
     >
       <button
         data-testid="trigger-on-success"
@@ -157,5 +158,13 @@ describe('AddRecommendationTrigger', () => {
   it('forwards userId prop to dialog', () => {
     render(<AddRecommendationTrigger userId="user-abc" />)
     expect(screen.getByTestId('mock-dialog')).toHaveAttribute('data-user-id', 'user-abc')
+  })
+
+  it("forwards currentCliqueId prop to dialog", () => {
+    render(<AddRecommendationTrigger currentCliqueId="clique-123" />)
+    expect(screen.getByTestId("mock-dialog")).toHaveAttribute(
+      "data-current-clique-id",
+      "clique-123"
+    )
   })
 })

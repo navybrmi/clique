@@ -30,6 +30,13 @@ describe('Header', () => {
     expect(screen.getByText('Clique')).toBeInTheDocument()
   })
 
+  it('should show clique hint when explicitly enabled', () => {
+    render(<Header showCliqueHint />)
+    expect(
+      screen.getByText('🤝 A Clique = your mini crew for trusted recommendations.')
+    ).toBeInTheDocument()
+  })
+
   it('should render back button when showBack is true', () => {
     render(<Header showBack={true} />)
     const backLinks = screen.getAllByRole('link', { name: /back/i })
@@ -54,7 +61,7 @@ describe('Header', () => {
     expect(screen.getByText('Get Started')).toBeInTheDocument()
   })
 
-  it('should show user menu when authenticated session is provided', () => {
+  it('should show user menu when authenticated session is provided', async () => {
     const mockSession = {
       user: {
         id: 'user-123',
@@ -64,7 +71,7 @@ describe('Header', () => {
     }
 
     render(<Header session={mockSession} />)
-    expect(screen.getByTestId('mock-user-menu')).toBeInTheDocument()
+    expect(await screen.findByTestId('mock-user-menu')).toBeInTheDocument()
     expect(screen.getByText('Test User')).toBeInTheDocument()
   })
 
@@ -87,9 +94,7 @@ describe('Header', () => {
 
     render(<Header session={mockSession} />)
 
-    expect(screen.getByTestId('mock-user-menu')).toBeInTheDocument()
-
-    const userMenuButton = screen.getByTestId('mock-user-menu')
+    const userMenuButton = await screen.findByTestId('mock-user-menu')
     fireEvent.click(userMenuButton)
 
     await waitFor(() => {

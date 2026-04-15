@@ -1029,6 +1029,152 @@ describe("AddRecommendationDialog", () => {
     })
   })
 
+  it("shows conflict actions and can add an existing recommendation to the active clique", async () => {
+    const onSuccess = jest.fn()
+    let cliqueRequestBody: Record<string, unknown> | null = null
+
+    ;(global.fetch as jest.Mock).mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input instanceof Request
+              ? input.url
+              : ""
+
+      if (url.includes("/api/auth/session")) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ user: { id: "test-user-id" } })) as unknown as Response
+        )
+      }
+      if (url.includes("/api/categories")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify([{ id: "1", name: "MOVIE", displayName: "Movie" }])
+          ) as unknown as Response
+        )
+      }
+      if (url.includes("/api/tags")) {
+        return Promise.resolve(new Response(JSON.stringify({ tags: [] })) as unknown as Response)
+      }
+      if (url.includes("/api/recommendations") && init?.method === "POST") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              error: "A recommendation for this item already exists",
+              code: "CLIQUE_RECOMMENDATION_EXISTS",
+              existingRecommendationId: "rec-existing",
+              entityName: "Inception",
+            }),
+            { status: 409 }
+          ) as unknown as Response
+        )
+      }
+      if (url.includes("/api/cliques/clique-1/recommendations") && init?.method === "POST") {
+        cliqueRequestBody = JSON.parse(String(init.body ?? "{}"))
+        return Promise.resolve(new Response(JSON.stringify({})) as unknown as Response)
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({ results: [] })) as unknown as Response)
+    })
+
+    render(
+      <AddRecommendationDialog
+        onSuccess={onSuccess}
+        initialCategoryId="1"
+        currentCliqueId="clique-1"
+      />
+    )
+
+    fireEvent.click(screen.getByText(/add recommendation/i))
+    await screen.findByLabelText(/category/i)
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: "Inception" } })
+    fireEvent.click(screen.getAllByText(/^create$/i).find((btn) => btn.tagName === "BUTTON")!)
+
+    await screen.findByText(/already exists in this clique/i)
+    fireEvent.click(screen.getByRole("button", { name: /add existing recommendation/i }))
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+    expect(cliqueRequestBody).toEqual({ recommendationId: "rec-existing" })
+  })
+
+  it("can create a new recommendation anyway after a clique conflict", async () => {
+    const onSuccess = jest.fn()
+    const recommendationPayloads: Record<string, unknown>[] = []
+
+    ;(global.fetch as jest.Mock).mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input instanceof Request
+              ? input.url
+              : ""
+
+      if (url.includes("/api/auth/session")) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ user: { id: "test-user-id" } })) as unknown as Response
+        )
+      }
+      if (url.includes("/api/categories")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify([{ id: "1", name: "MOVIE", displayName: "Movie" }])
+          ) as unknown as Response
+        )
+      }
+      if (url.includes("/api/tags")) {
+        return Promise.resolve(new Response(JSON.stringify({ tags: [] })) as unknown as Response)
+      }
+      if (url.includes("/api/recommendations") && init?.method === "POST") {
+        const payload = JSON.parse(String(init.body ?? "{}"))
+        recommendationPayloads.push(payload)
+        if (!payload.forceCreateNew) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                error: "A recommendation for this item already exists",
+                code: "CLIQUE_RECOMMENDATION_EXISTS",
+                existingRecommendationId: "rec-existing",
+                entityName: "Inception",
+              }),
+              { status: 409 }
+            ) as unknown as Response
+          )
+        }
+
+        return Promise.resolve(new Response(JSON.stringify({ id: "rec-new" })) as unknown as Response)
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({ results: [] })) as unknown as Response)
+    })
+
+    render(
+      <AddRecommendationDialog
+        onSuccess={onSuccess}
+        initialCategoryId="1"
+        currentCliqueId="clique-1"
+      />
+    )
+
+    fireEvent.click(screen.getByText(/add recommendation/i))
+    await screen.findByLabelText(/category/i)
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: "Inception" } })
+    fireEvent.click(screen.getAllByText(/^create$/i).find((btn) => btn.tagName === "BUTTON")!)
+
+    await screen.findByText(/already exists in this clique/i)
+    fireEvent.click(screen.getByRole("button", { name: /create new anyway/i }))
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+    expect(recommendationPayloads).toHaveLength(2)
+    expect(recommendationPayloads[1]).toMatchObject({
+      cliqueIds: ["clique-1"],
+      forceCreateNew: true,
+    })
+  })
+
   it("should handle dialog footer buttons", async () => {
     render(<AddRecommendationDialog onSuccess={jest.fn()} initialCategoryId="1" />)
     fireEvent.click(screen.getByText(/add recommendation/i))

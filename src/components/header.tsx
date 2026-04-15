@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { UserMenu } from "@/components/user-menu"
@@ -12,6 +13,8 @@ import { signOut } from "next-auth/react"
 interface HeaderProps {
   /** Whether to show the back button. Defaults to false. */
   showBack?: boolean
+  /** Whether to show the top-of-page clique explainer tag. */
+  showCliqueHint?: boolean
   /** Resolved session from the server component parent. */
   session?: { user?: { id?: string; name?: string | null; image?: string | null } } | null
 }
@@ -26,7 +29,13 @@ interface HeaderProps {
  * @param props - Component props
  * @returns A sticky header with navigation and auth controls
  */
-export function Header({ showBack, session }: HeaderProps) {
+export function Header({ showBack, showCliqueHint, session }: HeaderProps) {
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
+
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/" })
   }
@@ -48,10 +57,19 @@ export function Header({ showBack, session }: HeaderProps) {
               Clique
             </h1>
           </Link>
+          {showCliqueHint && !showBack && (
+            <span className="hidden rounded-full border border-zinc-300 bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 md:inline-flex dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+              🤝 A Clique = your mini crew for trusted recommendations.
+            </span>
+          )}
         </div>
         <nav className="flex items-center gap-4">
           {session?.user ? (
-            <UserMenu user={session.user} onSignOut={handleSignOut} />
+            isHydrated ? (
+              <UserMenu user={session.user} onSignOut={handleSignOut} />
+            ) : (
+              <div className="h-10 w-10 rounded-full bg-zinc-200 dark:bg-zinc-800" />
+            )
           ) : (
             <>
               <Button variant="ghost" asChild>

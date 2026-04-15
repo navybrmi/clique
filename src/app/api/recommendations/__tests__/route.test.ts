@@ -7,6 +7,7 @@ jest.mock("@/lib/prisma", () => ({
   prisma: {
     recommendation: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
     },
     entity: {
@@ -22,7 +23,17 @@ jest.mock("@/lib/prisma", () => ({
     movie: {
       create: jest.fn(),
     },
+    cliqueMember: {
+      count: jest.fn(),
+    },
+    cliqueRecommendation: {
+      createMany: jest.fn(),
+    },
   },
+}))
+
+jest.mock("@/lib/tag-service", () => ({
+  trackMultipleTags: jest.fn().mockResolvedValue(undefined),
 }))
 
 describe("GET /api/recommendations", () => {
@@ -181,6 +192,135 @@ describe("POST /api/recommendations", () => {
     // Assert
     expect(response.status).toBe(400)
     expect(data).toEqual({ error: "Either entityName or entityId is required" })
+  })
+
+  it("should return 400 when cliqueIds contains invalid values", async () => {
+    const request = new NextRequest("http://localhost/api/recommendations", {
+      method: "POST",
+      body: JSON.stringify({
+        userId: "user1",
+        categoryId: "cat1",
+        entityName: "Test Entity",
+        cliqueIds: ["clique-1", ""],
+      }),
+    })
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(data).toEqual({ error: "cliqueIds must contain non-empty string IDs" })
+  })
+
+  it("should return 409 conflict metadata when recommendation already exists for clique flow", async () => {
+    ;(prisma.cliqueMember.count as jest.Mock).mockResolvedValue(1)
+    ;(prisma.recommendation.findFirst as jest.Mock).mockResolvedValue({
+      id: "rec-existing",
+      entity: {
+        name: "Inception",
+      },
+    })
+
+    const request = new NextRequest("http://localhost/api/recommendations", {
+      method: "POST",
+      body: JSON.stringify({
+        userId: "user1",
+        categoryId: "cat1",
+        entityName: "Inception",
+        cliqueIds: ["clique-1"],
+      }),
+    })
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(409)
+    expect(data).toEqual({
+      error: "A recommendation for this item already exists",
+      code: "CLIQUE_RECOMMENDATION_EXISTS",
+      conflict: true,
+      existingRecommendationId: "rec-existing",
+      entityName: "Inception",
+    })
+    expect(prisma.recommendation.create).not.toHaveBeenCalled()
+  })
+
+  it("should create recommendation and attach it to cliques", async () => {
+    ;(prisma.cliqueMember.count as jest.Mock).mockResolvedValue(1)
+    ;(prisma.recommendation.findFirst as jest.Mock).mockResolvedValue(null)
+    ;(prisma.entity.findFirst as jest.Mock).mockResolvedValue({
+      id: "entity1",
+      name: "Existing Entity",
+      categoryId: "cat1",
+    })
+    ;(prisma.recommendation.create as jest.Mock).mockResolvedValue({
+      id: "rec1",
+      userId: "user1",
+      entityId: "entity1",
+    })
+    ;(prisma.cliqueRecommendation.createMany as jest.Mock).mockResolvedValue({ count: 1 })
+
+    const request = new NextRequest("http://localhost/api/recommendations", {
+      method: "POST",
+      body: JSON.stringify({
+        userId: "user1",
+        categoryId: "cat1",
+        entityName: "Existing Entity",
+        cliqueIds: ["clique-1"],
+      }),
+    })
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(201)
+    expect(data).toEqual({
+      id: "rec1",
+      userId: "user1",
+      entityId: "entity1",
+    })
+    expect(prisma.cliqueRecommendation.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          cliqueId: "clique-1",
+          recommendationId: "rec1",
+          addedById: "user1",
+        },
+      ],
+      skipDuplicates: true,
+    })
+  })
+
+  it("should allow creating new recommendation when forceCreateNew is true", async () => {
+    ;(prisma.cliqueMember.count as jest.Mock).mockResolvedValue(1)
+    ;(prisma.entity.findFirst as jest.Mock).mockResolvedValue({
+      id: "entity1",
+      name: "Inception",
+      categoryId: "cat1",
+    })
+    ;(prisma.recommendation.create as jest.Mock).mockResolvedValue({
+      id: "rec1",
+      userId: "user1",
+      entityId: "entity1",
+    })
+    ;(prisma.cliqueRecommendation.createMany as jest.Mock).mockResolvedValue({ count: 1 })
+
+    const request = new NextRequest("http://localhost/api/recommendations", {
+      method: "POST",
+      body: JSON.stringify({
+        userId: "user1",
+        categoryId: "cat1",
+        entityName: "Inception",
+        cliqueIds: ["clique-1"],
+        forceCreateNew: true,
+      }),
+    })
+
+    const response = await POST(request)
+
+    expect(response.status).toBe(201)
+    expect(prisma.recommendation.findFirst).not.toHaveBeenCalled()
+    expect(prisma.recommendation.create).toHaveBeenCalled()
   })
 
   it("should create recommendation with existing entity", async () => {

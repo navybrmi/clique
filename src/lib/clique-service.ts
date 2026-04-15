@@ -17,6 +17,8 @@ export async function getCliqueFeed(
   cliqueId: string,
   _currentUserId: string
 ): Promise<CliqueFeedItem[]> {
+  void _currentUserId
+
   const [rows, members] = await Promise.all([
     prisma.cliqueRecommendation.findMany({
       where: { cliqueId },
@@ -38,6 +40,24 @@ export async function getCliqueFeed(
                 category: {
                   select: { id: true, name: true, displayName: true },
                 },
+                restaurant: {
+                  select: {
+                    cuisine: true,
+                    location: true,
+                    priceRange: true,
+                  },
+                },
+                movie: {
+                  select: {
+                    director: true,
+                    year: true,
+                    genre: true,
+                    duration: true,
+                  },
+                },
+                fashion: true,
+                household: true,
+                other: true,
               },
             },
             _count: { select: { upvotes: true, comments: true } },
@@ -77,6 +97,33 @@ export async function getCliqueFeed(
           name: row.recommendation.entity.category.name,
           displayName: row.recommendation.entity.category.displayName,
         },
+        restaurant: row.recommendation.entity.restaurant
+          ? {
+              cuisine: row.recommendation.entity.restaurant.cuisine ?? null,
+              location: row.recommendation.entity.restaurant.location ?? null,
+              priceRange: row.recommendation.entity.restaurant.priceRange ?? null,
+            }
+          : null,
+        movie: row.recommendation.entity.movie
+          ? {
+              director: row.recommendation.entity.movie.director ?? null,
+              year: row.recommendation.entity.movie.year ?? null,
+              genre: row.recommendation.entity.movie.genre ?? null,
+              duration: row.recommendation.entity.movie.duration ?? null,
+            }
+          : null,
+        fashion: (row.recommendation.entity.fashion ?? null) as Record<
+          string,
+          unknown
+        > | null,
+        household: (row.recommendation.entity.household ?? null) as Record<
+          string,
+          unknown
+        > | null,
+        other: (row.recommendation.entity.other ?? null) as Record<
+          string,
+          unknown
+        > | null,
       },
       _count: {
         upvotes: row.recommendation._count.upvotes,

@@ -18,6 +18,8 @@ const AddRecommendationDialog = dynamic(
 interface AddRecommendationTriggerProps {
   /** Authenticated user ID resolved server-side. Forwarded to the dialog to skip session fetches. */
   userId?: string | null
+  /** Active clique context from the current feed URL, if any. */
+  currentCliqueId?: string
 }
 
 /**
@@ -31,7 +33,10 @@ interface AddRecommendationTriggerProps {
  * @param props.userId - Optional authenticated user ID; forwarded to the dialog to avoid extra session lookups.
  * @returns The add recommendation trigger UI.
  */
-export function AddRecommendationTrigger({ userId }: AddRecommendationTriggerProps) {
+export function AddRecommendationTrigger({
+  userId,
+  currentCliqueId,
+}: AddRecommendationTriggerProps) {
   const [showLoginAlert, setShowLoginAlert] = useState(false)
   const router = useRouter()
 
@@ -40,6 +45,7 @@ export function AddRecommendationTrigger({ userId }: AddRecommendationTriggerPro
       <div className="flex gap-4">
         <AddRecommendationDialog
           userId={userId}
+          currentCliqueId={currentCliqueId}
           onSuccess={() => router.refresh()}
           showLoginAlert={showLoginAlert}
           onDismissLoginAlert={() => setShowLoginAlert(false)}

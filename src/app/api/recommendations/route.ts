@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { trackMultipleTags } from "@/lib/tag-service"
 
@@ -85,6 +86,8 @@ export async function GET() {
  * @param {object} [fashionData] - Fashion-specific fields (if category is FASHION)
  * @param {object} [householdData] - Household-specific fields (if category is HOUSEHOLD)
  * @param {object} [otherData] - Generic category fields (if category is OTHER)
+ * @param {string[]} [cliqueIds] - Cliques to add this recommendation to
+ * @param {boolean} [forceCreateNew] - If true, bypasses clique duplicate conflict checks
  * 
  * @returns {Promise<NextResponse>} Created recommendation with all relations
  * @throws {400} If required fields are missing or invalid
@@ -118,8 +121,27 @@ export async function POST(request: NextRequest) {
       movieData,
       fashionData,
       householdData,
-      otherData
+      otherData,
+      cliqueIds,
+      allowDuplicateInClique,
+      forceCreateNew,
     } = body
+
+    const trimmedEntityName = typeof entityName === "string" ? entityName.trim() : ""
+    const hasInvalidCliqueId =
+      Array.isArray(cliqueIds) &&
+      cliqueIds.some((id) => typeof id !== "string" || id.trim().length === 0)
+
+    if (hasInvalidCliqueId) {
+      return NextResponse.json(
+        { error: "cliqueIds must contain non-empty string IDs" },
+        { status: 400 }
+      )
+    }
+
+    const uniqueCliqueIds = Array.isArray(cliqueIds)
+      ? Array.from(new Set(cliqueIds.map((id: string) => id.trim())))
+      : []
 
     // Validate required fields
     if (!userId || !categoryId) {
@@ -129,20 +151,87 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!entityName && !entityId) {
+    if (!trimmedEntityName && !entityId) {
       return NextResponse.json(
         { error: "Either entityName or entityId is required" },
         { status: 400 }
       )
     }
 
+    if (uniqueCliqueIds.length > 0) {
+      const membershipCount =
+        typeof (prisma as unknown as {
+          cliqueMember?: {
+            count?: (args: {
+              where: { userId: string; cliqueId: { in: string[] } }
+            }) => Promise<number>
+          }
+        }).cliqueMember?.count === "function"
+          ? await prisma.cliqueMember.count({
+              where: {
+                userId,
+                cliqueId: { in: uniqueCliqueIds },
+              },
+            })
+          : (
+              await prisma.$queryRaw<{ cliqueId: string }[]>`
+                SELECT "cliqueId"
+                FROM "CliqueMember"
+                WHERE "userId" = ${userId}
+                  AND "cliqueId" IN (${Prisma.join(uniqueCliqueIds)})
+              `
+            ).length
+
+      if (membershipCount !== uniqueCliqueIds.length) {
+        return NextResponse.json(
+          { error: "You are not a member of one or more selected cliques" },
+          { status: 403 }
+        )
+      }
+    }
+
+    const shouldAllowDuplicateInClique =
+      Boolean(allowDuplicateInClique) || Boolean(forceCreateNew)
+
+    if (uniqueCliqueIds.length > 0 && trimmedEntityName && !entityId && !shouldAllowDuplicateInClique) {
+      const existingRecommendation = await prisma.recommendation.findFirst({
+        where: {
+          entity: {
+            is: {
+              name: trimmedEntityName,
+              categoryId,
+            },
+          },
+        },
+        select: {
+          id: true,
+          entity: {
+            select: { name: true },
+          },
+        },
+      })
+
+      if (existingRecommendation) {
+        return NextResponse.json(
+          {
+            error: "A recommendation for this item already exists",
+            code: "CLIQUE_RECOMMENDATION_EXISTS",
+            conflict: true,
+            existingRecommendationId: existingRecommendation.id,
+            entityName: existingRecommendation.entity.name,
+          },
+          { status: 409 }
+        )
+      }
+    }
+
     let finalEntityId = entityId
 
     // If entityName is provided, check if entity exists or create it
-    if (!entityId && entityName) {
+    if (!entityId && trimmedEntityName) {
       let entity = await prisma.entity.findFirst({
         where: {
-          name: entityName,
+          name: trimmedEntityName,
           categoryId: categoryId,
         },
       })
@@ -151,7 +240,7 @@ export async function POST(request: NextRequest) {
         // Create new entity
         entity = await prisma.entity.create({
           data: {
-            name: entityName,
+            name: trimmedEntityName,
             categoryId: categoryId,
           },
         })
@@ -238,6 +327,40 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    if (uniqueCliqueIds.length > 0) {
+      const cliqueRecommendationDelegate = (prisma as unknown as {
+        cliqueRecommendation?: {
+          createMany?: (args: {
+            data: {
+              cliqueId: string
+              recommendationId: string
+              addedById: string
+            }[]
+            skipDuplicates: boolean
+          }) => Promise<{ count: number }>
+        }
+      }).cliqueRecommendation
+
+      if (typeof cliqueRecommendationDelegate?.createMany === "function") {
+        await cliqueRecommendationDelegate.createMany({
+          data: uniqueCliqueIds.map((cliqueId: string) => ({
+            cliqueId,
+            recommendationId: recommendation.id,
+            addedById: userId,
+          })),
+          skipDuplicates: true,
+        })
+      } else {
+        for (const cliqueId of uniqueCliqueIds) {
+          await prisma.$executeRaw`
+            INSERT INTO "CliqueRecommendation" ("cliqueId", "recommendationId", "addedById", "addedAt")
+            VALUES (${cliqueId}, ${recommendation.id}, ${userId}, NOW())
+            ON CONFLICT ("cliqueId", "recommendationId") DO NOTHING
+          `
+        }
+      }
+    }
 
     // Track tag usage for community tag promotion
     if (tags && tags.length > 0) {

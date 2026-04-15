@@ -112,10 +112,16 @@ export async function POST(
       // serializes the per-user 10-clique check; the clique lock serializes
       // the 50-member check. Consistent ordering prevents deadlocks.
       const userLockKey = hashStringToInt(userId)
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${userLockKey})`
+      await tx.$queryRaw`
+        SELECT 1
+        FROM (SELECT pg_advisory_xact_lock(${userLockKey})) AS user_lock_acquired
+      `
 
       const cliqueLockKey = hashStringToInt(cliqueId)
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${cliqueLockKey})`
+      await tx.$queryRaw`
+        SELECT 1
+        FROM (SELECT pg_advisory_xact_lock(${cliqueLockKey})) AS clique_lock_acquired
+      `
 
       // Check 50-member limit
       const memberCount = await tx.cliqueMember.count({ where: { cliqueId } })
