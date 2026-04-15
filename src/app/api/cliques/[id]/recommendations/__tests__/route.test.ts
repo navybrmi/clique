@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server"
+import { Prisma } from "@prisma/client"
 import { GET, POST } from "../route"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
@@ -197,6 +198,21 @@ describe("POST /api/cliques/[id]/recommendations", () => {
     expect(res.status).toBe(403)
   })
 
+  it("should return 400 when body is malformed JSON", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1", userId: "user1" })
+
+    const req = new NextRequest("http://localhost/api/cliques/clique1/recommendations", {
+      method: "POST",
+      // No body — request.json() will throw
+    })
+    const res = await POST(req, { params: Promise.resolve({ id: "clique1" }) })
+    const data = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(data.error).toContain("Invalid JSON")
+  })
+
   it("should return 400 when recommendationId is missing", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
     ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1", userId: "user1" })
@@ -265,6 +281,29 @@ describe("POST /api/cliques/[id]/recommendations", () => {
     expect(prisma.cliqueRecommendation.create).toHaveBeenCalledWith({
       data: { cliqueId: "clique1", recommendationId: "rec1", addedById: "user1" },
     })
+  })
+
+  it("should return 409 when a concurrent request causes a unique-constraint violation", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1", userId: "user1" })
+    ;(prisma.recommendation.findUnique as jest.Mock).mockResolvedValue({ id: "rec1" })
+    ;(prisma.cliqueRecommendation.findUnique as jest.Mock).mockResolvedValue(null) // fast-path passes
+    ;(prisma.cliqueRecommendation.create as jest.Mock).mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "6.0.0",
+      })
+    )
+
+    const req = new NextRequest("http://localhost/api/cliques/clique1/recommendations", {
+      method: "POST",
+      body: JSON.stringify({ recommendationId: "rec1" }),
+    })
+    const res = await POST(req, { params: Promise.resolve({ id: "clique1" }) })
+    const data = await res.json()
+
+    expect(res.status).toBe(409)
+    expect(data.error).toContain("already in this clique")
   })
 
   it("should handle database errors", async () => {

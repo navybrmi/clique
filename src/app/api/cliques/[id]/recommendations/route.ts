@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import { getCliqueFeed } from "@/lib/clique-service"
@@ -101,7 +102,10 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (!body) {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
+    }
     const { recommendationId } = body
 
     if (!recommendationId || typeof recommendationId !== "string") {
@@ -141,6 +145,16 @@ export async function POST(
       { status: 201 }
     )
   } catch (error) {
+    // Unique-constraint violation: concurrent request already added this recommendation
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      return NextResponse.json(
+        { error: "Recommendation already in this clique" },
+        { status: 409 }
+      )
+    }
     console.error("Error adding recommendation to clique:", error)
     return NextResponse.json(
       { error: "Failed to add recommendation to clique" },
