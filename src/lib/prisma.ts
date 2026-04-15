@@ -1,11 +1,11 @@
 import { PrismaClient } from '@prisma/client'
 
 /**
- * Global augmentation for Prisma client instance.
- * Prevents multiple Prisma Client instances in development due to hot reloading.
+ * Global augmentation for the cached Prisma client instance and schema-refresh state.
  */
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
+  prismaSchemaRefreshAttempted: boolean | undefined
 }
 
 /**
@@ -27,27 +27,57 @@ function hasCurrentSchema(client: PrismaClient | undefined): client is PrismaCli
 }
 
 /**
- * Resolves the current Prisma client instance, replacing any stale cached
- * development client whose generated schema no longer matches the app code.
+ * Disconnects a stale Prisma client before it is replaced in the global cache.
  *
- * @returns A Prisma client whose model delegates match the current schema
+ * @param client - Stale Prisma client instance slated for replacement
+ */
+function disconnectStaleClient(client: PrismaClient): void {
+  void client.$disconnect().catch((error: unknown) => {
+    console.error('Failed to disconnect stale Prisma client', error)
+  })
+}
+
+/**
+ * Resolves the current Prisma client instance, replacing any stale cached
+ * client whose generated schema no longer matches the app code.
+ *
+ * If a replacement client still does not expose the expected delegates, the
+ * stale replacement is cached and reused so the app does not create a new
+ * Prisma client on every call before the process is restarted.
+ *
+ * @returns A Prisma client whose model delegates match the current schema when available
  */
 export function getPrismaClient(): PrismaClient {
-  if (!hasCurrentSchema(globalForPrisma.prisma)) {
-    globalForPrisma.prisma = new PrismaClient()
+  const cachedClient = globalForPrisma.prisma
+
+  if (hasCurrentSchema(cachedClient)) {
+    globalForPrisma.prismaSchemaRefreshAttempted = false
+    return cachedClient
   }
 
-  return globalForPrisma.prisma
+  if (cachedClient && globalForPrisma.prismaSchemaRefreshAttempted) {
+    return cachedClient
+  }
+
+  if (cachedClient) {
+    disconnectStaleClient(cachedClient)
+  }
+
+  const nextClient = new PrismaClient()
+  globalForPrisma.prisma = nextClient
+  globalForPrisma.prismaSchemaRefreshAttempted = !hasCurrentSchema(nextClient)
+
+  return nextClient
 }
 
 /**
  * Singleton Prisma Client instance.
- * 
- * In development, this uses a global variable to prevent creating multiple instances
- * during hot module replacement. In production, a new instance is created.
- * 
+ *
+ * This module caches the client on `globalThis` so repeated imports and
+ * server-side calls reuse one process-wide instance in both development and
+ * production. When hot reloading preserves a client with an outdated generated
+ * schema shape, `getPrismaClient()` refreshes the cached client once.
+ *
  * @see {@link https://www.prisma.io/docs/guides/performance-and-optimization/connection-management#prevent-hot-reloading-from-creating-new-instances}
  */
 export const prisma = getPrismaClient()
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma

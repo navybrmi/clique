@@ -379,6 +379,77 @@ describe('HomePage - Server Component', () => {
     )
     expect(getRecommendations).not.toHaveBeenCalled()
   })
+
+  it('shows a generic clique feed error in production while logging remediation steps server-side', async () => {
+    const originalNodeEnv = process.env.NODE_ENV
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+
+    process.env.NODE_ENV = 'production'
+    mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
+    mockFindFirstClique.mockResolvedValue({ id: 'clique-1', name: 'Weekend Crew' })
+    mockGetPrismaClient.mockReturnValue({
+      clique: {
+        findFirst: mockFindFirstClique,
+        findUnique: mockFindUniqueClique,
+      },
+      cliqueRecommendation: {},
+      cliqueMember: {},
+      $queryRaw: mockQueryRaw,
+    })
+
+    try {
+      await renderHomePage({ cliqueId: 'clique-1' })
+
+      expect(screen.getByText('Unable to open this clique feed')).toBeInTheDocument()
+      expect(
+        screen.getByText('Clique feed is temporarily unavailable. Please try again shortly.')
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/npx prisma generate/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/restart the dev server/i)).not.toBeInTheDocument()
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('npx prisma generate')
+      )
+    } finally {
+      process.env.NODE_ENV = originalNodeEnv
+      consoleErrorSpy.mockRestore()
+    }
+  })
+
+  it('keeps development guidance generic by sending users to server logs', async () => {
+    const originalNodeEnv = process.env.NODE_ENV
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+
+    process.env.NODE_ENV = 'development'
+    mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
+    mockFindFirstClique.mockResolvedValue({ id: 'clique-1', name: 'Weekend Crew' })
+    mockGetPrismaClient.mockReturnValue({
+      clique: {
+        findFirst: mockFindFirstClique,
+        findUnique: mockFindUniqueClique,
+      },
+      cliqueRecommendation: {},
+      cliqueMember: {},
+      $queryRaw: mockQueryRaw,
+    })
+
+    try {
+      await renderHomePage({ cliqueId: 'clique-1' })
+
+      expect(
+        screen.getByText(
+          'Clique feed is temporarily unavailable in development. Check the server logs for more details.'
+        )
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/npx prisma generate/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/restart the dev server/i)).not.toBeInTheDocument()
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('restart the dev server')
+      )
+    } finally {
+      process.env.NODE_ENV = originalNodeEnv
+      consoleErrorSpy.mockRestore()
+    }
+  })
 })
 
 describe('HomePage - submitter name auth gating', () => {

@@ -28,6 +28,32 @@ const CATEGORY_EMOJIS: Record<string, string> = {
 const getCategoryEmoji = (categoryName: string): string =>
   CATEGORY_EMOJIS[categoryName] || "⭐"
 
+const CLIQUE_FEED_UNAVAILABLE_MESSAGE =
+  "Clique feed is temporarily unavailable. Please try again shortly."
+
+const CLIQUE_FEED_DEVELOPMENT_MESSAGE =
+  "Clique feed is temporarily unavailable in development. Check the server logs for more details."
+
+/**
+ * Returns the user-facing clique feed fallback message for the current environment.
+ *
+ * @returns Safe clique feed error copy for the homepage UI
+ */
+function getCliqueFeedUnavailableMessage(): string {
+  return process.env.NODE_ENV === "production"
+    ? CLIQUE_FEED_UNAVAILABLE_MESSAGE
+    : CLIQUE_FEED_DEVELOPMENT_MESSAGE
+}
+
+/**
+ * Logs the server-side remediation for a missing clique feed Prisma delegate.
+ */
+function logCliqueFeedDelegateMismatch(): void {
+  console.error(
+    "Clique feed is temporarily unavailable because the Prisma client is out of date. Run `npx prisma generate` and restart the dev server."
+  )
+}
+
 type HomeFeedItem = {
   id: string
   tags: string[]
@@ -196,8 +222,8 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
           normalizeCliqueFeedItem(item, activeCliqueId)
         )
       } else {
-        cliqueError =
-          "Clique feed is temporarily unavailable because your Prisma client is out of date. Run `npx prisma generate` and restart the dev server."
+        logCliqueFeedDelegateMismatch()
+        cliqueError = getCliqueFeedUnavailableMessage()
       }
     } else {
       const clique =
