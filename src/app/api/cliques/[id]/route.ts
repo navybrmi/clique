@@ -27,6 +27,23 @@ export async function GET(
     const userId = session.user.id
     const { id } = await params
 
+    // Lightweight membership check first to avoid loading full member details for non-members
+    const membership = await prisma.cliqueMember.findUnique({
+      where: { cliqueId_userId: { cliqueId: id, userId } },
+    })
+
+    if (!membership) {
+      // Check if clique exists to distinguish 404 from 403
+      const exists = await prisma.clique.findUnique({
+        where: { id },
+        select: { id: true },
+      })
+      if (!exists) {
+        return NextResponse.json({ error: "Clique not found" }, { status: 404 })
+      }
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
     const clique = await prisma.clique.findUnique({
       where: { id },
       include: {
@@ -36,7 +53,7 @@ export async function GET(
         members: {
           include: {
             user: {
-              select: { id: true, name: true, image: true, email: true },
+              select: { id: true, name: true, image: true },
             },
           },
         },
@@ -48,14 +65,6 @@ export async function GET(
 
     if (!clique) {
       return NextResponse.json({ error: "Clique not found" }, { status: 404 })
-    }
-
-    // Check membership
-    const isMember = clique.members.some(
-      (m) => m.userId === userId
-    )
-    if (!isMember) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     return NextResponse.json(clique)

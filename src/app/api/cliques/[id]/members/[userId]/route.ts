@@ -40,6 +40,14 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
+    // Prevent creator from removing themselves — delete the clique instead
+    if (userId === clique.creatorId) {
+      return NextResponse.json(
+        { error: "Cannot remove the clique creator. Delete the clique instead." },
+        { status: 400 }
+      )
+    }
+
     // Verify the target user is a current member
     const membership = await prisma.cliqueMember.findUnique({
       where: {
