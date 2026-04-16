@@ -10,14 +10,20 @@ jest.mock("@/components/clique-sidebar", () => ({
   CliqueSidebar: ({
     cliques,
     activeCliqueId,
+    userId,
+    currentCliqueId,
   }: {
     cliques: { id: string; name: string }[]
     activeCliqueId?: string
+    userId?: string | null
+    currentCliqueId?: string
   }) => (
     <div
       data-testid="clique-sidebar"
       data-count={cliques.length}
       data-active={activeCliqueId ?? ""}
+      data-userid={userId ?? ""}
+      data-current-clique={currentCliqueId ?? ""}
     />
   ),
 }))
@@ -48,13 +54,15 @@ describe("CliqueSidebarWrapper", () => {
       clique: { findMany: mockFindMany },
     })
 
-    const jsx = await CliqueSidebarWrapper({ userId: "user1", activeCliqueId: "c1" })
+    const jsx = await CliqueSidebarWrapper({ userId: "user1", activeCliqueId: "c1", currentCliqueId: "c1" })
     const { getByTestId } = render(jsx as React.ReactElement)
 
     const sidebar = getByTestId("clique-sidebar")
     expect(sidebar).toBeInTheDocument()
     expect(sidebar.getAttribute("data-count")).toBe("2")
     expect(sidebar.getAttribute("data-active")).toBe("c1")
+    expect(sidebar.getAttribute("data-userid")).toBe("user1")
+    expect(sidebar.getAttribute("data-current-clique")).toBe("c1")
     expect(mockFindMany).toHaveBeenCalledWith({
       where: { members: { some: { userId: "user1" } } },
       select: { id: true, name: true },

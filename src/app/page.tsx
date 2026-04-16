@@ -278,22 +278,11 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
             )}
           >
             {session?.user?.id && (
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                    Discover and share recommendations for restaurants, movies,
-                    fashion, household items, and more with your friends.
-                  </p>
-                  <AddRecommendationTrigger
-                    userId={session.user.id}
-                    currentCliqueId={activeCliqueId}
-                  />
-                </div>
-                <CliqueSidebarWrapper
-                  userId={session.user.id}
-                  activeCliqueId={activeCliqueId}
-                />
-              </div>
+              <CliqueSidebarWrapper
+                userId={session.user.id}
+                activeCliqueId={activeCliqueId}
+                currentCliqueId={activeCliqueId}
+              />
             )}
 
             <div

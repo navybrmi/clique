@@ -24,6 +24,14 @@ jest.mock("@/components/create-clique-dialog", () => ({
   CreateCliqueDialog: () => <button type="button">Create new Clique</button>,
 }))
 
+jest.mock("@/components/add-recommendation-trigger", () => ({
+  AddRecommendationTrigger: ({ userId }: { userId: string | null }) => (
+    <button type="button" data-testid="add-rec-trigger" data-userid={userId ?? ""}>
+      Add Recommendation
+    </button>
+  ),
+}))
+
 describe("CliqueSidebar", () => {
   const cliques = [
     { id: "clique-1", name: "Weekend Crew" },
@@ -86,5 +94,21 @@ describe("CliqueSidebar", () => {
     expect(
       screen.getByRole("button", { name: "Create new Clique" })
     ).toBeInTheDocument()
+  })
+
+  it("renders the description text and Add Recommendation trigger", () => {
+    render(<CliqueSidebar cliques={cliques} userId="user-1" currentCliqueId="clique-1" />)
+
+    expect(screen.getByText(/Discover and share recommendations/)).toBeInTheDocument()
+    const trigger = screen.getByTestId("add-rec-trigger")
+    expect(trigger).toBeInTheDocument()
+    expect(trigger).toHaveAttribute("data-userid", "user-1")
+  })
+
+  it("renders the Add Recommendation trigger with null userId when not provided", () => {
+    render(<CliqueSidebar cliques={cliques} />)
+
+    const trigger = screen.getByTestId("add-rec-trigger")
+    expect(trigger).toHaveAttribute("data-userid", "")
   })
 })

@@ -6,6 +6,8 @@ interface CliqueSidebarWrapperProps {
   userId?: string | null
   /** Active clique ID from the current URL, if any. */
   activeCliqueId?: string
+  /** Current clique context forwarded into the Add Recommendation dialog. */
+  currentCliqueId?: string
 }
 
 /**
@@ -17,6 +19,7 @@ interface CliqueSidebarWrapperProps {
 export async function CliqueSidebarWrapper({
   userId,
   activeCliqueId,
+  currentCliqueId,
 }: CliqueSidebarWrapperProps) {
   if (!userId) {
     return null
@@ -59,7 +62,12 @@ export async function CliqueSidebarWrapper({
 
   return (
     <aside>
-      <CliqueSidebar cliques={cliques} activeCliqueId={activeCliqueId} />
+      <CliqueSidebar
+        cliques={cliques}
+        activeCliqueId={activeCliqueId}
+        userId={userId}
+        currentCliqueId={currentCliqueId}
+      />
     </aside>
   )
 }

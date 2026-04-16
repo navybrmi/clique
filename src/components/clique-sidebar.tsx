@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { Users } from "lucide-react"
 import { CreateCliqueDialog } from "@/components/create-clique-dialog"
+import { AddRecommendationTrigger } from "@/components/add-recommendation-trigger"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { CliqueSidebarItem } from "@/types/clique"
@@ -12,6 +13,10 @@ interface CliqueSidebarProps {
   cliques: CliqueSidebarItem[]
   /** Active clique ID from the current page URL, if any. */
   activeCliqueId?: string
+  /** Authenticated user ID, used to render the Add Recommendation CTA. */
+  userId?: string | null
+  /** Current clique context forwarded into the Add Recommendation dialog. */
+  currentCliqueId?: string
 }
 
 /**
@@ -23,6 +28,8 @@ interface CliqueSidebarProps {
 export function CliqueSidebar({
   cliques,
   activeCliqueId,
+  userId,
+  currentCliqueId,
 }: CliqueSidebarProps) {
   const getNavItemClassName = (isActive: boolean) =>
     cn(
@@ -36,6 +43,14 @@ export function CliqueSidebar({
 
   return (
     <div className="sticky top-24 space-y-4 rounded-xl border bg-white/70 p-4 backdrop-blur-sm dark:bg-zinc-950/70">
+      <div className="space-y-3 border-b border-zinc-200 pb-4 dark:border-zinc-800">
+        <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+          Discover and share recommendations for restaurants, movies, fashion,
+          household items, and more with your friends.
+        </p>
+        <AddRecommendationTrigger userId={userId ?? null} currentCliqueId={currentCliqueId} />
+      </div>
+
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-zinc-500">
           <Users className="h-4 w-4" />
