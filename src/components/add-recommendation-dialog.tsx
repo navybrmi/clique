@@ -757,25 +757,23 @@ export function AddRecommendationDialog({
         }}
       >
         <DialogTrigger asChild>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-            {trigger ? (
-              // If custom trigger, clone and add onClick
-              // @ts-ignore
-              React.cloneElement(trigger as any, {
-                onClick: (e: React.MouseEvent) => {
-                  if (typeof (trigger as any).props?.onClick === 'function') {
-                    (trigger as any).props.onClick(e)
-                  }
-                  handleTriggerClick(e)
-                },
-              })
-            ) : (
-              <Button onClick={handleTriggerClick}>
-                <Plus className="mr-2 h-4 w-4" />
-                {editMode ? "Edit Recommendation" : "Add Recommendation"}
-              </Button>
-            )}
-          </div>
+          {trigger ? (
+            // If custom trigger, clone and add onClick
+            // @ts-ignore
+            React.cloneElement(trigger as any, {
+              onClick: (e: React.MouseEvent) => {
+                if (typeof (trigger as any).props?.onClick === 'function') {
+                  (trigger as any).props.onClick(e)
+                }
+                handleTriggerClick(e)
+              },
+            })
+          ) : (
+            <Button onClick={handleTriggerClick}>
+              <Plus className="mr-2 h-4 w-4" />
+              {editMode ? "Edit Recommendation" : "Add Recommendation"}
+            </Button>
+          )}
         </DialogTrigger>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
           <DialogHeader>

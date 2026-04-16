@@ -90,9 +90,9 @@ export function CreateCliqueDialog({ onSuccess }: CreateCliqueDialogProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm" className="w-full sm:w-auto">
+        <Button size="sm" className="w-full justify-start">
           <Plus className="h-4 w-4" />
           Create new Clique
         </Button>

@@ -24,6 +24,7 @@ jest.mock('next/dynamic', () => (fn: () => Promise<{ default: React.ComponentTyp
       data-user-id={props.userId ?? ''}
       data-current-clique-id={props.currentCliqueId ?? ''}
     >
+      {props.trigger ?? <button type="button">Add Recommendation</button>}
       <button
         data-testid="trigger-on-success"
         onClick={() => props.onSuccess && props.onSuccess()}
@@ -59,6 +60,13 @@ describe('AddRecommendationTrigger', () => {
   it('renders the Browse Categories button', () => {
     render(<AddRecommendationTrigger />)
     expect(screen.getByRole('button', { name: /browse categories/i })).toBeInTheDocument()
+  })
+
+  it('renders compact full-width actions in the sidebar layout', () => {
+    render(<AddRecommendationTrigger layout="sidebar" />)
+
+    expect(screen.getByRole('button', { name: /add recommendation/i })).toHaveClass('w-full')
+    expect(screen.getByRole('button', { name: /browse categories/i })).toHaveClass('w-full')
   })
 
   it('renders the dialog', () => {

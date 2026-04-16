@@ -27,6 +27,11 @@ describe("CreateCliqueDialog", () => {
     const user = userEvent.setup()
     render(<CreateCliqueDialog />)
 
+    expect(screen.getByRole("button", { name: "Create new Clique" })).toHaveClass(
+      "w-full",
+      "justify-start"
+    )
+
     await user.click(screen.getByRole("button", { name: "Create new Clique" }))
     const dialog = screen.getByRole("dialog")
 

@@ -283,6 +283,15 @@ describe('HomePage - Server Component', () => {
     expect(screen.getByTestId('mock-trigger')).toBeInTheDocument()
   })
 
+  it('does not render the top AddRecommendationTrigger for authenticated users', async () => {
+    mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
+    ;(getRecommendations as jest.Mock).mockResolvedValue([])
+
+    await renderHomePage()
+
+    expect(screen.queryByTestId('mock-trigger')).not.toBeInTheDocument()
+  })
+
   it('sets priority on the first card image and not subsequent ones', async () => {
     ;(getRecommendations as jest.Mock).mockResolvedValue([
       mockRecWithImage,
