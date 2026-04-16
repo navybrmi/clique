@@ -113,7 +113,7 @@ export async function GET() {
  * @param {string[]} [tags] - Array of recommendation tags
  * @param {string} [link] - External link related to recommendation
  * @param {string} [imageUrl] - Image URL for the recommendation
- * @param {number} [rating] - User rating value (UI uses a 0-10 scale)
+ * @param {number} [rating] - User rating value (UI typically sends 0-10; server stores provided value)
  * @param {object} [restaurantData] - Restaurant-specific fields (if category is RESTAURANT)
  * @param {object} [movieData] - Movie-specific fields (if category is MOVIE)
  * @param {object} [fashionData] - Fashion-specific fields (if category is FASHION)
@@ -121,7 +121,7 @@ export async function GET() {
  * @param {object} [otherData] - Generic category fields (if category is OTHER)
  * @param {string[]} [cliqueIds] - Cliques to add this recommendation to
  * @param {boolean} [allowDuplicateInClique] - If true, allows creating despite clique-level duplicate checks
- * @param {boolean} [forceCreateNew] - If true, bypasses clique duplicate conflict checks
+ * @param {boolean} [forceCreateNew] - Legacy alias for allowDuplicateInClique (same behavior)
  * 
  * @returns {Promise<NextResponse>} Created recommendation with all relations
  * @throws {401} If unauthenticated
@@ -244,14 +244,14 @@ export async function POST(request: NextRequest) {
       // the same entity has been recommended in a different clique.
       let existingCliqueRec: CliqueRecommendationConflictResult | null = null
 
-      const cliqueRecommendationDelegate = (
+      const cliqueRecDelegate = (
         prisma as unknown as {
           cliqueRecommendation?: Partial<CliqueRecommendationConflictDelegate>
         }
       ).cliqueRecommendation
 
-      if (typeof cliqueRecommendationDelegate?.findFirst === "function") {
-        existingCliqueRec = await cliqueRecommendationDelegate.findFirst({
+      if (typeof cliqueRecDelegate?.findFirst === "function") {
+        existingCliqueRec = await cliqueRecDelegate.findFirst({
           where: {
             cliqueId: { in: uniqueCliqueIds },
             recommendation: {
