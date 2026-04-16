@@ -4,8 +4,8 @@ import { GET, POST } from "../route"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 
-jest.mock("@/lib/prisma", () => ({
-  prisma: {
+jest.mock("@/lib/prisma", () => {
+  const mockPrisma = {
     clique: {
       findUnique: jest.fn(),
     },
@@ -21,8 +21,13 @@ jest.mock("@/lib/prisma", () => ({
     recommendation: {
       findUnique: jest.fn(),
     },
-  },
-}))
+  }
+
+  return {
+    prisma: mockPrisma,
+    getPrismaClient: jest.fn(() => mockPrisma),
+  }
+})
 
 jest.mock("@/lib/auth", () => ({
   auth: jest.fn(),

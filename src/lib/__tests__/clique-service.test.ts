@@ -1,16 +1,21 @@
 import { getCliqueFeed } from "@/lib/clique-service"
 import { prisma } from "@/lib/prisma"
 
-jest.mock("@/lib/prisma", () => ({
-  prisma: {
+jest.mock("@/lib/prisma", () => {
+  const mockPrisma = {
     cliqueRecommendation: {
       findMany: jest.fn(),
     },
     cliqueMember: {
       findMany: jest.fn(),
     },
-  },
-}))
+  }
+
+  return {
+    prisma: mockPrisma,
+    getPrismaClient: jest.fn(() => mockPrisma),
+  }
+})
 
 /** Builds a minimal recommendation row for testing entity field mapping. */
 const makeRow = (entityOverrides: Record<string, unknown> = {}) => ({
