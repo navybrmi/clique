@@ -257,16 +257,18 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
 
       <main className="container mx-auto px-4 py-6">
         <div className="space-y-6">
-          <div className="mb-6 text-center">
-            <p className="mx-auto max-w-2xl text-xl text-zinc-600 dark:text-zinc-400">
-              Discover and share recommendations for restaurants, movies, fashion,
-              household items, and more with your friends.
-            </p>
-            <AddRecommendationTrigger
-              userId={session?.user?.id ?? null}
-              currentCliqueId={activeCliqueId}
-            />
-          </div>
+          {!session?.user?.id && (
+            <div className="mb-6 text-center">
+              <p className="mx-auto max-w-2xl text-xl text-zinc-600 dark:text-zinc-400">
+                Discover and share recommendations for restaurants, movies, fashion,
+                household items, and more with your friends.
+              </p>
+              <AddRecommendationTrigger
+                userId={null}
+                currentCliqueId={activeCliqueId}
+              />
+            </div>
+          )}
 
           <div
             className={cn(
@@ -276,10 +278,22 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
             )}
           >
             {session?.user?.id && (
-              <CliqueSidebarWrapper
-                userId={session.user.id}
-                activeCliqueId={activeCliqueId}
-              />
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                    Discover and share recommendations for restaurants, movies,
+                    fashion, household items, and more with your friends.
+                  </p>
+                  <AddRecommendationTrigger
+                    userId={session.user.id}
+                    currentCliqueId={activeCliqueId}
+                  />
+                </div>
+                <CliqueSidebarWrapper
+                  userId={session.user.id}
+                  activeCliqueId={activeCliqueId}
+                />
+              </div>
             )}
 
             <div
