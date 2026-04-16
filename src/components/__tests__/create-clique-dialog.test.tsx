@@ -95,6 +95,43 @@ describe("CreateCliqueDialog", () => {
     expect(mockRefresh).not.toHaveBeenCalled()
   })
 
+  it("shows a generic error when the fetch throws a network error", async () => {
+    const user = userEvent.setup()
+    global.fetch = jest.fn().mockRejectedValue(new Error("Network error")) as typeof fetch
+    jest.spyOn(console, "error").mockImplementation()
+
+    render(<CreateCliqueDialog />)
+
+    await user.click(screen.getByRole("button", { name: "Create new Clique" }))
+    await user.type(screen.getByLabelText("Clique name"), "My Clique")
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Create new Clique" })
+    )
+
+    expect(await screen.findByText("Failed to create clique")).toBeInTheDocument()
+    ;(console.error as jest.Mock).mockRestore()
+  })
+
+  it("closes the dialog when Cancel is clicked and resets the form", async () => {
+    const user = userEvent.setup()
+
+    render(<CreateCliqueDialog />)
+
+    await user.click(screen.getByRole("button", { name: "Create new Clique" }))
+    await screen.findByRole("dialog")
+
+    await user.type(screen.getByLabelText("Clique name"), "Some Name")
+    await user.click(screen.getByRole("button", { name: /cancel/i }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    })
+
+    // Reopen — form should be reset
+    await user.click(screen.getByRole("button", { name: "Create new Clique" }))
+    expect((screen.getByLabelText("Clique name") as HTMLInputElement).value).toBe("")
+  })
+
   it("closes and notifies the parent on success", async () => {
     const user = userEvent.setup()
     const onSuccess = jest.fn()
