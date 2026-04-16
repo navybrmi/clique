@@ -561,7 +561,7 @@ export function AddRecommendationDialog({
    * @param forceCreateNew - When true, bypasses clique duplicate conflict checks.
    */
   const submitRecommendation = async (
-    resolvedUserId: string,
+    _resolvedUserId: string,
     forceCreateNew = false
   ): Promise<Response> => {
     const selectedCategory = categories.find((c) => c.id === selectedCategoryId)
@@ -572,7 +572,6 @@ export function AddRecommendationDialog({
       link: link || null,
       imageUrl: imageUrl || null,
       rating: rating ? parseInt(rating, 10) : null,
-      userId: resolvedUserId,
     }
 
     if (!editMode && currentCliqueId) {

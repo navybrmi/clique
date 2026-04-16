@@ -1,5 +1,6 @@
 import { GET, POST } from "../route"
 import { prisma } from "@/lib/prisma"
+import { auth } from "@/lib/auth"
 import { NextRequest } from "next/server"
 
 // Mock Prisma
@@ -36,10 +37,15 @@ jest.mock("@/lib/prisma", () => ({
       count: jest.fn(),
     },
     cliqueRecommendation: {
+      findFirst: jest.fn(),
       createMany: jest.fn(),
     },
     $executeRaw: jest.fn(),
   },
+}))
+
+jest.mock("@/lib/auth", () => ({
+  auth: jest.fn(),
 }))
 
 jest.mock("@/lib/tag-service", () => ({
@@ -143,27 +149,27 @@ describe("GET /api/recommendations", () => {
 })
 
 describe("POST /api/recommendations", () => {
+  beforeEach(() => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+  })
+
   afterEach(() => {
     jest.clearAllMocks()
   })
 
-  it("should return 400 when userId is missing", async () => {
-    // Arrange
+  it("should return 401 when unauthenticated", async () => {
+    ;(auth as jest.Mock).mockResolvedValue(null)
+
     const request = new NextRequest("http://localhost/api/recommendations", {
       method: "POST",
-      body: JSON.stringify({
-        categoryId: "cat1",
-        entityName: "Test Entity",
-      }),
+      body: JSON.stringify({ categoryId: "cat1", entityName: "Test Entity" }),
     })
 
-    // Act
     const response = await POST(request)
     const data = await response.json()
 
-    // Assert
-    expect(response.status).toBe(400)
-    expect(data).toEqual({ error: "userId and categoryId are required" })
+    expect(response.status).toBe(401)
+    expect(data).toEqual({ error: "Unauthorized" })
   })
 
   it("should return 400 when categoryId is missing", async () => {
@@ -171,7 +177,6 @@ describe("POST /api/recommendations", () => {
     const request = new NextRequest("http://localhost/api/recommendations", {
       method: "POST",
       body: JSON.stringify({
-        userId: "user1",
         entityName: "Test Entity",
       }),
     })
@@ -182,7 +187,7 @@ describe("POST /api/recommendations", () => {
 
     // Assert
     expect(response.status).toBe(400)
-    expect(data).toEqual({ error: "userId and categoryId are required" })
+    expect(data).toEqual({ error: "categoryId is required" })
   })
 
   it("should return 400 when both entityName and entityId are missing", async () => {
@@ -190,7 +195,6 @@ describe("POST /api/recommendations", () => {
     const request = new NextRequest("http://localhost/api/recommendations", {
       method: "POST",
       body: JSON.stringify({
-        userId: "user1",
         categoryId: "cat1",
       }),
     })
@@ -222,19 +226,18 @@ describe("POST /api/recommendations", () => {
     expect(data).toEqual({ error: "cliqueIds must contain non-empty string IDs" })
   })
 
-  it("should return 409 conflict metadata when recommendation already exists for clique flow", async () => {
+  it("should return 409 conflict metadata when recommendation already exists in target clique", async () => {
     ;(prisma.cliqueMember.count as jest.Mock).mockResolvedValue(1)
-    ;(prisma.recommendation.findFirst as jest.Mock).mockResolvedValue({
-      id: "rec-existing",
-      entity: {
-        name: "Inception",
+    ;(prisma.cliqueRecommendation.findFirst as jest.Mock).mockResolvedValue({
+      recommendation: {
+        id: "rec-existing",
+        entity: { name: "Inception" },
       },
     })
 
     const request = new NextRequest("http://localhost/api/recommendations", {
       method: "POST",
       body: JSON.stringify({
-        userId: "user1",
         categoryId: "cat1",
         entityName: "Inception",
         cliqueIds: ["clique-1"],
@@ -246,7 +249,7 @@ describe("POST /api/recommendations", () => {
 
     expect(response.status).toBe(409)
     expect(data).toEqual({
-      error: "A recommendation for this item already exists",
+      error: "A recommendation for this item already exists in this clique",
       code: "CLIQUE_RECOMMENDATION_EXISTS",
       conflict: true,
       existingRecommendationId: "rec-existing",
@@ -257,7 +260,7 @@ describe("POST /api/recommendations", () => {
 
   it("should create recommendation and attach it to cliques", async () => {
     ;(prisma.cliqueMember.count as jest.Mock).mockResolvedValue(1)
-    ;(prisma.recommendation.findFirst as jest.Mock).mockResolvedValue(null)
+    ;(prisma.cliqueRecommendation.findFirst as jest.Mock).mockResolvedValue(null)
     ;(prisma.entity.findFirst as jest.Mock).mockResolvedValue({
       id: "entity1",
       name: "Existing Entity",
@@ -329,7 +332,7 @@ describe("POST /api/recommendations", () => {
     const response = await POST(request)
 
     expect(response.status).toBe(201)
-    expect(prisma.recommendation.findFirst).not.toHaveBeenCalled()
+    expect(prisma.cliqueRecommendation.findFirst).not.toHaveBeenCalled()
     expect(prisma.recommendation.create).toHaveBeenCalled()
   })
 
@@ -652,8 +655,8 @@ describe("POST /api/recommendations", () => {
     const response = await POST(request)
 
     expect(response.status).toBe(201)
-    // findFirst (conflict check) should NOT have been called because allowDuplicateInClique=true
-    expect(prisma.recommendation.findFirst).not.toHaveBeenCalled()
+    // cliqueRecommendation.findFirst (conflict check) should NOT be called when allowDuplicateInClique=true
+    expect(prisma.cliqueRecommendation.findFirst).not.toHaveBeenCalled()
   })
 
   it("should handle database errors during creation", async () => {

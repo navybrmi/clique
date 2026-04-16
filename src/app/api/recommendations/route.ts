@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+import { auth } from "@/lib/auth"
 import { trackMultipleTags } from "@/lib/tag-service"
 
 /**
@@ -69,11 +70,12 @@ export async function GET() {
 
 /**
  * POST /api/recommendations
- * 
+ *
  * Creates a new recommendation with optional entity creation.
- * 
+ * The authenticated user's ID is resolved from the session — the client must not
+ * supply a `userId` in the body; any body `userId` field is ignored.
+ *
  * Request Body:
- * @param {string} userId - ID of the user creating the recommendation (required)
  * @param {string} categoryId - Category ID for the recommendation (required)
  * @param {string} [entityId] - Existing entity ID (if reusing an entity)
  * @param {string} [entityName] - Name for new entity (if creating)
@@ -90,6 +92,7 @@ export async function GET() {
  * @param {boolean} [forceCreateNew] - If true, bypasses clique duplicate conflict checks
  * 
  * @returns {Promise<NextResponse>} Created recommendation with all relations
+ * @throws {401} If unauthenticated
  * @throws {400} If required fields are missing or invalid
  * @throws {500} If database operation fails
  * 
@@ -107,16 +110,21 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+    const userId = session.user.id
+
     const body = await request.json()
-    const { 
-      entityName, 
+    const {
+      entityName,
       entityId,
-      tags, 
-      categoryId, 
-      link, 
-      imageUrl, 
-      rating, 
-      userId,
+      tags,
+      categoryId,
+      link,
+      imageUrl,
+      rating,
       restaurantData,
       movieData,
       fashionData,
@@ -144,9 +152,9 @@ export async function POST(request: NextRequest) {
       : []
 
     // Validate required fields
-    if (!userId || !categoryId) {
+    if (!categoryId) {
       return NextResponse.json(
-        { error: "userId and categoryId are required" },
+        { error: "categoryId is required" },
         { status: 400 }
       )
     }
@@ -194,31 +202,37 @@ export async function POST(request: NextRequest) {
       Boolean(allowDuplicateInClique) || Boolean(forceCreateNew)
 
     if (uniqueCliqueIds.length > 0 && trimmedEntityName && !entityId && !shouldAllowDuplicateInClique) {
-      const existingRecommendation = await prisma.recommendation.findFirst({
+      // Check whether any of the target cliques already contain a recommendation
+      // for this entity. Scoping to the clique(s) prevents false conflicts when
+      // the same entity has been recommended in a different clique.
+      const existingCliqueRec = await prisma.cliqueRecommendation.findFirst({
         where: {
-          entity: {
-            is: {
+          cliqueId: { in: uniqueCliqueIds },
+          recommendation: {
+            entity: {
               name: trimmedEntityName,
               categoryId,
             },
           },
         },
         select: {
-          id: true,
-          entity: {
-            select: { name: true },
+          recommendation: {
+            select: {
+              id: true,
+              entity: { select: { name: true } },
+            },
           },
         },
       })
 
-      if (existingRecommendation) {
+      if (existingCliqueRec) {
         return NextResponse.json(
           {
-            error: "A recommendation for this item already exists",
+            error: "A recommendation for this item already exists in this clique",
             code: "CLIQUE_RECOMMENDATION_EXISTS",
             conflict: true,
-            existingRecommendationId: existingRecommendation.id,
-            entityName: existingRecommendation.entity.name,
+            existingRecommendationId: existingCliqueRec.recommendation.id,
+            entityName: existingCliqueRec.recommendation.entity.name,
           },
           { status: 409 }
         )
