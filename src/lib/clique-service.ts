@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma"
+import { getPrismaClient } from "@/lib/prisma"
 import type { CliqueFeedItem } from "@/types/clique"
 
 /**
@@ -18,6 +18,7 @@ export async function getCliqueFeed(
   _currentUserId: string
 ): Promise<CliqueFeedItem[]> {
   void _currentUserId
+  const prisma = getPrismaClient()
 
   const [rows, members] = await Promise.all([
     prisma.cliqueRecommendation.findMany({

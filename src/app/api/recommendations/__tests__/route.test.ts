@@ -40,6 +40,7 @@ jest.mock("@/lib/prisma", () => ({
       findFirst: jest.fn(),
       createMany: jest.fn(),
     },
+    $queryRaw: jest.fn(),
     $executeRaw: jest.fn(),
   },
 }))
@@ -256,6 +257,49 @@ describe("POST /api/recommendations", () => {
       entityName: "Inception",
     })
     expect(prisma.recommendation.create).not.toHaveBeenCalled()
+  })
+
+  it("should use raw SQL fallback for clique conflict checks when cliqueRecommendation delegate is unavailable", async () => {
+    ;(prisma.cliqueMember.count as jest.Mock).mockResolvedValue(1)
+    ;(prisma.$queryRaw as jest.Mock).mockResolvedValue([
+      {
+        recommendationId: "rec-existing",
+        entityName: "Inception",
+      },
+    ])
+
+    const originalCliqueRecommendation = (
+      prisma as unknown as { cliqueRecommendation?: unknown }
+    ).cliqueRecommendation
+    ;(prisma as unknown as { cliqueRecommendation?: unknown }).cliqueRecommendation =
+      undefined
+
+    try {
+      const request = new NextRequest("http://localhost/api/recommendations", {
+        method: "POST",
+        body: JSON.stringify({
+          categoryId: "cat1",
+          entityName: "Inception",
+          cliqueIds: ["clique-1"],
+        }),
+      })
+
+      const response = await POST(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(409)
+      expect(data).toEqual({
+        error: "A recommendation for this item already exists in this clique",
+        code: "CLIQUE_RECOMMENDATION_EXISTS",
+        conflict: true,
+        existingRecommendationId: "rec-existing",
+        entityName: "Inception",
+      })
+      expect(prisma.$queryRaw).toHaveBeenCalled()
+    } finally {
+      ;(prisma as unknown as { cliqueRecommendation?: unknown }).cliqueRecommendation =
+        originalCliqueRecommendation
+    }
   })
 
   it("should create recommendation and attach it to cliques", async () => {

@@ -70,6 +70,16 @@ export function getPrismaClient(): PrismaClient {
   return nextClient
 }
 
+function createPrismaClientProxy(): PrismaClient {
+  return new Proxy({} as PrismaClient, {
+    get(_target, prop, receiver) {
+      const client = getPrismaClient() as unknown as Record<PropertyKey, unknown>
+      const value = Reflect.get(client, prop, receiver)
+      return typeof value === "function" ? value.bind(client) : value
+    },
+  })
+}
+
 /**
  * Singleton Prisma Client instance.
  *
@@ -80,4 +90,4 @@ export function getPrismaClient(): PrismaClient {
  *
  * @see {@link https://www.prisma.io/docs/guides/performance-and-optimization/connection-management#prevent-hot-reloading-from-creating-new-instances}
  */
-export const prisma = getPrismaClient()
+export const prisma = createPrismaClientProxy()

@@ -82,13 +82,14 @@ export async function GET() {
  * @param {string[]} [tags] - Array of recommendation tags
  * @param {string} [link] - External link related to recommendation
  * @param {string} [imageUrl] - Image URL for the recommendation
- * @param {number} [rating] - User rating (0-5)
+ * @param {number} [rating] - User rating (0-10)
  * @param {object} [restaurantData] - Restaurant-specific fields (if category is RESTAURANT)
  * @param {object} [movieData] - Movie-specific fields (if category is MOVIE)
  * @param {object} [fashionData] - Fashion-specific fields (if category is FASHION)
  * @param {object} [householdData] - Household-specific fields (if category is HOUSEHOLD)
  * @param {object} [otherData] - Generic category fields (if category is OTHER)
  * @param {string[]} [cliqueIds] - Cliques to add this recommendation to
+ * @param {boolean} [allowDuplicateInClique] - If true, allows creating despite clique-level duplicate checks
  * @param {boolean} [forceCreateNew] - If true, bypasses clique duplicate conflict checks
  * 
  * @returns {Promise<NextResponse>} Created recommendation with all relations
@@ -100,11 +101,11 @@ export async function GET() {
  * // Creating new restaurant recommendation:
  * // POST /api/recommendations
  * // Body: {
- * //   userId: "user123",
  * //   categoryId: "cat1",
  * //   entityName: "Joe's Pizza",
  * //   tags: ["Great crust", "Authentic"],
- * //   rating: 5,
+ * //   rating: 8,
+ * //   allowDuplicateInClique: false,
  * //   restaurantData: { cuisine: "Italian", location: "NYC" }
  * // }
  */
@@ -201,29 +202,107 @@ export async function POST(request: NextRequest) {
     const shouldAllowDuplicateInClique =
       Boolean(allowDuplicateInClique) || Boolean(forceCreateNew)
 
-    if (uniqueCliqueIds.length > 0 && trimmedEntityName && !entityId && !shouldAllowDuplicateInClique) {
+    if (
+      uniqueCliqueIds.length > 0 &&
+      trimmedEntityName &&
+      !entityId &&
+      !shouldAllowDuplicateInClique
+    ) {
       // Check whether any of the target cliques already contain a recommendation
       // for this entity. Scoping to the clique(s) prevents false conflicts when
       // the same entity has been recommended in a different clique.
-      const existingCliqueRec = await prisma.cliqueRecommendation.findFirst({
-        where: {
-          cliqueId: { in: uniqueCliqueIds },
-          recommendation: {
-            entity: {
-              name: trimmedEntityName,
-              categoryId,
+      let existingCliqueRec: {
+        recommendation: {
+          id: string
+          entity: {
+            name: string
+          }
+        }
+      } | null = null
+
+      const cliqueRecommendationDelegate = (
+        prisma as unknown as {
+          cliqueRecommendation?: {
+            findFirst?: (args: {
+              where: {
+                cliqueId: { in: string[] }
+                recommendation: {
+                  entity: {
+                    name: string
+                    categoryId: string
+                  }
+                }
+              }
+              select: {
+                recommendation: {
+                  select: {
+                    id: true
+                    entity: { select: { name: true } }
+                  }
+                }
+              }
+            }) => Promise<{
+              recommendation: {
+                id: string
+                entity: {
+                  name: string
+                }
+              }
+            } | null>
+          }
+        }
+      ).cliqueRecommendation
+
+      if (typeof cliqueRecommendationDelegate?.findFirst === "function") {
+        existingCliqueRec = await cliqueRecommendationDelegate.findFirst({
+          where: {
+            cliqueId: { in: uniqueCliqueIds },
+            recommendation: {
+              entity: {
+                name: trimmedEntityName,
+                categoryId,
+              },
             },
           },
-        },
-        select: {
-          recommendation: {
-            select: {
-              id: true,
-              entity: { select: { name: true } },
+          select: {
+            recommendation: {
+              select: {
+                id: true,
+                entity: { select: { name: true } },
+              },
             },
           },
-        },
-      })
+        })
+      } else {
+        const existingCliqueRecRows = await prisma.$queryRaw<
+          Array<{ recommendationId: string; entityName: string }>
+        >(Prisma.sql`
+          SELECT
+            r."id" AS "recommendationId",
+            e."name" AS "entityName"
+          FROM "CliqueRecommendation" cr
+          INNER JOIN "Recommendation" r
+            ON r."id" = cr."recommendationId"
+          INNER JOIN "Entity" e
+            ON e."id" = r."entityId"
+          WHERE cr."cliqueId" IN (${Prisma.join(uniqueCliqueIds)})
+            AND e."name" = ${trimmedEntityName}
+            AND e."categoryId" = ${categoryId}
+          LIMIT 1
+        `)
+
+        const existingCliqueRecRow = existingCliqueRecRows[0]
+        if (existingCliqueRecRow) {
+          existingCliqueRec = {
+            recommendation: {
+              id: existingCliqueRecRow.recommendationId,
+              entity: {
+                name: existingCliqueRecRow.entityName,
+              },
+            },
+          }
+        }
+      }
 
       if (existingCliqueRec) {
         return NextResponse.json(

@@ -156,7 +156,6 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
         ? rawCliqueId[0]
         : undefined
 
-  let activeCliqueName: string | null = null
   let cliqueError: string | null = null
   let recommendations: HomeFeedItem[] = []
   const prisma = getPrismaClient()
@@ -210,7 +209,6 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
           )[0] ?? null
 
     if (accessibleClique) {
-      activeCliqueName = accessibleClique.name
       if (
         typeof cliqueDelegate.cliqueRecommendation?.findMany === "function" &&
         typeof cliqueDelegate.cliqueMember?.findMany === "function"

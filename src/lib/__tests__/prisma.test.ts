@@ -57,8 +57,8 @@ describe('Prisma client singleton', () => {
 
     const { prisma, getPrismaClient } = await import('../prisma')
 
-    expect(prisma).toBe(cachedClient)
     expect(getPrismaClient()).toBe(cachedClient)
+    expect((prisma as unknown as { clique?: unknown }).clique).toBe(cachedClient.clique)
     expect(PrismaClientMock).not.toHaveBeenCalled()
   })
 
@@ -71,8 +71,8 @@ describe('Prisma client singleton', () => {
 
     const { prisma, getPrismaClient } = await import('../prisma')
 
-    expect(prisma).toBe(freshClient)
     expect(getPrismaClient()).toBe(freshClient)
+    expect((prisma as unknown as { clique?: unknown }).clique).toBe(freshClient.clique)
     expect(staleClient.$disconnect).toHaveBeenCalledTimes(1)
     expect(PrismaClientMock).toHaveBeenCalledTimes(1)
   })
@@ -86,11 +86,30 @@ describe('Prisma client singleton', () => {
 
     const { prisma, getPrismaClient } = await import('../prisma')
 
-    expect(prisma).toBe(replacementClient)
     expect(getPrismaClient()).toBe(replacementClient)
     expect(getPrismaClient()).toBe(replacementClient)
+    expect((prisma as unknown as { clique?: unknown }).clique).toBe(
+      replacementClient.clique
+    )
     expect(staleClient.$disconnect).toHaveBeenCalledTimes(1)
     expect(replacementClient.$disconnect).not.toHaveBeenCalled()
     expect(PrismaClientMock).toHaveBeenCalledTimes(1)
+  })
+
+  it("reads the latest cached client through the exported prisma proxy", async () => {
+    const firstClient = createClient()
+    const replacementClient = createClient()
+
+    globalState.prisma = firstClient
+
+    const { prisma } = await import("../prisma")
+
+    expect((prisma as unknown as { clique?: unknown }).clique).toBe(firstClient.clique)
+
+    globalState.prisma = replacementClient
+
+    expect((prisma as unknown as { clique?: unknown }).clique).toBe(
+      replacementClient.clique
+    )
   })
 })

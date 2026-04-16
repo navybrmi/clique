@@ -147,4 +147,11 @@ describe("CliqueSidebar", () => {
     expect(screen.queryByText("Quick start")).not.toBeInTheDocument()
     expect(screen.queryByTestId("add-rec-trigger")).not.toBeInTheDocument()
   })
+
+  it("does not render the quick-start section when userId is null", () => {
+    render(<CliqueSidebar cliques={cliques} userId={null} />)
+
+    expect(screen.queryByText("Quick start")).not.toBeInTheDocument()
+    expect(screen.queryByTestId("add-rec-trigger")).not.toBeInTheDocument()
+  })
 })

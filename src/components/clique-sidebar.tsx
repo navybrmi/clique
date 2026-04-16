@@ -56,7 +56,7 @@ export function CliqueSidebar({
 
   return (
     <div className="sticky top-24 space-y-4 rounded-xl border bg-white/70 p-4 backdrop-blur-sm dark:bg-zinc-950/70">
-      {userId !== undefined && (
+      {userId != null && (
         <div className="space-y-3 rounded-lg bg-zinc-50/80 p-3 dark:bg-zinc-900/80">
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-zinc-500">
