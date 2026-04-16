@@ -160,8 +160,6 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
   let cliqueError: string | null = null
   let recommendations: HomeFeedItem[] = []
   const prisma = getPrismaClient()
-  const feedLabel =
-    activeCliqueId && session?.user?.id ? activeCliqueName || "Clique Feed" : "Public Feed"
 
   if (session?.user?.id && activeCliqueId) {
     const userId = session.user.id
@@ -255,19 +253,11 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black">
-      <Header session={session} showCliqueHint />
+      <Header session={session} showCliqueHint pageTitle="Share Your Favorite Things" />
 
-      <main className="container mx-auto px-4 py-16">
-        <div className="space-y-10">
-          <div className="mb-16 text-center">
-            <div className="mb-4 flex flex-col items-center gap-3">
-              <Badge variant="secondary" className="px-3 py-1 text-sm">
-                {activeCliqueName ? `Viewing ${activeCliqueName}` : feedLabel}
-              </Badge>
-              <h2 className="text-5xl font-bold tracking-tight">
-                Share Your Favorite Things
-              </h2>
-            </div>
+      <main className="container mx-auto px-4 py-6">
+        <div className="space-y-6">
+          <div className="mb-6 text-center">
             <p className="mx-auto max-w-2xl text-xl text-zinc-600 dark:text-zinc-400">
               Discover and share recommendations for restaurants, movies, fashion,
               household items, and more with your friends.

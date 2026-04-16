@@ -354,7 +354,6 @@ describe('HomePage - Server Component', () => {
     await renderHomePage({ cliqueId: 'clique-1' })
 
     expect(mockGetCliqueFeed).toHaveBeenCalledWith('clique-1', 'user-1')
-    expect(screen.getByText('Viewing Weekend Crew')).toBeInTheDocument()
     expect(screen.getByText('Submitted by Clique Submitter')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Private Movie/i })).toHaveAttribute(
       'href',

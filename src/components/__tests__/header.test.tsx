@@ -30,11 +30,23 @@ describe('Header', () => {
     expect(screen.getByText('Clique')).toBeInTheDocument()
   })
 
-  it('should show clique hint when explicitly enabled', () => {
+  it('should show clique hint when explicitly enabled and no pageTitle', () => {
     render(<Header showCliqueHint />)
     expect(
       screen.getByText('🤝 A Clique = your mini crew for trusted recommendations.')
     ).toBeInTheDocument()
+  })
+
+  it('should render the pageTitle as an h2 when provided', () => {
+    render(<Header pageTitle="Share Your Favorite Things" />)
+    expect(screen.getByRole('heading', { level: 2, name: 'Share Your Favorite Things' })).toBeInTheDocument()
+  })
+
+  it('should not show the clique hint when pageTitle is provided', () => {
+    render(<Header showCliqueHint pageTitle="Share Your Favorite Things" />)
+    expect(
+      screen.queryByText('🤝 A Clique = your mini crew for trusted recommendations.')
+    ).not.toBeInTheDocument()
   })
 
   it('should render back button when showBack is true', () => {

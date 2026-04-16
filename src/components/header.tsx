@@ -17,6 +17,8 @@ interface HeaderProps {
   showCliqueHint?: boolean
   /** Resolved session from the server component parent. */
   session?: { user?: { id?: string; name?: string | null; image?: string | null } } | null
+  /** Optional page-level tagline rendered in the header at the same level as the app name. */
+  pageTitle?: string
 }
 
 /**
@@ -29,7 +31,7 @@ interface HeaderProps {
  * @param props - Component props
  * @returns A sticky header with navigation and auth controls
  */
-export function Header({ showBack, showCliqueHint, session }: HeaderProps) {
+export function Header({ showBack, showCliqueHint, session, pageTitle }: HeaderProps) {
   const [isHydrated, setIsHydrated] = useState(false)
 
   useEffect(() => {
@@ -42,7 +44,7 @@ export function Header({ showBack, showCliqueHint, session }: HeaderProps) {
 
   return (
     <header className="border-b bg-white/50 backdrop-blur-sm dark:bg-black/50">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+      <div className="container mx-auto flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-4">
           {showBack && (
             <Link href="/">
@@ -57,7 +59,15 @@ export function Header({ showBack, showCliqueHint, session }: HeaderProps) {
               Clique
             </h1>
           </Link>
-          {showCliqueHint && !showBack && (
+          {pageTitle && (
+            <>
+              <span className="hidden h-8 w-px bg-zinc-300 dark:bg-zinc-700 md:block" aria-hidden="true" />
+              <h2 className="hidden text-5xl font-bold tracking-tight md:block">
+                {pageTitle}
+              </h2>
+            </>
+          )}
+          {!pageTitle && showCliqueHint && !showBack && (
             <span className="hidden rounded-full border border-zinc-300 bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 md:inline-flex dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
               🤝 A Clique = your mini crew for trusted recommendations.
             </span>
