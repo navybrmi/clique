@@ -268,11 +268,12 @@ describe("POST /api/recommendations", () => {
       },
     ])
 
-    const originalCliqueRecommendation = (
-      prisma as unknown as { cliqueRecommendation?: unknown }
-    ).cliqueRecommendation
-    ;(prisma as unknown as { cliqueRecommendation?: unknown }).cliqueRecommendation =
-      undefined
+    const prismaWithOptionalCliqueRecommendation = prisma as unknown as {
+      cliqueRecommendation?: unknown
+    }
+    const originalCliqueRecommendation =
+      prismaWithOptionalCliqueRecommendation.cliqueRecommendation
+    prismaWithOptionalCliqueRecommendation.cliqueRecommendation = undefined
 
     try {
       const request = new NextRequest("http://localhost/api/recommendations", {
@@ -297,7 +298,7 @@ describe("POST /api/recommendations", () => {
       })
       expect(prisma.$queryRaw).toHaveBeenCalled()
     } finally {
-      ;(prisma as unknown as { cliqueRecommendation?: unknown }).cliqueRecommendation =
+      prismaWithOptionalCliqueRecommendation.cliqueRecommendation =
         originalCliqueRecommendation
     }
   })

@@ -4,6 +4,37 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import { trackMultipleTags } from "@/lib/tag-service"
 
+type CliqueRecommendationConflictResult = {
+  recommendation: {
+    id: string
+    entity: {
+      name: string
+    }
+  }
+}
+
+type CliqueRecommendationConflictDelegate = {
+  findFirst: (args: {
+    where: {
+      cliqueId: { in: string[] }
+      recommendation: {
+        entity: {
+          name: string
+          categoryId: string
+        }
+      }
+    }
+    select: {
+      recommendation: {
+        select: {
+          id: true
+          entity: { select: { name: true } }
+        }
+      }
+    }
+  }) => Promise<CliqueRecommendationConflictResult | null>
+}
+
 /**
  * GET /api/recommendations
  * 
@@ -82,7 +113,7 @@ export async function GET() {
  * @param {string[]} [tags] - Array of recommendation tags
  * @param {string} [link] - External link related to recommendation
  * @param {string} [imageUrl] - Image URL for the recommendation
- * @param {number} [rating] - User rating (0-10)
+ * @param {number} [rating] - User rating value (UI uses a 0-10 scale)
  * @param {object} [restaurantData] - Restaurant-specific fields (if category is RESTAURANT)
  * @param {object} [movieData] - Movie-specific fields (if category is MOVIE)
  * @param {object} [fashionData] - Fashion-specific fields (if category is FASHION)
@@ -211,45 +242,11 @@ export async function POST(request: NextRequest) {
       // Check whether any of the target cliques already contain a recommendation
       // for this entity. Scoping to the clique(s) prevents false conflicts when
       // the same entity has been recommended in a different clique.
-      let existingCliqueRec: {
-        recommendation: {
-          id: string
-          entity: {
-            name: string
-          }
-        }
-      } | null = null
+      let existingCliqueRec: CliqueRecommendationConflictResult | null = null
 
       const cliqueRecommendationDelegate = (
         prisma as unknown as {
-          cliqueRecommendation?: {
-            findFirst?: (args: {
-              where: {
-                cliqueId: { in: string[] }
-                recommendation: {
-                  entity: {
-                    name: string
-                    categoryId: string
-                  }
-                }
-              }
-              select: {
-                recommendation: {
-                  select: {
-                    id: true
-                    entity: { select: { name: true } }
-                  }
-                }
-              }
-            }) => Promise<{
-              recommendation: {
-                id: string
-                entity: {
-                  name: string
-                }
-              }
-            } | null>
-          }
+          cliqueRecommendation?: Partial<CliqueRecommendationConflictDelegate>
         }
       ).cliqueRecommendation
 
