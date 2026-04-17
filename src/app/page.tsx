@@ -310,8 +310,20 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                 {recommendations.map((rec, index) => (
                   <Card
                     key={rec.id}
-                    className="overflow-hidden transition-all hover:scale-[1.02] hover:shadow-lg"
+                    className="group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
                   >
+                    {showAddToCliqueActions && (
+                      <div className="pointer-events-none absolute right-3 top-3 z-20 translate-y-1 opacity-0 transition-all duration-200 delay-100 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+                        <div className="relative">
+                          <div className="pointer-events-none absolute -inset-1 rounded-full border-2 border-zinc-400/40 border-t-white/80 opacity-0 transition-opacity duration-150 delay-200 group-hover:animate-spin group-hover:opacity-100" />
+                          <AddToCliquesDialog
+                            recommendationId={rec.id}
+                            recommendationName={rec.entity.name}
+                            variant="icon"
+                          />
+                        </div>
+                      </div>
+                    )}
                     <Link href={rec.href} className="block cursor-pointer">
                       <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900">
                         {rec.imageUrl ? (
@@ -449,16 +461,6 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                         </div>
                       </CardContent>
                     </Link>
-                    {showAddToCliqueActions && (
-                      <CardContent className="pt-0">
-                        <div className="flex justify-end">
-                          <AddToCliquesDialog
-                            recommendationId={rec.id}
-                            recommendationName={rec.entity.name}
-                          />
-                        </div>
-                      </CardContent>
-                    )}
                   </Card>
                 ))}
               </div>

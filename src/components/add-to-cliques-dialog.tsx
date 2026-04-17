@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { Loader2, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,6 +12,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import type { CliqueWithMemberCount } from "@/types/clique"
 
 interface AddToCliquesDialogProps {
@@ -21,6 +27,8 @@ interface AddToCliquesDialogProps {
   recommendationName: string
   /** Optional callback fired after at least one clique add succeeds. */
   onSuccess?: () => void
+  /** Render mode — "default" shows labelled button, "icon" shows icon-only with tooltip. */
+  variant?: "default" | "icon"
 }
 
 type SelectableClique = Pick<CliqueWithMemberCount, "id" | "name" | "_count">
@@ -42,8 +50,12 @@ export function AddToCliquesDialog({
   recommendationId,
   recommendationName,
   onSuccess,
+  variant = "default",
 }: AddToCliquesDialogProps) {
   const [open, setOpen] = useState(false)
+  const [tooltipOpen, setTooltipOpen] = useState(false)
+  const suppressTooltipRef = useRef(false)
+  const suppressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [cliques, setCliques] = useState<SelectableClique[]>([])
   const [selectedCliqueIds, setSelectedCliqueIds] = useState<string[]>([])
   const [isLoadingCliques, setIsLoadingCliques] = useState(false)
@@ -87,11 +99,24 @@ export function AddToCliquesDialog({
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen)
     if (nextOpen) {
+      // Clear any pending suppression lift so reopening before 400ms doesn't
+      // accidentally release the suppress flag while the dialog is open
+      if (suppressTimeoutRef.current) {
+        clearTimeout(suppressTimeoutRef.current)
+        suppressTimeoutRef.current = null
+      }
+      suppressTooltipRef.current = true
+      setTooltipOpen(false)
       void loadCliques()
       return
     }
 
     resetDialog()
+    // Suppress tooltip reopen from focus-return after dialog close; lift after 400ms
+    suppressTimeoutRef.current = setTimeout(() => {
+      suppressTooltipRef.current = false
+      suppressTimeoutRef.current = null
+    }, 400)
   }
 
   const handleCliqueToggle = (cliqueId: string) => {
@@ -185,14 +210,44 @@ export function AddToCliquesDialog({
     }
   }
 
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+  const trigger =
+    variant === "icon" ? (
+      <TooltipProvider>
+        <Tooltip
+          open={tooltipOpen}
+          onOpenChange={(next) => {
+            if (next && suppressTooltipRef.current) return
+            setTooltipOpen(next)
+          }}
+        >
+          <TooltipTrigger asChild>
+            {/* Button is the single focusable element — tooltip and dialog both fire from it */}
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              className="h-9 w-9 rounded-full bg-zinc-900/85 shadow-md hover:bg-zinc-700 dark:bg-zinc-100/90 dark:hover:bg-zinc-200"
+              aria-label="Add to your clique(s)"
+              onClick={() => handleOpenChange(true)}
+            >
+              <Plus className="h-4 w-4 text-white dark:text-zinc-900" strokeWidth={2.5} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">Add to your clique(s)</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    ) : (
       <DialogTrigger asChild>
         <Button type="button" variant="outline" size="sm">
           <Plus className="h-4 w-4" />
           Add to Clique
         </Button>
       </DialogTrigger>
+    )
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {trigger}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add to Clique</DialogTitle>

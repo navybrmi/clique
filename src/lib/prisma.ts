@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@/lib/generated/prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 
 /**
  * Global augmentation for the cached Prisma client instance and schema-refresh state.
@@ -63,7 +64,8 @@ export function getPrismaClient(): PrismaClient {
     disconnectStaleClient(cachedClient)
   }
 
-  const nextClient = new PrismaClient()
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+  const nextClient = new PrismaClient({ adapter })
   globalForPrisma.prisma = nextClient
   globalForPrisma.prismaSchemaRefreshAttempted = !hasCurrentSchema(nextClient)
 

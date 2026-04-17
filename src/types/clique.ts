@@ -5,7 +5,7 @@ import type {
   Notification as PrismaNotification,
   CliqueInviteStatus,
   NotificationType,
-} from "@prisma/client"
+} from "@/lib/generated/prisma/client"
 
 export type { CliqueInviteStatus, NotificationType }
 

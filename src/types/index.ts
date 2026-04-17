@@ -1,4 +1,4 @@
-import { Category, Entity } from '@prisma/client'
+import { Category, Entity } from '@/lib/generated/prisma/client'
 
 /**
  * Re-exported Prisma types for Category and Entity models

@@ -41,8 +41,11 @@ describe('Prisma client singleton', () => {
     delete globalState.prisma
     delete globalState.prismaSchemaRefreshAttempted
 
-    jest.doMock('@prisma/client', () => ({
+    jest.doMock('@/lib/generated/prisma/client', () => ({
       PrismaClient: PrismaClientMock,
+    }))
+    jest.doMock('@prisma/adapter-pg', () => ({
+      PrismaPg: jest.fn(() => ({})),
     }))
   })
 

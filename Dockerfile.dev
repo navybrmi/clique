@@ -1,5 +1,5 @@
 # Dockerfile optimized for development (hot reload, no production build)
-FROM node:20-bookworm-slim
+FROM node:24-bookworm-slim
 
 WORKDIR /app
 
@@ -8,14 +8,19 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl postgresql-client ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-# Copy only package files and prisma schema for dependency caching
+# Copy package files and prisma schema for dependency caching
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
 
-RUN npm ci
+# Generate during install; prisma.config.ts not present yet so a placeholder
+# DATABASE_URL is required by Prisma 7 for client codegen (no real DB needed)
+RUN DATABASE_URL=postgresql://placeholder:5432/placeholder npm ci
 
-# Copy the rest of the source code
+# Copy the rest of the source code (includes prisma.config.ts)
 COPY . .
+
+# Re-run generate with prisma.config.ts now available (no DB connection needed for codegen)
+RUN DATABASE_URL=postgresql://placeholder:5432/placeholder npx prisma generate
 
 EXPOSE 3000
 

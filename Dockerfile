@@ -1,7 +1,7 @@
 # Runtime Dockerfile for running Clique locally (and in prod-like mode)
 # Uses a simple build-then-start flow (no standalone output required).
 
-FROM node:20-bookworm-slim
+FROM node:24-bookworm-slim
 
 WORKDIR /app
 
