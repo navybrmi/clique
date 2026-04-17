@@ -53,6 +53,7 @@ export function AddToCliquesDialog({
   variant = "default",
 }: AddToCliquesDialogProps) {
   const [open, setOpen] = useState(false)
+  const [tooltipOpen, setTooltipOpen] = useState(false)
   const [cliques, setCliques] = useState<SelectableClique[]>([])
   const [selectedCliqueIds, setSelectedCliqueIds] = useState<string[]>([])
   const [isLoadingCliques, setIsLoadingCliques] = useState(false)
@@ -96,6 +97,7 @@ export function AddToCliquesDialog({
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen)
     if (nextOpen) {
+      setTooltipOpen(false)
       void loadCliques()
       return
     }
@@ -197,7 +199,7 @@ export function AddToCliquesDialog({
   const trigger =
     variant === "icon" ? (
       <TooltipProvider>
-        <Tooltip>
+        <Tooltip open={tooltipOpen} onOpenChange={setTooltipOpen}>
           <TooltipTrigger asChild>
             {/* span owns the tooltip hover; DialogTrigger owns the click — avoids double-asChild conflict */}
             <span className="inline-flex">
