@@ -199,17 +199,20 @@ export function AddToCliquesDialog({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <DialogTrigger asChild>
-              <Button
-                type="button"
-                variant="secondary"
-                size="icon"
-                className="h-9 w-9 rounded-full bg-zinc-900/85 shadow-md hover:bg-zinc-700 dark:bg-zinc-100/90 dark:hover:bg-zinc-200"
-                aria-label="Add to your clique(s)"
-              >
-                <Plus className="h-4 w-4 text-white dark:text-zinc-900" strokeWidth={2.5} />
-              </Button>
-            </DialogTrigger>
+            {/* span owns the tooltip hover; DialogTrigger owns the click — avoids double-asChild conflict */}
+            <span className="inline-flex">
+              <DialogTrigger asChild>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  className="h-9 w-9 rounded-full bg-zinc-900/85 shadow-md hover:bg-zinc-700 dark:bg-zinc-100/90 dark:hover:bg-zinc-200"
+                  aria-label="Add to your clique(s)"
+                >
+                  <Plus className="h-4 w-4 text-white dark:text-zinc-900" strokeWidth={2.5} />
+                </Button>
+              </DialogTrigger>
+            </span>
           </TooltipTrigger>
           <TooltipContent side="left">Add to your clique(s)</TooltipContent>
         </Tooltip>

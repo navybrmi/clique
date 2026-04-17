@@ -313,9 +313,9 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                     className="group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
                   >
                     {showAddToCliqueActions && (
-                      <div className="absolute right-3 top-3 z-20 translate-y-1 opacity-0 transition-all duration-200 delay-100 group-hover:translate-y-0 group-hover:opacity-100">
+                      <div className="pointer-events-none absolute right-3 top-3 z-20 translate-y-1 opacity-0 transition-all duration-200 delay-100 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
                         <div className="relative">
-                          <div className="absolute -inset-1 animate-spin rounded-full border-2 border-zinc-400/40 border-t-white/80 opacity-0 transition-opacity duration-150 delay-200 group-hover:opacity-100" />
+                          <div className="pointer-events-none absolute -inset-1 animate-spin rounded-full border-2 border-zinc-400/40 border-t-white/80 opacity-0 transition-opacity duration-150 delay-200 group-hover:opacity-100" />
                           <AddToCliquesDialog
                             recommendationId={rec.id}
                             recommendationName={rec.entity.name}
