@@ -4,6 +4,7 @@
 import React from "react"
 
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -74,6 +75,8 @@ interface AddRecommendationDialogProps {
   initialCategoryId?: string
   /** Authenticated user ID resolved server-side. When provided, skips /api/auth/session fetches. */
   userId?: string | null
+  /** Active clique context from the current feed URL, if any. */
+  currentCliqueId?: string
 }
 
 /**
@@ -103,6 +106,7 @@ export function AddRecommendationDialog({
   initialData,
   initialCategoryId,
   userId,
+  currentCliqueId,
   showLoginAlert,
   onDismissLoginAlert,
   onBlockedOpen,
@@ -112,6 +116,7 @@ export function AddRecommendationDialog({
   onBlockedOpen?: () => void
 }) {
   const [open, setOpen] = useState(false)
+  const router = useRouter()
   // Track if user tried to open dialog while not logged in
   const blockedOpenRef = useRef(false)
 
@@ -166,8 +171,12 @@ export function AddRecommendationDialog({
       setRestaurantData({ cuisine: "", location: "", priceRange: "", hours: "", phoneNumber: "", placeId: "" })
       setFashionData({ brand: "", price: "", size: "", color: "" })
       setHouseholdData({ productType: "", model: "", purchaseLink: "" })
+      setConflictRecommendationId(null)
+      setConflictEntityName("")
     }
   const [loading, setLoading] = useState(false)
+  const [conflictRecommendationId, setConflictRecommendationId] = useState<string | null>(null)
+  const [conflictEntityName, setConflictEntityName] = useState("")
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategoryId, setSelectedCategoryId] = useState(initialCategoryId || "")
   const [entityName, setEntityName] = useState("")
@@ -533,14 +542,121 @@ export function AddRecommendationDialog({
   }
 
   /**
+   * Resolves the active user ID.
+   * Prefers server-provided userId and falls back to session API when undefined.
+   */
+  const resolveUserId = async (): Promise<string | null> => {
+    let resolvedUserId = userId
+    if (typeof resolvedUserId === "undefined") {
+      const sessionRes = await fetch("/api/auth/session")
+      const session = await sessionRes.json()
+      resolvedUserId = session?.user?.id ?? null
+    }
+
+    return resolvedUserId ?? null
+  }
+
+  /**
+   * Sends create/update payload to recommendation APIs.
+   *
+   * @param resolvedUserId - Authenticated user ID.
+   * @param forceCreateNew - When true, bypasses clique duplicate conflict checks.
+   */
+  const submitRecommendation = async (
+    _resolvedUserId: string,
+    forceCreateNew = false
+  ): Promise<Response> => {
+    const selectedCategory = categories.find((c) => c.id === selectedCategoryId)
+    const payload: Record<string, unknown> = {
+      entityName,
+      categoryId: selectedCategoryId,
+      tags,
+      link: link || null,
+      imageUrl: imageUrl || null,
+      rating: rating ? parseInt(rating, 10) : null,
+    }
+
+    if (!editMode && currentCliqueId) {
+      payload.cliqueIds = [currentCliqueId]
+    }
+
+    if (!editMode && forceCreateNew) {
+      payload.forceCreateNew = true
+    }
+
+    if (selectedCategory?.name === "RESTAURANT") {
+      payload.restaurantData = restaurantData
+    } else if (selectedCategory?.name === "MOVIE") {
+      payload.movieData = movieData
+    } else if (selectedCategory?.name === "FASHION") {
+      payload.fashionData = fashionData
+    } else if (selectedCategory?.name === "HOUSEHOLD") {
+      payload.householdData = householdData
+    }
+
+    const url = editMode ? `/api/recommendations/${recommendationId}` : "/api/recommendations"
+    const method = editMode ? "PUT" : "POST"
+
+    return fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+  }
+
+  /**
+   * Navigates to the existing recommendation for the active clique.
+   */
+  const handleUseExistingRecommendation = () => {
+    if (!currentCliqueId || !conflictRecommendationId) {
+      return
+    }
+
+    setOpen(false)
+    resetForm()
+    router.push(
+      `/recommendations/${conflictRecommendationId}?cliqueId=${currentCliqueId}`
+    )
+  }
+
+  /**
+   * Handles explicitly creating a new recommendation after a conflict is detected.
+   */
+  const handleCreateNewRecommendationAnyway = async () => {
+    if (!conflictRecommendationId) {
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const resolvedUserId = await resolveUserId()
+      if (!resolvedUserId) {
+        alert("Please sign in to create recommendations")
+        return
+      }
+
+      const res = await submitRecommendation(resolvedUserId, true)
+      if (!res.ok) {
+        const error = await res.json()
+        alert(`Error: ${error.error}`)
+        return
+      }
+
+      setOpen(false)
+      resetForm()
+      onSuccess?.()
+    } catch (error) {
+      console.error("Error:", error)
+      alert("Failed to save recommendation")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /**
    * Handles form submission for creating or updating a recommendation.
-   * 
-   * - Validates required fields
-   * - Sends POST (create) or PUT (edit) request to API
-   * - Resets form on success
-   * - Calls onSuccess callback
-   * - Handles errors with user alerts
-   * 
+   *
    * @param e - Form submit event
    */
   const handleSubmit = async (e: React.FormEvent) => {
@@ -548,82 +664,40 @@ export function AddRecommendationDialog({
     setLoading(true)
 
     try {
-      // Resolve the current user ID: prefer the server-side prop, fall back to session API.
-      // Only fall back when userId is undefined (not provided). null means explicitly unauthenticated.
-      let resolvedUserId = userId
-      if (typeof resolvedUserId === 'undefined') {
-        const sessionRes = await fetch("/api/auth/session")
-        const session = await sessionRes.json()
-        resolvedUserId = session?.user?.id ?? null
-      }
-
+      const resolvedUserId = await resolveUserId()
       if (!resolvedUserId) {
         alert("Please sign in to create recommendations")
-        setLoading(false)
         return
       }
 
       if (!entityName || !selectedCategoryId) {
         alert("Entity name and category are required")
-        setLoading(false)
         return
       }
 
-      const payload: Record<string, any> = {
-        entityName,
-        categoryId: selectedCategoryId,
-        tags,
-        link: link || null,
-        imageUrl: imageUrl || null,
-        rating: rating ? parseInt(rating) : null,
-        userId: resolvedUserId,
-      }
-
-      // Add category-specific data
-      const selectedCategory = categories.find((c) => c.id === selectedCategoryId)
-      if (selectedCategory?.name === "RESTAURANT") {
-        payload.restaurantData = restaurantData
-      } else if (selectedCategory?.name === "MOVIE") {
-        payload.movieData = movieData
-      } else if (selectedCategory?.name === "FASHION") {
-        payload.fashionData = fashionData
-      } else if (selectedCategory?.name === "HOUSEHOLD") {
-        payload.householdData = householdData
-      }
-
-      const url = editMode ? `/api/recommendations/${recommendationId}` : "/api/recommendations"
-      const method = editMode ? "PUT" : "POST"
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-
+      const res = await submitRecommendation(resolvedUserId)
       if (res.ok) {
         setOpen(false)
-        // Reset form
-        setEntityName("")
-        setSelectedCategoryId("")
-        setTags([])
-        setLink("")
-        setImageUrl("")
-        setRating("")
-        setRestaurantData({ cuisine: "", location: "", priceRange: "", hours: "", phoneNumber: "", placeId: "" })
-        setMovieData({ director: "", year: "", genre: "", duration: "", tmdbId: "" })
-        setFashionData({ brand: "", price: "", size: "", color: "" })
-        setHouseholdData({ productType: "", model: "", purchaseLink: "" })
-        setMovieSuggestions([])
-        setRestaurantSuggestions([])
-
-        if (onSuccess) {
-          onSuccess()
-        }
-      } else {
-        const error = await res.json()
-        console.error("API Error Response:", { status: res.status, error })
-        alert(`Error: ${error.error}`)
+        resetForm()
+        onSuccess?.()
+        return
       }
+
+      const error = await res.json()
+      if (
+        !editMode &&
+        currentCliqueId &&
+        res.status === 409 &&
+        error.code === "CLIQUE_RECOMMENDATION_EXISTS" &&
+        typeof error.existingRecommendationId === "string"
+      ) {
+        setConflictRecommendationId(error.existingRecommendationId)
+        setConflictEntityName(typeof error.entityName === "string" ? error.entityName : entityName)
+        return
+      }
+
+      console.error("API Error Response:", { status: res.status, error })
+      alert(`Error: ${error.error}`)
     } catch (error) {
       console.error("Error:", error)
       alert("Failed to save recommendation")
@@ -660,25 +734,23 @@ export function AddRecommendationDialog({
         }}
       >
         <DialogTrigger asChild>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-            {trigger ? (
-              // If custom trigger, clone and add onClick
-              // @ts-ignore
-              React.cloneElement(trigger as any, {
-                onClick: (e: React.MouseEvent) => {
-                  if (typeof (trigger as any).props?.onClick === 'function') {
-                    (trigger as any).props.onClick(e)
-                  }
-                  handleTriggerClick(e)
-                },
-              })
-            ) : (
-              <Button onClick={handleTriggerClick}>
-                <Plus className="mr-2 h-4 w-4" />
-                {editMode ? "Edit Recommendation" : "Add Recommendation"}
-              </Button>
-            )}
-          </div>
+          {trigger ? (
+            // If custom trigger, clone and add onClick
+            // @ts-ignore
+            React.cloneElement(trigger as any, {
+              onClick: (e: React.MouseEvent) => {
+                if (typeof (trigger as any).props?.onClick === 'function') {
+                  (trigger as any).props.onClick(e)
+                }
+                handleTriggerClick(e)
+              },
+            })
+          ) : (
+            <Button onClick={handleTriggerClick}>
+              <Plus className="mr-2 h-4 w-4" />
+              {editMode ? "Edit Recommendation" : "Add Recommendation"}
+            </Button>
+          )}
         </DialogTrigger>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
           <DialogHeader>
@@ -692,7 +764,14 @@ export function AddRecommendationDialog({
             {/* Category */}
             <div className="space-y-2">
               <Label htmlFor="category">Category *</Label>
-              <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+              <Select
+                value={selectedCategoryId}
+                onValueChange={(value) => {
+                  setSelectedCategoryId(value)
+                  setConflictRecommendationId(null)
+                  setConflictEntityName("")
+                }}
+              >
                 <SelectTrigger id="category">
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
@@ -719,6 +798,8 @@ export function AddRecommendationDialog({
                   value={entityName !== undefined ? String(entityName) : ""}
                   onChange={(e) => {
                     setEntityName(e.target.value)
+                    setConflictRecommendationId(null)
+                    setConflictEntityName("")
                     if (selectedCategory?.name === "MOVIE") {
                       handleMovieSearch(e.target.value)
                     } else if (selectedCategory?.name === "RESTAURANT") {
@@ -1071,11 +1152,38 @@ export function AddRecommendationDialog({
 
           </div>
 
+          {conflictRecommendationId && currentCliqueId && !editMode && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              <p className="font-medium">
+                &quot;{conflictEntityName || entityName}&quot; already exists in this clique.
+              </p>
+              <p className="mt-1">You can add the existing recommendation or create a new one anyway.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={loading}
+                  onClick={handleUseExistingRecommendation}
+                >
+                  Open existing recommendation
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={loading}
+                  onClick={handleCreateNewRecommendationAnyway}
+                >
+                  Create new anyway
+                </Button>
+              </div>
+            </div>
+          )}
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || Boolean(conflictRecommendationId)}>
               {loading ? "Saving..." : editMode ? "Update" : "Create"}
             </Button>
           </DialogFooter>

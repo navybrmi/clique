@@ -85,7 +85,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const clique = await prisma.$transaction(async (tx) => {
       // Acquire a transaction-scoped advisory lock keyed by a hash of userId
       const lockKey = hashStringToInt(userId)
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${lockKey})`
+      await tx.$queryRaw`
+        SELECT 1
+        FROM (SELECT pg_advisory_xact_lock(${lockKey})) AS lock_acquired
+      `
 
       // Count cliques this user belongs to
       const membershipCount = await tx.cliqueMember.count({
@@ -127,4 +130,3 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     )
   }
 }
-

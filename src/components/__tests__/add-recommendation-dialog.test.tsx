@@ -1,4 +1,21 @@
 import '@testing-library/jest-dom';
+const mockRouterPush = jest.fn()
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: mockRouterPush,
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+    back: jest.fn(),
+    pathname: '/',
+    query: {},
+    asPath: '/',
+    route: '/',
+    refresh: jest.fn(),
+  }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+  notFound: jest.fn(),
+}))
 // Mock Radix Portal to render children inline for tests
 jest.mock('@radix-ui/react-portal', () => ({
   __esModule: true,
@@ -31,6 +48,7 @@ import React from "react"
 
 // Mock fetch for categories and movies
 beforeEach(() => {
+  mockRouterPush.mockReset()
   global.fetch = jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : (input instanceof Request ? input.url : ''));
     if (url.includes("/api/auth/session")) {
@@ -1026,6 +1044,150 @@ describe("AddRecommendationDialog", () => {
     await waitFor(() => {
       const linkInput = screen.getByLabelText(/^link$/i) as HTMLInputElement
       expect(linkInput.value).toBe("https://testpizzaplace.com")
+    })
+  })
+
+  it("shows conflict actions and can open the existing recommendation in the active clique", async () => {
+    const onSuccess = jest.fn()
+
+    ;(global.fetch as jest.Mock).mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input instanceof Request
+              ? input.url
+              : ""
+
+      if (url.includes("/api/auth/session")) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ user: { id: "test-user-id" } })) as unknown as Response
+        )
+      }
+      if (url.includes("/api/categories")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify([{ id: "1", name: "MOVIE", displayName: "Movie" }])
+          ) as unknown as Response
+        )
+      }
+      if (url.includes("/api/tags")) {
+        return Promise.resolve(new Response(JSON.stringify({ tags: [] })) as unknown as Response)
+      }
+      if (url.includes("/api/recommendations") && init?.method === "POST") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              error: "A recommendation for this item already exists",
+              code: "CLIQUE_RECOMMENDATION_EXISTS",
+              existingRecommendationId: "rec-existing",
+              entityName: "Inception",
+            }),
+            { status: 409 }
+          ) as unknown as Response
+        )
+      }
+      return Promise.resolve(new Response(JSON.stringify({ results: [] })) as unknown as Response)
+    })
+
+    render(
+      <AddRecommendationDialog
+        onSuccess={onSuccess}
+        initialCategoryId="1"
+        currentCliqueId="clique-1"
+      />
+    )
+
+    fireEvent.click(screen.getByText(/add recommendation/i))
+    await screen.findByLabelText(/category/i)
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: "Inception" } })
+    fireEvent.click(screen.getAllByText(/^create$/i).find((btn) => btn.tagName === "BUTTON")!)
+
+    await screen.findByText(/already exists in this clique/i)
+    fireEvent.click(screen.getByRole("button", { name: /open existing recommendation/i }))
+
+    await waitFor(() => {
+      expect(mockRouterPush).toHaveBeenCalledWith(
+        "/recommendations/rec-existing?cliqueId=clique-1"
+      )
+    })
+    expect(onSuccess).not.toHaveBeenCalled()
+  })
+
+  it("can create a new recommendation anyway after a clique conflict", async () => {
+    const onSuccess = jest.fn()
+    const recommendationPayloads: Record<string, unknown>[] = []
+
+    ;(global.fetch as jest.Mock).mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input instanceof Request
+              ? input.url
+              : ""
+
+      if (url.includes("/api/auth/session")) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ user: { id: "test-user-id" } })) as unknown as Response
+        )
+      }
+      if (url.includes("/api/categories")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify([{ id: "1", name: "MOVIE", displayName: "Movie" }])
+          ) as unknown as Response
+        )
+      }
+      if (url.includes("/api/tags")) {
+        return Promise.resolve(new Response(JSON.stringify({ tags: [] })) as unknown as Response)
+      }
+      if (url.includes("/api/recommendations") && init?.method === "POST") {
+        const payload = JSON.parse(String(init.body ?? "{}"))
+        recommendationPayloads.push(payload)
+        if (!payload.forceCreateNew) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                error: "A recommendation for this item already exists",
+                code: "CLIQUE_RECOMMENDATION_EXISTS",
+                existingRecommendationId: "rec-existing",
+                entityName: "Inception",
+              }),
+              { status: 409 }
+            ) as unknown as Response
+          )
+        }
+
+        return Promise.resolve(new Response(JSON.stringify({ id: "rec-new" })) as unknown as Response)
+      }
+
+      return Promise.resolve(new Response(JSON.stringify({ results: [] })) as unknown as Response)
+    })
+
+    render(
+      <AddRecommendationDialog
+        onSuccess={onSuccess}
+        initialCategoryId="1"
+        currentCliqueId="clique-1"
+      />
+    )
+
+    fireEvent.click(screen.getByText(/add recommendation/i))
+    await screen.findByLabelText(/category/i)
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: "Inception" } })
+    fireEvent.click(screen.getAllByText(/^create$/i).find((btn) => btn.tagName === "BUTTON")!)
+
+    await screen.findByText(/already exists in this clique/i)
+    fireEvent.click(screen.getByRole("button", { name: /create new anyway/i }))
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+    expect(recommendationPayloads).toHaveLength(2)
+    expect(recommendationPayloads[1]).toMatchObject({
+      cliqueIds: ["clique-1"],
+      forceCreateNew: true,
     })
   })
 

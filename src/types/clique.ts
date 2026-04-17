@@ -75,6 +75,20 @@ export interface CliqueFeedItem {
         name: string
         displayName: string
       }
+      restaurant?: {
+        cuisine?: string | null
+        location?: string | null
+        priceRange?: string | null
+      } | null
+      movie?: {
+        director?: string | null
+        year?: number | null
+        genre?: string | null
+        duration?: string | null
+      } | null
+      fashion?: Record<string, unknown> | null
+      household?: Record<string, unknown> | null
+      other?: Record<string, unknown> | null
     }
     _count: {
       upvotes: number

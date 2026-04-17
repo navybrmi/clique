@@ -1,6 +1,16 @@
 #!/usr/bin/env node
 
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
+
+// Ensure Prisma Client is current before starting Next.js dev server
+const prismaGenerate = spawnSync('npx', ['prisma', 'generate'], {
+  stdio: 'inherit',
+  shell: process.platform === 'win32',
+});
+
+if (prismaGenerate.status !== 0) {
+  process.exit(prismaGenerate.status || 1);
+}
 
 // Start the Next.js dev server
 const devServer = spawn('next', ['dev'], {
