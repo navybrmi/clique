@@ -204,10 +204,10 @@ export function AddToCliquesDialog({
                 type="button"
                 variant="secondary"
                 size="icon"
-                className="h-8 w-8 rounded-full bg-white/90 shadow-sm hover:bg-white dark:bg-zinc-900/90 dark:hover:bg-zinc-900"
+                className="h-9 w-9 rounded-full bg-zinc-900/85 shadow-md hover:bg-zinc-700 dark:bg-zinc-100/90 dark:hover:bg-zinc-200"
                 aria-label="Add to your clique(s)"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4 text-white dark:text-zinc-900" strokeWidth={2.5} />
               </Button>
             </DialogTrigger>
           </TooltipTrigger>
