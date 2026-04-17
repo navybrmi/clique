@@ -55,6 +55,7 @@ export function AddToCliquesDialog({
   const [open, setOpen] = useState(false)
   const [tooltipOpen, setTooltipOpen] = useState(false)
   const suppressTooltipRef = useRef(false)
+  const suppressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [cliques, setCliques] = useState<SelectableClique[]>([])
   const [selectedCliqueIds, setSelectedCliqueIds] = useState<string[]>([])
   const [isLoadingCliques, setIsLoadingCliques] = useState(false)
@@ -98,6 +99,12 @@ export function AddToCliquesDialog({
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen)
     if (nextOpen) {
+      // Clear any pending suppression lift so reopening before 400ms doesn't
+      // accidentally release the suppress flag while the dialog is open
+      if (suppressTimeoutRef.current) {
+        clearTimeout(suppressTimeoutRef.current)
+        suppressTimeoutRef.current = null
+      }
       suppressTooltipRef.current = true
       setTooltipOpen(false)
       void loadCliques()
@@ -106,8 +113,9 @@ export function AddToCliquesDialog({
 
     resetDialog()
     // Suppress tooltip reopen from focus-return after dialog close; lift after 400ms
-    setTimeout(() => {
+    suppressTimeoutRef.current = setTimeout(() => {
       suppressTooltipRef.current = false
+      suppressTimeoutRef.current = null
     }, 400)
   }
 
@@ -213,20 +221,17 @@ export function AddToCliquesDialog({
           }}
         >
           <TooltipTrigger asChild>
-            {/* span owns the tooltip hover; DialogTrigger owns the click — avoids double-asChild conflict */}
-            <span className="inline-flex">
-              <DialogTrigger asChild>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="icon"
-                  className="h-9 w-9 rounded-full bg-zinc-900/85 shadow-md hover:bg-zinc-700 dark:bg-zinc-100/90 dark:hover:bg-zinc-200"
-                  aria-label="Add to your clique(s)"
-                >
-                  <Plus className="h-4 w-4 text-white dark:text-zinc-900" strokeWidth={2.5} />
-                </Button>
-              </DialogTrigger>
-            </span>
+            {/* Button is the single focusable element — tooltip and dialog both fire from it */}
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              className="h-9 w-9 rounded-full bg-zinc-900/85 shadow-md hover:bg-zinc-700 dark:bg-zinc-100/90 dark:hover:bg-zinc-200"
+              aria-label="Add to your clique(s)"
+              onClick={() => handleOpenChange(true)}
+            >
+              <Plus className="h-4 w-4 text-white dark:text-zinc-900" strokeWidth={2.5} />
+            </Button>
           </TooltipTrigger>
           <TooltipContent side="left">Add to your clique(s)</TooltipContent>
         </Tooltip>

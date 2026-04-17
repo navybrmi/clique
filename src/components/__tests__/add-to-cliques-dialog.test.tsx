@@ -402,5 +402,73 @@ describe("AddToCliquesDialog", () => {
       await user.click(screen.getByRole("button", { name: /add to your clique/i }))
       expect(await screen.findByRole("dialog")).toBeInTheDocument()
     })
+
+    it("clears the suppress timeout when dialog is reopened before 400ms elapses", async () => {
+      jest.useFakeTimers()
+      const clearTimeoutSpy = jest.spyOn(global, "clearTimeout")
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime })
+
+      global.fetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      ) as typeof fetch
+
+      render(
+        <AddToCliquesDialog
+          recommendationId="rec-1"
+          recommendationName="Inception"
+          variant="icon"
+        />
+      )
+
+      const trigger = screen.getByRole("button", { name: /add to your clique/i })
+
+      // Open dialog
+      await user.click(trigger)
+      await screen.findByRole("dialog")
+
+      // Close dialog — starts the 400ms suppress timeout
+      await user.keyboard("{Escape}")
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
+
+      // Reopen within 400ms — should clear the pending timeout
+      await user.click(trigger)
+      expect(clearTimeoutSpy).toHaveBeenCalled()
+      expect(await screen.findByRole("dialog")).toBeInTheDocument()
+
+      clearTimeoutSpy.mockRestore()
+      jest.useRealTimers()
+    })
+
+    it("can be reopened after close without errors", async () => {
+      const user = userEvent.setup()
+      global.fetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      ) as typeof fetch
+
+      render(
+        <AddToCliquesDialog
+          recommendationId="rec-1"
+          recommendationName="Inception"
+          variant="icon"
+        />
+      )
+
+      const trigger = screen.getByRole("button", { name: /add to your clique/i })
+
+      await user.click(trigger)
+      await screen.findByRole("dialog")
+      await user.keyboard("{Escape}")
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
+
+      // Reopen after close
+      await user.click(trigger)
+      expect(await screen.findByRole("dialog")).toBeInTheDocument()
+    })
   })
 })
