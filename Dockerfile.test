@@ -1,7 +1,7 @@
 # Dockerfile for testing build locally before pushing to Vercel
 # This simulates Vercel's build environment
 
-FROM node:20-slim
+FROM node:24-slim
 
 # Install OpenSSL for Prisma
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
