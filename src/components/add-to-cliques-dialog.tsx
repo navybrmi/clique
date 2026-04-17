@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { Loader2, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -54,6 +54,7 @@ export function AddToCliquesDialog({
 }: AddToCliquesDialogProps) {
   const [open, setOpen] = useState(false)
   const [tooltipOpen, setTooltipOpen] = useState(false)
+  const suppressTooltipRef = useRef(false)
   const [cliques, setCliques] = useState<SelectableClique[]>([])
   const [selectedCliqueIds, setSelectedCliqueIds] = useState<string[]>([])
   const [isLoadingCliques, setIsLoadingCliques] = useState(false)
@@ -97,12 +98,17 @@ export function AddToCliquesDialog({
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen)
     if (nextOpen) {
+      suppressTooltipRef.current = true
       setTooltipOpen(false)
       void loadCliques()
       return
     }
 
     resetDialog()
+    // Suppress tooltip reopen from focus-return after dialog close; lift after 400ms
+    setTimeout(() => {
+      suppressTooltipRef.current = false
+    }, 400)
   }
 
   const handleCliqueToggle = (cliqueId: string) => {
@@ -199,7 +205,13 @@ export function AddToCliquesDialog({
   const trigger =
     variant === "icon" ? (
       <TooltipProvider>
-        <Tooltip open={tooltipOpen} onOpenChange={setTooltipOpen}>
+        <Tooltip
+          open={tooltipOpen}
+          onOpenChange={(next) => {
+            if (next && suppressTooltipRef.current) return
+            setTooltipOpen(next)
+          }}
+        >
           <TooltipTrigger asChild>
             {/* span owns the tooltip hover; DialogTrigger owns the click — avoids double-asChild conflict */}
             <span className="inline-flex">
