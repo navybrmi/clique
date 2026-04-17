@@ -4,6 +4,7 @@
 import React from "react"
 
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -115,6 +116,7 @@ export function AddRecommendationDialog({
   onBlockedOpen?: () => void
 }) {
   const [open, setOpen] = useState(false)
+  const router = useRouter()
   // Track if user tried to open dialog while not logged in
   const blockedOpenRef = useRef(false)
 
@@ -603,43 +605,18 @@ export function AddRecommendationDialog({
   }
 
   /**
-   * Handles selecting an existing recommendation for the active clique.
+   * Navigates to the existing recommendation for the active clique.
    */
-  const handleUseExistingRecommendation = async () => {
+  const handleUseExistingRecommendation = () => {
     if (!currentCliqueId || !conflictRecommendationId) {
       return
     }
 
-    setLoading(true)
-
-    try {
-      const resolvedUserId = await resolveUserId()
-      if (!resolvedUserId) {
-        alert("Please sign in to create recommendations")
-        return
-      }
-
-      const res = await fetch(`/api/cliques/${currentCliqueId}/recommendations`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recommendationId: conflictRecommendationId }),
-      })
-
-      if (!res.ok) {
-        const error = await res.json()
-        alert(`Error: ${error.error}`)
-        return
-      }
-
-      setOpen(false)
-      resetForm()
-      onSuccess?.()
-    } catch (error) {
-      console.error("Error:", error)
-      alert("Failed to add recommendation to clique")
-    } finally {
-      setLoading(false)
-    }
+    setOpen(false)
+    resetForm()
+    router.push(
+      `/recommendations/${conflictRecommendationId}?cliqueId=${currentCliqueId}`
+    )
   }
 
   /**
@@ -1188,7 +1165,7 @@ export function AddRecommendationDialog({
                   disabled={loading}
                   onClick={handleUseExistingRecommendation}
                 >
-                  Add existing recommendation
+                  Open existing recommendation
                 </Button>
                 <Button
                   type="button"

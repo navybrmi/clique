@@ -1,4 +1,21 @@
 import '@testing-library/jest-dom';
+const mockRouterPush = jest.fn()
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: mockRouterPush,
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+    back: jest.fn(),
+    pathname: '/',
+    query: {},
+    asPath: '/',
+    route: '/',
+    refresh: jest.fn(),
+  }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+  notFound: jest.fn(),
+}))
 // Mock Radix Portal to render children inline for tests
 jest.mock('@radix-ui/react-portal', () => ({
   __esModule: true,
@@ -31,6 +48,7 @@ import React from "react"
 
 // Mock fetch for categories and movies
 beforeEach(() => {
+  mockRouterPush.mockReset()
   global.fetch = jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : (input instanceof Request ? input.url : ''));
     if (url.includes("/api/auth/session")) {
@@ -1029,9 +1047,8 @@ describe("AddRecommendationDialog", () => {
     })
   })
 
-  it("shows conflict actions and can add an existing recommendation to the active clique", async () => {
+  it("shows conflict actions and can open the existing recommendation in the active clique", async () => {
     const onSuccess = jest.fn()
-    let cliqueRequestBody: Record<string, unknown> | null = null
 
     ;(global.fetch as jest.Mock).mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url =
@@ -1071,11 +1088,6 @@ describe("AddRecommendationDialog", () => {
           ) as unknown as Response
         )
       }
-      if (url.includes("/api/cliques/clique-1/recommendations") && init?.method === "POST") {
-        cliqueRequestBody = JSON.parse(String(init.body ?? "{}"))
-        return Promise.resolve(new Response(JSON.stringify({})) as unknown as Response)
-      }
-
       return Promise.resolve(new Response(JSON.stringify({ results: [] })) as unknown as Response)
     })
 
@@ -1093,10 +1105,14 @@ describe("AddRecommendationDialog", () => {
     fireEvent.click(screen.getAllByText(/^create$/i).find((btn) => btn.tagName === "BUTTON")!)
 
     await screen.findByText(/already exists in this clique/i)
-    fireEvent.click(screen.getByRole("button", { name: /add existing recommendation/i }))
+    fireEvent.click(screen.getByRole("button", { name: /open existing recommendation/i }))
 
-    await waitFor(() => expect(onSuccess).toHaveBeenCalled())
-    expect(cliqueRequestBody).toEqual({ recommendationId: "rec-existing" })
+    await waitFor(() => {
+      expect(mockRouterPush).toHaveBeenCalledWith(
+        "/recommendations/rec-existing?cliqueId=clique-1"
+      )
+    })
+    expect(onSuccess).not.toHaveBeenCalled()
   })
 
   it("can create a new recommendation anyway after a clique conflict", async () => {
