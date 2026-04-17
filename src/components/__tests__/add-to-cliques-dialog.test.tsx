@@ -364,4 +364,43 @@ describe("AddToCliquesDialog", () => {
       expect(onSuccess).toHaveBeenCalled()
     })
   })
+
+  describe("icon variant", () => {
+    it("renders an icon-only button with the correct aria-label", () => {
+      global.fetch = jest.fn() as typeof fetch
+      render(
+        <AddToCliquesDialog
+          recommendationId="rec-1"
+          recommendationName="Inception"
+          variant="icon"
+        />
+      )
+
+      const trigger = screen.getByRole("button", { name: /add to your clique/i })
+      expect(trigger).toBeInTheDocument()
+      expect(trigger).toHaveAttribute("aria-label", "Add to your clique(s)")
+      expect(screen.queryByText("Add to Clique")).not.toBeInTheDocument()
+    })
+
+    it("opens the dialog when the icon button is clicked", async () => {
+      const user = userEvent.setup()
+      global.fetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      ) as typeof fetch
+
+      render(
+        <AddToCliquesDialog
+          recommendationId="rec-1"
+          recommendationName="Inception"
+          variant="icon"
+        />
+      )
+
+      await user.click(screen.getByRole("button", { name: /add to your clique/i }))
+      expect(await screen.findByRole("dialog")).toBeInTheDocument()
+    })
+  })
 })

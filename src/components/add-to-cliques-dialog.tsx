@@ -12,6 +12,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import type { CliqueWithMemberCount } from "@/types/clique"
 
 interface AddToCliquesDialogProps {
@@ -21,6 +27,8 @@ interface AddToCliquesDialogProps {
   recommendationName: string
   /** Optional callback fired after at least one clique add succeeds. */
   onSuccess?: () => void
+  /** Render mode — "default" shows labelled button, "icon" shows icon-only with tooltip. */
+  variant?: "default" | "icon"
 }
 
 type SelectableClique = Pick<CliqueWithMemberCount, "id" | "name" | "_count">
@@ -42,6 +50,7 @@ export function AddToCliquesDialog({
   recommendationId,
   recommendationName,
   onSuccess,
+  variant = "default",
 }: AddToCliquesDialogProps) {
   const [open, setOpen] = useState(false)
   const [cliques, setCliques] = useState<SelectableClique[]>([])
@@ -185,14 +194,38 @@ export function AddToCliquesDialog({
     }
   }
 
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+  const trigger =
+    variant === "icon" ? (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                className="h-8 w-8 rounded-full bg-white/90 shadow-sm hover:bg-white dark:bg-zinc-900/90 dark:hover:bg-zinc-900"
+                aria-label="Add to your clique(s)"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="left">Add to your clique(s)</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    ) : (
       <DialogTrigger asChild>
         <Button type="button" variant="outline" size="sm">
           <Plus className="h-4 w-4" />
           Add to Clique
         </Button>
       </DialogTrigger>
+    )
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {trigger}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add to Clique</DialogTitle>

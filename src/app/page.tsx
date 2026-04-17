@@ -310,8 +310,17 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                 {recommendations.map((rec, index) => (
                   <Card
                     key={rec.id}
-                    className="overflow-hidden transition-all hover:scale-[1.02] hover:shadow-lg"
+                    className="relative overflow-hidden transition-all hover:scale-[1.02] hover:shadow-lg"
                   >
+                    {showAddToCliqueActions && (
+                      <div className="absolute right-3 top-3 z-20">
+                        <AddToCliquesDialog
+                          recommendationId={rec.id}
+                          recommendationName={rec.entity.name}
+                          variant="icon"
+                        />
+                      </div>
+                    )}
                     <Link href={rec.href} className="block cursor-pointer">
                       <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900">
                         {rec.imageUrl ? (
@@ -449,16 +458,6 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                         </div>
                       </CardContent>
                     </Link>
-                    {showAddToCliqueActions && (
-                      <CardContent className="pt-0">
-                        <div className="flex justify-end">
-                          <AddToCliquesDialog
-                            recommendationId={rec.id}
-                            recommendationName={rec.entity.name}
-                          />
-                        </div>
-                      </CardContent>
-                    )}
                   </Card>
                 ))}
               </div>
