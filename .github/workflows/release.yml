@@ -42,9 +42,107 @@ jobs:
           name: ${{ steps.tag_version.outputs.new_tag }}
           generate_release_notes: true
 
+      # Calls the GitHub Models API (Copilot's underlying inference endpoint) to
+      # generate playful, funny release notes and appends them to the GitHub
+      # Release body under a "The Fun Version" section.
+      # Uses GITHUB_TOKEN — no extra secrets required.
+      - name: Generate funny release notes with Copilot
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.tag_version.outputs.new_tag }}
+          PREV_TAG: ${{ steps.tag_version.outputs.previous_tag }}
+        run: |
+          # Collect commit subjects since the previous tag
+          if [ -n "$PREV_TAG" ]; then
+            git log "${PREV_TAG}..HEAD" --pretty=format:"%s" | head -40 > /tmp/commits.txt
+          else
+            git log --pretty=format:"%s" | head -40 > /tmp/commits.txt
+          fi
+
+          # Use Python to safely build the JSON request and parse the response
+          python3 - <<'PYEOF'
+          import json, os, subprocess, sys, urllib.request
+
+          commits = open("/tmp/commits.txt").read().strip() or "No commits found."
+          version = os.environ["VERSION"]
+          github_token = os.environ.get("GITHUB_TOKEN", "")
+
+          if not github_token:
+              print("GITHUB_TOKEN not available — skipping funny notes", file=sys.stderr)
+              sys.exit(0)
+
+          prompt = f"""You are the hype person for Clique — a social recommendation platform where friends share their favourite movies, restaurants, fashion picks, and more.
+
+Write the release notes for version {version} in the most entertaining way possible. Base them on these commit messages:
+
+{commits}
+
+Rules:
+- Be funny, playful, and use emojis liberally 🎉
+- Use dramatic flair and pop culture references
+- Celebrate even tiny bug fixes like they saved humanity
+- Keep it under 350 words
+- Use markdown with a short intro paragraph, then a few fun sections
+- Never be boring. Ever."""
+
+          payload = {
+              "model": "gpt-4o-mini",
+              "max_tokens": 1024,
+              "messages": [{"role": "user", "content": prompt}],
+          }
+
+          req = urllib.request.Request(
+              "https://models.inference.ai.azure.com/chat/completions",
+              data=json.dumps(payload).encode(),
+              headers={
+                  "Authorization": f"Bearer {github_token}",
+                  "content-type": "application/json",
+              },
+          )
+
+          try:
+              with urllib.request.urlopen(req, timeout=30) as resp:
+                  body = json.loads(resp.read())
+              funny = body["choices"][0]["message"]["content"]
+          except Exception as e:
+              print(f"GitHub Models API call failed: {e}", file=sys.stderr)
+              sys.exit(0)  # Non-fatal — release still succeeds without funny notes
+
+          # Fetch current release body; replace existing fun section if present
+          # (idempotent on re-runs), otherwise append a new one.
+          try:
+              current = subprocess.check_output(
+                  ["gh", "release", "view", version, "--json", "body", "-q", ".body"],
+                  text=True,
+              ).strip()
+          except Exception as e:
+              print(f"Could not fetch release body: {e}", file=sys.stderr)
+              sys.exit(0)
+
+          fun_header = "\n\n---\n\n## 🎭 The Fun Version\n\n"
+          if fun_header.strip("\\n") in current:
+              # Replace existing section (idempotent re-run)
+              new_body = current.split("---\n\n## 🎭 The Fun Version")[0].rstrip() + fun_header + funny
+          else:
+              new_body = current + fun_header + funny
+
+          with open("/tmp/new_release_body.txt", "w") as f:
+              f.write(new_body)
+
+          print("Funny release notes generated successfully.")
+          PYEOF
+
+          # Apply the updated body if it was written. Best-effort — a failure
+          # here must not block the CHANGELOG update that follows.
+          if [ -f /tmp/new_release_body.txt ]; then
+            gh release edit "$VERSION" --notes-file /tmp/new_release_body.txt || \
+              echo "Warning: gh release edit failed — skipping fun section update"
+          fi
+
       # Prepends a versioned, hyperlinked entry to CHANGELOG.md.
       # Release notes are fetched from the release we just created so they
-      # match exactly what GitHub generated.
+      # match exactly what GitHub generated (including the fun section above).
       - name: Update CHANGELOG.md
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
