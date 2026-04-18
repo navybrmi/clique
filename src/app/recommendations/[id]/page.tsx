@@ -13,8 +13,18 @@ import { ActionsSidebar } from "@/components/actions-sidebar"
 import { auth } from "@/lib/auth"
 import { SubmitterInfo } from "@/components/submitter-info"
 
-export default async function RecommendationDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
+export default async function RecommendationDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams?: Promise<{ cliqueId?: string }>
+}) {
+  const [{ id }, resolvedSearch] = await Promise.all([
+    params,
+    (searchParams ?? Promise.resolve({})) as Promise<{ cliqueId?: string }>,
+  ])
+  const cliqueId = resolvedSearch.cliqueId ?? null
 
   const [recommendation, session] = await Promise.all([
     prisma.recommendation.findUnique({
@@ -66,6 +76,25 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
 
   if (!recommendation) {
     notFound()
+  }
+
+  let isCliqueContext = false
+  let userHasUpvoted = false
+  if (cliqueId && currentUserId) {
+    const [membership, existingUpvote] = await Promise.all([
+      prisma.cliqueMember.findUnique({
+        where: { cliqueId_userId: { cliqueId, userId: currentUserId } },
+        select: { userId: true },
+      }),
+      prisma.upVote.findUnique({
+        where: {
+          userId_recommendationId: { userId: currentUserId, recommendationId: id },
+        },
+        select: { id: true },
+      }),
+    ])
+    isCliqueContext = !!membership
+    userHasUpvoted = !!existingUpvote
   }
 
   return (
@@ -256,7 +285,11 @@ export default async function RecommendationDetailPage({ params }: { params: Pro
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Action Card */}
-            <ActionsSidebar recommendation={recommendation} />
+            <ActionsSidebar
+              recommendation={recommendation}
+              cliqueId={isCliqueContext ? cliqueId : null}
+              initialHasUpvoted={userHasUpvoted}
+            />
             <Card>
               <CardContent className="pt-6 space-y-3">
                 <EditRecommendationButton recommendation={recommendation} currentUserId={currentUserId} />

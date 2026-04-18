@@ -91,9 +91,30 @@ jest.mock('@/lib/prisma', () => ({
     cliqueMember: {
       findMany: jest.fn(),
     },
+    upVote: {
+      findMany: jest.fn(),
+    },
     $queryRaw: jest.fn(),
   },
   getPrismaClient: jest.fn(),
+}))
+
+jest.mock('@/components/upvote-button', () => ({
+  UpvoteButton: function MockUpvoteButton({
+    initialCount,
+    initialHasUpvoted,
+  }: {
+    recommendationId: string
+    cliqueId: string
+    initialCount: number
+    initialHasUpvoted: boolean
+  }) {
+    return (
+      <button aria-label={initialHasUpvoted ? 'Remove upvote' : 'Upvote'}>
+        {initialCount}
+      </button>
+    )
+  },
 }))
 
 import { getRecommendations } from '@/lib/recommendations'
@@ -213,6 +234,7 @@ describe('HomePage - Server Component', () => {
     mockFindFirstClique.mockResolvedValue(null)
     mockFindUniqueClique.mockResolvedValue(null)
     mockQueryRaw.mockResolvedValue([])
+    ;(prisma.upVote.findMany as jest.Mock).mockResolvedValue([])
   })
 
   afterEach(() => {

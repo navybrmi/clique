@@ -3,13 +3,14 @@ import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowUp, MessageCircle, Star, MapPin } from "lucide-react"
+import { MessageCircle, Star, MapPin } from "lucide-react"
 import { Header } from "@/components/header"
 import { AddRecommendationTrigger } from "@/components/add-recommendation-trigger"
 import { AddToCliquesDialog } from "@/components/add-to-cliques-dialog"
 import { CliqueSidebarWrapper } from "@/components/clique-sidebar-wrapper"
+import { UpvoteButton } from "@/components/upvote-button"
 import { auth } from "@/lib/auth"
-import { getPrismaClient } from "@/lib/prisma"
+import { getPrismaClient, prisma } from "@/lib/prisma"
 import { getCliqueFeed } from "@/lib/clique-service"
 import { getRecommendations, type RecommendationFeedItem } from "@/lib/recommendations"
 import type { CliqueFeedItem } from "@/types/clique"
@@ -67,6 +68,11 @@ type HomeFeedItem = {
   }
   attribution: string | null
   href: string
+  /** Present only for clique feed items; enables interactive upvoting. */
+  upvoteContext?: {
+    cliqueId: string
+    hasUpvoted: boolean
+  }
 }
 
 interface HomePageProps {
@@ -105,11 +111,13 @@ function normalizePublicFeedItem(
  *
  * @param item - Clique feed item
  * @param cliqueId - Active clique ID
+ * @param hasUpvoted - Whether the current user has upvoted this recommendation
  * @returns Shared homepage feed item
  */
 function normalizeCliqueFeedItem(
   item: CliqueFeedItem,
-  cliqueId: string
+  cliqueId: string,
+  hasUpvoted: boolean
 ): HomeFeedItem {
   const submitterName = item.submitterName || null
   const addedByName = item.addedByName || null
@@ -132,6 +140,7 @@ function normalizeCliqueFeedItem(
     _count: item.recommendation._count,
     attribution,
     href: `/recommendations/${item.recommendation.id}?cliqueId=${cliqueId}`,
+    upvoteContext: { cliqueId, hasUpvoted },
   }
 }
 
@@ -214,8 +223,21 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
         typeof cliqueDelegate.cliqueMember?.findMany === "function"
       ) {
         const cliqueFeed = await getCliqueFeed(activeCliqueId, userId)
+        const recIds = cliqueFeed.map((item) => item.recommendation.id)
+        const userUpvoteRows =
+          recIds.length > 0
+            ? await prisma.upVote.findMany({
+                where: { userId, recommendationId: { in: recIds } },
+                select: { recommendationId: true },
+              })
+            : []
+        const upvotedIds = new Set(userUpvoteRows.map((r) => r.recommendationId))
         recommendations = cliqueFeed.map((item) =>
-          normalizeCliqueFeedItem(item, activeCliqueId)
+          normalizeCliqueFeedItem(
+            item,
+            activeCliqueId,
+            upvotedIds.has(item.recommendation.id)
+          )
         )
       } else {
         logCliqueFeedDelegateMismatch()
@@ -446,10 +468,14 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                       <CardContent>
                         <div className="flex items-center justify-between text-sm text-zinc-500">
                           <div className="flex gap-4">
-                            <span className="flex items-center gap-1">
-                              <ArrowUp className="h-4 w-4" />
-                              {rec._count.upvotes}
-                            </span>
+                            {rec.upvoteContext ? (
+                              <UpvoteButton
+                                recommendationId={rec.id}
+                                cliqueId={rec.upvoteContext.cliqueId}
+                                initialCount={rec._count.upvotes}
+                                initialHasUpvoted={rec.upvoteContext.hasUpvoted}
+                              />
+                            ) : null}
                             <span className="flex items-center gap-1">
                               <MessageCircle className="h-4 w-4" />
                               {rec._count.comments}
