@@ -42,12 +42,14 @@ jobs:
           name: ${{ steps.tag_version.outputs.new_tag }}
           generate_release_notes: true
 
-      # Calls the Claude API to generate playful, funny release notes and
-      # appends them to the GitHub Release body under a "The Fun Version" section.
-      - name: Generate funny release notes with Claude
+      # Calls the GitHub Models API (Copilot's underlying inference endpoint) to
+      # generate playful, funny release notes and appends them to the GitHub
+      # Release body under a "The Fun Version" section.
+      # Uses GITHUB_TOKEN — no extra secrets required.
+      - name: Generate funny release notes with Copilot
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.tag_version.outputs.new_tag }}
           PREV_TAG: ${{ steps.tag_version.outputs.previous_tag }}
         run: |
@@ -58,16 +60,16 @@ jobs:
             git log --pretty=format:"%s" | head -40 > /tmp/commits.txt
           fi
 
-          # Build the Claude API request using Python to safely handle JSON encoding
+          # Use Python to safely build the JSON request and parse the response
           python3 - <<'PYEOF'
           import json, os, subprocess, sys, urllib.request, urllib.error
 
           commits = open("/tmp/commits.txt").read().strip() or "No commits found."
           version = os.environ["VERSION"]
-          api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+          github_token = os.environ.get("GITHUB_TOKEN", "")
 
-          if not api_key:
-              print("ANTHROPIC_API_KEY not set — skipping funny notes", file=sys.stderr)
+          if not github_token:
+              print("GITHUB_TOKEN not available — skipping funny notes", file=sys.stderr)
               sys.exit(0)
 
           prompt = f"""You are the hype person for Clique — a social recommendation platform where friends share their favourite movies, restaurants, fashion picks, and more.
@@ -85,17 +87,16 @@ Rules:
 - Never be boring. Ever."""
 
           payload = {
-              "model": "claude-haiku-4-5-20251001",
+              "model": "gpt-4o-mini",
               "max_tokens": 1024,
               "messages": [{"role": "user", "content": prompt}],
           }
 
           req = urllib.request.Request(
-              "https://api.anthropic.com/v1/messages",
+              "https://models.inference.ai.azure.com/chat/completions",
               data=json.dumps(payload).encode(),
               headers={
-                  "x-api-key": api_key,
-                  "anthropic-version": "2023-06-01",
+                  "Authorization": f"Bearer {github_token}",
                   "content-type": "application/json",
               },
           )
@@ -103,9 +104,9 @@ Rules:
           try:
               with urllib.request.urlopen(req, timeout=30) as resp:
                   body = json.loads(resp.read())
-              funny = body["content"][0]["text"]
+              funny = body["choices"][0]["message"]["content"]
           except Exception as e:
-              print(f"Claude API call failed: {e}", file=sys.stderr)
+              print(f"GitHub Models API call failed: {e}", file=sys.stderr)
               sys.exit(0)  # Non-fatal — release still succeeds without funny notes
 
           # Fetch current release body and append the fun section
