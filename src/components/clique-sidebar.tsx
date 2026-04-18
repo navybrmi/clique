@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { Sparkles, Users } from "lucide-react"
 import { AddRecommendationTrigger } from "@/components/add-recommendation-trigger"
+import { CliqueManagementDialog } from "@/components/clique-management-dialog"
 import { CreateCliqueDialog } from "@/components/create-clique-dialog"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -103,15 +104,23 @@ export function CliqueSidebar({
             </Link>
 
             {cliques.map((clique) => (
-              <Link
-                key={clique.id}
-                href={`/?cliqueId=${clique.id}`}
-                aria-label={clique.name}
-                aria-current={activeCliqueId === clique.id ? "page" : undefined}
-                className={getNavItemClassName(activeCliqueId === clique.id)}
-              >
-                {renderFeedLabel(clique.name, activeCliqueId === clique.id)}
-              </Link>
+              <div key={clique.id} className="flex items-center gap-1">
+                <Link
+                  href={`/?cliqueId=${clique.id}`}
+                  aria-label={clique.name}
+                  aria-current={activeCliqueId === clique.id ? "page" : undefined}
+                  className={cn(getNavItemClassName(activeCliqueId === clique.id), "flex-1")}
+                >
+                  {renderFeedLabel(clique.name, activeCliqueId === clique.id)}
+                </Link>
+                {userId != null && (
+                  <CliqueManagementDialog
+                    cliqueId={clique.id}
+                    cliqueName={clique.name}
+                    currentUserId={userId}
+                  />
+                )}
+              </div>
             ))}
           </nav>
         </div>
