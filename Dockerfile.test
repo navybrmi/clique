@@ -20,7 +20,8 @@ RUN npm ci
 COPY . .
 
 # Run Prisma generate (happens in postinstall but explicit here)
-RUN npx prisma generate
+# DATABASE_URL is not needed for code generation but prisma.config.ts evaluates it eagerly
+RUN DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder" npx prisma generate
 
 # Run tests with coverage checks (must pass before build)
 RUN npm run test:coverage
