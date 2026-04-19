@@ -123,18 +123,11 @@ export async function POST(
         )
       }
 
-      // Look up user by email only
+      // Look up user by email — may not have an account yet (that's fine)
       const invitee = await prisma.user.findUnique({
         where: { email },
         select: { id: true, name: true, email: true },
       })
-
-      if (!invitee) {
-        return NextResponse.json(
-          { error: "No user found with that email" },
-          { status: 404 }
-        )
-      }
 
       const clique = await prisma.clique.findUnique({
         where: { id },
@@ -148,45 +141,55 @@ export async function POST(
       const token = generateInviteToken()
       const expiresAt = getInviteExpiry()
 
-      // Atomically create invite and notification together
-      const invite = await prisma.$transaction(async (tx) => {
-        const inv = await tx.cliqueInvite.create({
-          data: {
-            token,
-            cliqueId: id,
-            createdById: userId,
-            // Store the resolved email for audit trail; field is optional
-            email: invitee.email,
-            status: "PENDING",
-            expiresAt,
-          },
-          include: {
-            createdBy: { select: { id: true, name: true } },
-          },
-        })
+      // If invitee has an account, create invite + in-app notification atomically.
+      // If not, create just the invite — they can sign up and use the link.
+      const invite = invitee
+        ? await prisma.$transaction(async (tx) => {
+            const inv = await tx.cliqueInvite.create({
+              data: {
+                token,
+                cliqueId: id,
+                createdById: userId,
+                email,
+                status: "PENDING",
+                expiresAt,
+              },
+              include: { createdBy: { select: { id: true, name: true } } },
+            })
 
-        await tx.notification.create({
-          data: {
-            userId: invitee.id,
-            type: "CLIQUE_INVITE",
-            payload: {
-              type: "CLIQUE_INVITE",
+            await tx.notification.create({
+              data: {
+                userId: invitee.id,
+                type: "CLIQUE_INVITE",
+                payload: {
+                  type: "CLIQUE_INVITE",
+                  cliqueId: id,
+                  cliqueName: clique?.name ?? "",
+                  invitedById: userId,
+                  invitedByName: inviter?.name ?? null,
+                  inviteToken: token,
+                },
+              },
+            })
+
+            return inv
+          })
+        : await prisma.cliqueInvite.create({
+            data: {
+              token,
               cliqueId: id,
-              cliqueName: clique?.name ?? "",
-              invitedById: userId,
-              invitedByName: inviter?.name ?? null,
-              inviteToken: token,
+              createdById: userId,
+              email,
+              status: "PENDING",
+              expiresAt,
             },
-          },
-        })
-
-        return inv
-      })
+            include: { createdBy: { select: { id: true, name: true } } },
+          })
 
       // Send email best-effort — failure must not roll back the invite
       try {
         await sendInviteEmail({
-          toEmail: invitee.email,
+          toEmail: invitee?.email ?? email,
           inviterName: inviter?.name ?? null,
           cliqueName: clique?.name ?? "",
           inviteToken: token,

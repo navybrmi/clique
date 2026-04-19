@@ -105,6 +105,7 @@ export function CliquePanel({
 
       <CliqueInviteDialog
         cliqueId={cliqueId}
+        cliqueName={cliqueName}
         open={inviteOpen}
         onOpenChange={setInviteOpen}
       />

@@ -576,7 +576,7 @@ describe("CliqueManagementDialog", () => {
 
     // The invite dialog should now be open — its title is distinct from the management dialog
     expect(
-      await screen.findByRole("heading", { name: /invite to clique/i })
+      await screen.findByRole("heading", { name: /invite to weekend crew/i })
     ).toBeInTheDocument()
   })
 })

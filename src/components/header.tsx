@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { NotificationBell } from "@/components/notification-bell"
 import { UserMenu } from "@/components/user-menu"
 import { ArrowLeft } from "lucide-react"
 import { signOut } from "next-auth/react"
@@ -73,10 +74,13 @@ export function Header({ showBack, showCliqueHint, session, pageTitle }: HeaderP
             </span>
           )}
         </div>
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-2">
           {session?.user ? (
             isHydrated ? (
-              <UserMenu user={session.user} onSignOut={handleSignOut} />
+              <>
+                <NotificationBell />
+                <UserMenu user={session.user} onSignOut={handleSignOut} />
+              </>
             ) : (
               <div className="h-10 w-10 rounded-full bg-zinc-200 dark:bg-zinc-800" />
             )

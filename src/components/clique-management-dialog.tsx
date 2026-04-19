@@ -46,7 +46,7 @@ export function CliqueManagementDialog({
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetch(`/api/cliques/${cliqueId}`)
+      const response = await fetch(`/api/cliques/${cliqueId}`, { cache: "no-store" })
       const body = await response.json().catch(() => null)
       if (!response.ok) {
         setError(body?.error ?? "Failed to load clique")
@@ -64,7 +64,7 @@ export function CliqueManagementDialog({
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetch(`/api/cliques/${cliqueId}/invites`)
+      const response = await fetch(`/api/cliques/${cliqueId}/invites`, { cache: "no-store" })
       const body = await response.json().catch(() => null)
       if (!response.ok) {
         setError(body?.error ?? "Failed to load invites")
@@ -364,6 +364,7 @@ export function CliqueManagementDialog({
 
       <CliqueInviteDialog
         cliqueId={cliqueId}
+        cliqueName={cliqueName}
         open={inviteDialogOpen}
         onOpenChange={setInviteDialogOpen}
       />

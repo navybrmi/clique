@@ -123,6 +123,15 @@ export async function POST(
         FROM (SELECT pg_advisory_xact_lock(${cliqueLockKey})) AS clique_lock_acquired
       `
 
+      // Check already-member inside the transaction (after locks) to be race-safe
+      const alreadyMember = await tx.cliqueMember.findUnique({
+        where: { cliqueId_userId: { cliqueId, userId } },
+        select: { cliqueId: true },
+      })
+      if (alreadyMember) {
+        throw new LimitExceededError("You are already a member of this clique")
+      }
+
       // Check 50-member limit
       const memberCount = await tx.cliqueMember.count({ where: { cliqueId } })
       if (memberCount >= 50) {

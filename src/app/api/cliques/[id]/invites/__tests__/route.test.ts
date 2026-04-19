@@ -240,10 +240,20 @@ describe("POST /api/cliques/[id]/invites (user type)", () => {
     expect(data.error).toContain("valid email")
   })
 
-  it("should return 404 when no matching user found", async () => {
+  it("should create invite and send email even when invitee has no account", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
     ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1", userId: "user1" })
-    ;(prisma.user.findUnique as jest.Mock).mockResolvedValueOnce(null)
+    // First findUnique: invitee not found; second: inviter
+    ;(prisma.user.findUnique as jest.Mock)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ name: "Alice" })
+    ;(prisma.clique.findUnique as jest.Mock).mockResolvedValue({ name: "Movie Buffs" })
+    ;(prisma.cliqueInvite.create as jest.Mock).mockResolvedValue({
+      id: "inv1",
+      token: "a".repeat(64),
+      status: "PENDING",
+      createdBy: { id: "user1", name: "Alice" },
+    })
 
     const req = new NextRequest("http://localhost/api/cliques/clique1/invites", {
       method: "POST",
@@ -251,7 +261,12 @@ describe("POST /api/cliques/[id]/invites (user type)", () => {
     })
     const res = await POST(req, { params: Promise.resolve({ id: "clique1" }) })
 
-    expect(res.status).toBe(404)
+    expect(res.status).toBe(201)
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+    expect(prisma.notification.create).not.toHaveBeenCalled()
+    expect(inviteService.sendInviteEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ toEmail: "unknown@test.com" })
+    )
   })
 
   it("should create invite and send in-app notification to invitee", async () => {
