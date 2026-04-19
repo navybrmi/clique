@@ -10,6 +10,7 @@ jest.mock("@/lib/prisma", () => ({
       updateMany: jest.fn(),
     },
     cliqueMember: {
+      findUnique: jest.fn(),
       count: jest.fn(),
       create: jest.fn(),
     },
@@ -167,6 +168,24 @@ describe("POST /api/invites/[token]", () => {
     expect(res.status).toBe(409)
   })
 
+  it("should return 409 when user is already a member of the clique", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.cliqueInvite.findUnique as jest.Mock).mockResolvedValue({
+      id: "inv1",
+      cliqueId: "clique1",
+      status: "PENDING",
+      expiresAt: new Date("2027-01-01"),
+    })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1" })
+
+    const req = new NextRequest("http://localhost/api/invites/sometoken", { method: "POST" })
+    const res = await POST(req, { params: Promise.resolve({ token: "sometoken" }) })
+    const data = await res.json()
+
+    expect(res.status).toBe(409)
+    expect(data.error).toContain("already a member")
+  })
+
   it("should return 409 when clique already has 50 members", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
     ;(prisma.cliqueInvite.findUnique as jest.Mock).mockResolvedValue({
@@ -175,6 +194,7 @@ describe("POST /api/invites/[token]", () => {
       status: "PENDING",
       expiresAt: new Date("2027-01-01"),
     })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue(null)
     ;(prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
       const tx = {
         $queryRaw: jest.fn().mockResolvedValue(undefined),
@@ -203,6 +223,7 @@ describe("POST /api/invites/[token]", () => {
       status: "PENDING",
       expiresAt: new Date("2027-01-01"),
     })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue(null)
     ;(prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
       const tx = {
         $queryRaw: jest.fn().mockResolvedValue(undefined),
@@ -233,6 +254,7 @@ describe("POST /api/invites/[token]", () => {
       status: "PENDING",
       expiresAt: new Date("2027-01-01"),
     })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue(null)
     ;(prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
       const tx = {
         $queryRaw: jest.fn().mockResolvedValue(undefined),
@@ -276,6 +298,7 @@ describe("POST /api/invites/[token]", () => {
       status: "PENDING",
       expiresAt: new Date("2027-01-01"),
     })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue(null)
     ;(prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
       const tx = {
         $queryRaw: jest.fn().mockResolvedValue(undefined),

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -10,7 +9,6 @@ interface AcceptInviteButtonProps {
 }
 
 export function AcceptInviteButton({ token }: AcceptInviteButtonProps) {
-  const router = useRouter()
   const [isAccepting, setIsAccepting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -28,8 +26,8 @@ export function AcceptInviteButton({ token }: AcceptInviteButtonProps) {
       }
 
       const cliqueId = body?.cliqueId as string | undefined
-      router.push(cliqueId ? `/?cliqueId=${cliqueId}` : "/")
-      router.refresh()
+      // Hard redirect so the server re-renders CliqueSidebarWrapper with the new membership
+      window.location.href = cliqueId ? `/?cliqueId=${cliqueId}` : "/"
     } catch {
       setError("Failed to accept invite")
     } finally {

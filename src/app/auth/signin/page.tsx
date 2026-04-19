@@ -5,13 +5,20 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 
-export default async function SignInPage() {
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>
+}) {
   const session = await auth()
-  
-  // If already signed in, redirect to home
+  const { callbackUrl } = await searchParams
+
+  // If already signed in, redirect to callbackUrl or home
   if (session) {
-    redirect('/')
+    redirect(callbackUrl ?? '/')
   }
+
+  const redirectTo = callbackUrl ?? "/"
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black flex items-center justify-center p-4">
@@ -26,7 +33,7 @@ export default async function SignInPage() {
           <form
             action={async () => {
               "use server"
-              await signIn("google", { redirectTo: "/" })
+              await signIn("google", { redirectTo })
             }}
           >
             <Button type="submit" variant="outline" className="w-full gap-2" size="lg">

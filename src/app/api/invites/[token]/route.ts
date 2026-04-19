@@ -106,6 +106,17 @@ export async function POST(
 
     const cliqueId = invite.cliqueId
 
+    const alreadyMember = await prisma.cliqueMember.findUnique({
+      where: { cliqueId_userId: { cliqueId, userId } },
+      select: { cliqueId: true },
+    })
+    if (alreadyMember) {
+      return NextResponse.json(
+        { error: "You are already a member of this clique" },
+        { status: 409 }
+      )
+    }
+
     await prisma.$transaction(async (tx) => {
       // Acquire advisory locks for both the user and the clique.
       // The user lock (acquired first, consistent with POST /api/cliques)

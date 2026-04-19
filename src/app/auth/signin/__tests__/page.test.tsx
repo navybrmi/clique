@@ -22,27 +22,27 @@ import SignInPage from "../page"
 
 describe("SignInPage", () => {
   it("renders the Welcome to Clique heading", async () => {
-    render(await SignInPage())
+    render(await SignInPage({ searchParams: Promise.resolve({}) }))
     expect(screen.getByText("Welcome to Clique")).toBeInTheDocument()
   })
 
   it("renders the Continue with Google button", async () => {
-    render(await SignInPage())
+    render(await SignInPage({ searchParams: Promise.resolve({}) }))
     expect(screen.getByText("Continue with Google")).toBeInTheDocument()
   })
 
   it("does not render a Continue with Facebook button", async () => {
-    render(await SignInPage())
+    render(await SignInPage({ searchParams: Promise.resolve({}) }))
     expect(screen.queryByText("Continue with Facebook")).not.toBeInTheDocument()
   })
 
   it("does not render any Facebook text", async () => {
-    render(await SignInPage())
+    render(await SignInPage({ searchParams: Promise.resolve({}) }))
     expect(screen.queryByText(/facebook/i)).not.toBeInTheDocument()
   })
 
   it("renders the Back to home link", async () => {
-    render(await SignInPage())
+    render(await SignInPage({ searchParams: Promise.resolve({}) }))
     expect(screen.getByRole("link", { name: /back to home/i })).toBeInTheDocument()
   })
 })
