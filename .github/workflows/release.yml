@@ -72,19 +72,20 @@ jobs:
               print("GITHUB_TOKEN not available — skipping funny notes", file=sys.stderr)
               sys.exit(0)
 
-          prompt = f"""You are the hype person for Clique — a social recommendation platform where friends share their favourite movies, restaurants, fashion picks, and more.
-
-Write the release notes for version {version} in the most entertaining way possible. Base them on these commit messages:
-
-{commits}
-
-Rules:
-- Be funny, playful, and use emojis liberally 🎉
-- Use dramatic flair and pop culture references
-- Celebrate even tiny bug fixes like they saved humanity
-- Keep it under 350 words
-- Use markdown with a short intro paragraph, then a few fun sections
-- Never be boring. Ever."""
+          prompt = (
+              "You are the hype person for Clique — a social recommendation platform"
+              " where friends share their favourite movies, restaurants, fashion picks, and more.\n\n"
+              f"Write the release notes for version {version} in the most entertaining way possible."
+              " Base them on these commit messages:\n\n"
+              + commits +
+              "\n\nRules:\n"
+              "- Be funny, playful, and use emojis liberally 🎉\n"
+              "- Use dramatic flair and pop culture references\n"
+              "- Celebrate even tiny bug fixes like they saved humanity\n"
+              "- Keep it under 350 words\n"
+              "- Use markdown with a short intro paragraph, then a few fun sections\n"
+              "- Never be boring. Ever."
+          )
 
           payload = {
               "model": "gpt-4o-mini",
