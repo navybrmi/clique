@@ -6,6 +6,8 @@ interface CliqueSidebarWrapperProps {
   userId?: string | null
   /** Active clique ID from the current URL, if any. */
   activeCliqueId?: string
+  /** Whether the "My Recommendations" feed is currently active. */
+  activeMine?: boolean
   /** Current clique context forwarded into the Add Recommendation dialog. */
   currentCliqueId?: string
 }
@@ -19,6 +21,7 @@ interface CliqueSidebarWrapperProps {
 export async function CliqueSidebarWrapper({
   userId,
   activeCliqueId,
+  activeMine,
   currentCliqueId,
 }: CliqueSidebarWrapperProps) {
   if (!userId) {
@@ -65,6 +68,7 @@ export async function CliqueSidebarWrapper({
       <CliqueSidebar
         cliques={cliques}
         activeCliqueId={activeCliqueId}
+        activeMine={activeMine}
         userId={userId}
         currentCliqueId={currentCliqueId}
       />

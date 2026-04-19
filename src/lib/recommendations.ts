@@ -36,6 +36,72 @@ export type RecommendationFeedItem = {
 }
 
 /**
+ * Fetches all recommendations submitted by a specific user, ordered by newest first.
+ *
+ * @param userId - The user whose recommendations to fetch
+ * @returns Promise that resolves to an array of recommendation feed items.
+ */
+export async function getMyRecommendations(
+  userId: string
+): Promise<RecommendationFeedItem[]> {
+  const rows = await prisma.recommendation.findMany({
+    where: { userId },
+    select: {
+      id: true,
+      tags: true,
+      rating: true,
+      imageUrl: true,
+      link: true,
+      user: { select: { name: true } },
+      entity: {
+        select: {
+          name: true,
+          category: { select: { displayName: true } },
+          restaurant: { select: { cuisine: true, location: true, priceRange: true } },
+          movie: { select: { director: true, year: true, genre: true, duration: true } },
+          fashion: true,
+          household: true,
+          other: true,
+        },
+      },
+      _count: { select: { upvotes: true, comments: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  })
+  return rows.map((row): RecommendationFeedItem => ({
+    id: row.id,
+    tags: row.tags,
+    rating: row.rating,
+    imageUrl: row.imageUrl,
+    link: row.link,
+    user: { name: row.user.name },
+    entity: {
+      name: row.entity.name,
+      category: { displayName: row.entity.category.displayName },
+      restaurant: row.entity.restaurant
+        ? {
+            cuisine: row.entity.restaurant.cuisine ?? null,
+            location: row.entity.restaurant.location ?? null,
+            priceRange: row.entity.restaurant.priceRange ?? null,
+          }
+        : null,
+      movie: row.entity.movie
+        ? {
+            director: row.entity.movie.director ?? null,
+            year: row.entity.movie.year ?? null,
+            genre: row.entity.movie.genre ?? null,
+            duration: row.entity.movie.duration ?? null,
+          }
+        : null,
+      fashion: (row.entity.fashion ?? null) as Record<string, unknown> | null,
+      household: (row.entity.household ?? null) as Record<string, unknown> | null,
+      other: (row.entity.other ?? null) as Record<string, unknown> | null,
+    },
+    _count: { upvotes: row._count.upvotes, comments: row._count.comments },
+  }))
+}
+
+/**
  * Fetches the recommendation feed with related data, ordered by newest first.
  *
  * Each item includes:

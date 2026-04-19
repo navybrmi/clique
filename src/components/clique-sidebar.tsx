@@ -1,9 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { Sparkles, Users } from "lucide-react"
+import { Sparkles, Users, BookMarked, Globe } from "lucide-react"
 import { AddRecommendationTrigger } from "@/components/add-recommendation-trigger"
-import { CliqueManagementDialog } from "@/components/clique-management-dialog"
 import { CreateCliqueDialog } from "@/components/create-clique-dialog"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -14,6 +13,8 @@ interface CliqueSidebarProps {
   cliques: CliqueSidebarItem[]
   /** Active clique ID from the current page URL, if any. */
   activeCliqueId?: string
+  /** Whether the "My Recommendations" feed is currently active. */
+  activeMine?: boolean
   /** Authenticated user ID, used to render the add recommendation CTA. */
   userId?: string | null
   /** Current clique context forwarded into the Add Recommendation dialog. */
@@ -29,6 +30,7 @@ interface CliqueSidebarProps {
 export function CliqueSidebar({
   cliques,
   activeCliqueId,
+  activeMine,
   userId,
   currentCliqueId,
 }: CliqueSidebarProps) {
@@ -97,30 +99,35 @@ export function CliqueSidebar({
             <Link
               href="/"
               aria-label="Public"
-              aria-current={!activeCliqueId ? "page" : undefined}
-              className={getNavItemClassName(!activeCliqueId)}
+              aria-current={!activeCliqueId && !activeMine ? "page" : undefined}
+              className={getNavItemClassName(!activeCliqueId && !activeMine)}
             >
-              {renderFeedLabel("Public", !activeCliqueId)}
+              <Globe className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+              {renderFeedLabel("Public", !activeCliqueId && !activeMine)}
             </Link>
 
+            {userId != null && (
+              <Link
+                href="/?mine=true"
+                aria-label="My Recommendations"
+                aria-current={activeMine ? "page" : undefined}
+                className={getNavItemClassName(!!activeMine)}
+              >
+                <BookMarked className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+                {renderFeedLabel("My Recommendations", !!activeMine)}
+              </Link>
+            )}
+
             {cliques.map((clique) => (
-              <div key={clique.id} className="flex items-center gap-1">
-                <Link
-                  href={`/?cliqueId=${clique.id}`}
-                  aria-label={clique.name}
-                  aria-current={activeCliqueId === clique.id ? "page" : undefined}
-                  className={cn(getNavItemClassName(activeCliqueId === clique.id), "flex-1")}
-                >
-                  {renderFeedLabel(clique.name, activeCliqueId === clique.id)}
-                </Link>
-                {userId != null && (
-                  <CliqueManagementDialog
-                    cliqueId={clique.id}
-                    cliqueName={clique.name}
-                    currentUserId={userId}
-                  />
-                )}
-              </div>
+              <Link
+                key={clique.id}
+                href={`/?cliqueId=${clique.id}`}
+                aria-label={clique.name}
+                aria-current={activeCliqueId === clique.id ? "page" : undefined}
+                className={getNavItemClassName(activeCliqueId === clique.id)}
+              >
+                {renderFeedLabel(clique.name, activeCliqueId === clique.id)}
+              </Link>
             ))}
           </nav>
         </div>
