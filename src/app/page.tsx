@@ -3,15 +3,17 @@ import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowUp, MessageCircle, Star, MapPin } from "lucide-react"
+import { MessageCircle, Star, MapPin } from "lucide-react"
 import { Header } from "@/components/header"
 import { AddRecommendationTrigger } from "@/components/add-recommendation-trigger"
 import { AddToCliquesDialog } from "@/components/add-to-cliques-dialog"
 import { CliqueSidebarWrapper } from "@/components/clique-sidebar-wrapper"
+import { CliquePanelWrapper } from "@/components/clique-panel-wrapper"
+import { UpvoteButton } from "@/components/upvote-button"
 import { auth } from "@/lib/auth"
 import { getPrismaClient } from "@/lib/prisma"
 import { getCliqueFeed } from "@/lib/clique-service"
-import { getRecommendations, type RecommendationFeedItem } from "@/lib/recommendations"
+import { getMyRecommendations, getRecommendations, type RecommendationFeedItem } from "@/lib/recommendations"
 import type { CliqueFeedItem } from "@/types/clique"
 import { cn } from "@/lib/utils"
 
@@ -67,11 +69,16 @@ type HomeFeedItem = {
   }
   attribution: string | null
   href: string
+  /** Present only for clique feed items; enables interactive upvoting. */
+  upvoteContext?: {
+    cliqueId: string
+    hasUpvoted: boolean
+  }
 }
 
 interface HomePageProps {
   /** Search params forwarded by the App Router. */
-  searchParams?: Promise<{ cliqueId?: string | string[] }>
+  searchParams?: Promise<{ cliqueId?: string | string[]; mine?: string }>
 }
 
 /**
@@ -93,9 +100,7 @@ function normalizePublicFeedItem(
     link: recommendation.link,
     entity: recommendation.entity,
     _count: recommendation._count,
-    attribution: isAuthenticated
-      ? `by ${recommendation.user.name || "Anonymous"}`
-      : null,
+    attribution: null,
     href: `/recommendations/${recommendation.id}`,
   }
 }
@@ -105,11 +110,13 @@ function normalizePublicFeedItem(
  *
  * @param item - Clique feed item
  * @param cliqueId - Active clique ID
+ * @param hasUpvoted - Whether the current user has upvoted this recommendation
  * @returns Shared homepage feed item
  */
 function normalizeCliqueFeedItem(
   item: CliqueFeedItem,
-  cliqueId: string
+  cliqueId: string,
+  hasUpvoted: boolean
 ): HomeFeedItem {
   const submitterName = item.submitterName || null
   const addedByName = item.addedByName || null
@@ -132,6 +139,7 @@ function normalizeCliqueFeedItem(
     _count: item.recommendation._count,
     attribution,
     href: `/recommendations/${item.recommendation.id}?cliqueId=${cliqueId}`,
+    upvoteContext: { cliqueId, hasUpvoted },
   }
 }
 
@@ -145,6 +153,7 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
   const [resolvedSearchParams, session] = await Promise.all([
     (searchParams ?? Promise.resolve({})) as Promise<{
       cliqueId?: string | string[]
+      mine?: string
     }>,
     auth(),
   ])
@@ -155,9 +164,11 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
       : Array.isArray(rawCliqueId)
         ? rawCliqueId[0]
         : undefined
+  const activeMine = resolvedSearchParams.mine === "true" && Boolean(session?.user?.id)
 
   let cliqueError: string | null = null
   let recommendations: HomeFeedItem[] = []
+  let activeClique: { id: string; name: string } | null = null
   const prisma = getPrismaClient()
 
   if (session?.user?.id && activeCliqueId) {
@@ -183,7 +194,7 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
       }
     )
 
-    const accessibleClique =
+    activeClique =
       typeof cliqueDelegate.clique?.findFirst === "function"
         ? await cliqueDelegate.clique.findFirst({
             where: {
@@ -208,14 +219,27 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
             `
           )[0] ?? null
 
-    if (accessibleClique) {
+    if (activeClique) {
       if (
         typeof cliqueDelegate.cliqueRecommendation?.findMany === "function" &&
         typeof cliqueDelegate.cliqueMember?.findMany === "function"
       ) {
         const cliqueFeed = await getCliqueFeed(activeCliqueId, userId)
+        const recIds = cliqueFeed.map((item) => item.recommendation.id)
+        const userUpvoteRows =
+          recIds.length > 0
+            ? await prisma.upVote.findMany({
+                where: { userId, recommendationId: { in: recIds } },
+                select: { recommendationId: true },
+              })
+            : []
+        const upvotedIds = new Set(userUpvoteRows.map((r) => r.recommendationId))
         recommendations = cliqueFeed.map((item) =>
-          normalizeCliqueFeedItem(item, activeCliqueId)
+          normalizeCliqueFeedItem(
+            item,
+            activeCliqueId,
+            upvotedIds.has(item.recommendation.id)
+          )
         )
       } else {
         logCliqueFeedDelegateMismatch()
@@ -240,6 +264,9 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
         ? "You do not have access to this clique feed."
         : "This clique could not be found."
     }
+  } else if (activeMine && session?.user?.id) {
+    const myFeed = await getMyRecommendations(session.user.id)
+    recommendations = myFeed.map((item) => normalizePublicFeedItem(item, false))
   } else {
     const publicFeed = await getRecommendations()
     recommendations = publicFeed.map((item) =>
@@ -272,20 +299,25 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
             className={cn(
               "space-y-8",
               session?.user?.id &&
-                "lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start lg:gap-10 lg:space-y-0"
+                "lg:grid lg:items-start lg:gap-10 lg:space-y-0",
+              session?.user?.id && !activeClique &&
+                "lg:grid-cols-[260px_minmax(0,1fr)]",
+              session?.user?.id && activeClique &&
+                "lg:grid-cols-[260px_minmax(0,1fr)_220px]"
             )}
           >
             {session?.user?.id && (
               <CliqueSidebarWrapper
                 userId={session.user.id}
                 activeCliqueId={activeCliqueId}
+                activeMine={activeMine}
                 currentCliqueId={activeCliqueId}
               />
             )}
 
             <div
               data-testid="feed-content-container"
-              className={cn(isEmptyFeed && session?.user?.id && "lg:col-span-2")}
+              className={cn(isEmptyFeed && session?.user?.id && !activeClique && "lg:col-span-2")}
             >
             {cliqueError ? (
               <Card className="mx-auto max-w-2xl">
@@ -302,7 +334,9 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
             ) : isEmptyFeed ? (
               <div className="text-center">
                 <p className="text-lg text-zinc-500">
-                  No recommendations yet. Be the first to add one!
+                  {activeMine
+                    ? "You haven't added any recommendations yet."
+                    : "No recommendations yet. Be the first to add one!"}
                 </p>
               </div>
             ) : (
@@ -310,12 +344,12 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                 {recommendations.map((rec, index) => (
                   <Card
                     key={rec.id}
-                    className="group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+                    className="group relative flex flex-col overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
                   >
                     {showAddToCliqueActions && (
-                      <div className="pointer-events-none absolute right-3 top-3 z-20 translate-y-1 opacity-0 transition-all duration-200 delay-100 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+                      <div className="pointer-events-auto absolute right-3 top-3 z-20 translate-y-0 opacity-100 transition-all duration-200 delay-100 md:pointer-events-none md:translate-y-1 md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:translate-y-0 md:group-hover:opacity-100">
                         <div className="relative">
-                          <div className="pointer-events-none absolute -inset-1 rounded-full border-2 border-zinc-400/40 border-t-white/80 opacity-0 transition-opacity duration-150 delay-200 group-hover:animate-spin group-hover:opacity-100" />
+                          <div className="pointer-events-none absolute -inset-1 rounded-full border-2 border-zinc-400/40 border-t-white/80 opacity-0 transition-opacity duration-150 delay-200 md:group-hover:animate-spin md:group-hover:opacity-100" />
                           <AddToCliquesDialog
                             recommendationId={rec.id}
                             recommendationName={rec.entity.name}
@@ -324,7 +358,7 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                         </div>
                       </div>
                     )}
-                    <Link href={rec.href} className="block cursor-pointer">
+                    <Link href={rec.href} className="flex h-full cursor-pointer flex-col">
                       <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900">
                         {rec.imageUrl ? (
                           <>
@@ -443,17 +477,23 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                           </div>
                         )}
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="mt-auto">
                         <div className="flex items-center justify-between text-sm text-zinc-500">
                           <div className="flex gap-4">
-                            <span className="flex items-center gap-1">
-                              <ArrowUp className="h-4 w-4" />
-                              {rec._count.upvotes}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <MessageCircle className="h-4 w-4" />
-                              {rec._count.comments}
-                            </span>
+                            {rec.upvoteContext ? (
+                              <UpvoteButton
+                                recommendationId={rec.id}
+                                cliqueId={rec.upvoteContext.cliqueId}
+                                initialCount={rec._count.upvotes}
+                                initialHasUpvoted={rec.upvoteContext.hasUpvoted}
+                              />
+                            ) : null}
+                            {rec.upvoteContext && (
+                              <span className="flex items-center gap-1">
+                                <MessageCircle className="h-4 w-4" />
+                                {rec._count.comments}
+                              </span>
+                            )}
                           </div>
                           {rec.attribution && (
                             <span className="text-right text-xs">{rec.attribution}</span>
@@ -466,6 +506,14 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
               </div>
             )}
             </div>
+
+            {session?.user?.id && activeClique && (
+              <CliquePanelWrapper
+                cliqueId={activeClique.id}
+                cliqueName={activeClique.name}
+                currentUserId={session.user.id}
+              />
+            )}
           </div>
         </div>
       </main>

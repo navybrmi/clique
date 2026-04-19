@@ -4,38 +4,48 @@ import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowUp, MessageCircle, Share2 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 /**
- * Props for the ActionsSidebar component
+ * Renders the recommendation action rail for upvotes, comments, and sharing.
+ *
+ * In clique contexts (`cliqueId` provided), the upvote control is visible and
+ * interactive, with the gate enforced by the `/upvotes` API route. In public
+ * contexts (`cliqueId` absent), the upvote control is intentionally hidden so
+ * the component does not imply global voting behaviour. The component also
+ * refreshes comment counts when a `commentUpdated` browser event is dispatched.
+ *
+ * @param props.recommendation - Recommendation data with `_count` values used to initialise the UI.
+ * @param props.onCommentCountChange - Optional callback invoked after the latest comment count is fetched.
+ * @param props.cliqueId - Clique identifier that enables clique-gated upvoting when present.
+ * @param props.initialHasUpvoted - Whether the current user has already upvoted in the active clique context.
  */
 interface ActionsSidebarProps {
   /** Initial recommendation data with counts */
   recommendation: any
   /** Callback when comment count changes */
   onCommentCountChange?: (count: number) => void
+  /**
+   * When provided, the upvote button becomes interactive. The API enforces
+   * clique membership before persisting the vote. When absent, the upvote
+   * button is hidden (public feed context).
+   */
+  cliqueId?: string | null
+  /** Whether the current user has already upvoted this recommendation */
+  initialHasUpvoted?: boolean
 }
 
-/**
- * Client component for the sidebar actions.
- * 
- * Features:
- * - Displays upvote and comment counts
- * - Updates comment count from API when needed
- * - Listens for external comment updates
- * 
- * @param props - Component props
- * @returns Sidebar actions card
- */
 export function ActionsSidebar({
   recommendation,
   onCommentCountChange,
+  cliqueId,
+  initialHasUpvoted = false,
 }: ActionsSidebarProps) {
   const [commentCount, setCommentCount] = useState(recommendation._count.comments)
   const [upvoteCount, setUpvoteCount] = useState(recommendation._count.upvotes)
+  const [hasUpvoted, setHasUpvoted] = useState(initialHasUpvoted)
+  const [isUpvoteLoading, setIsUpvoteLoading] = useState(false)
 
-  /**
-   * Update comment count from API
-   */
   const updateCommentCount = async () => {
     try {
       const response = await fetch(`/api/recommendations/${recommendation.id}`)
@@ -50,7 +60,24 @@ export function ActionsSidebar({
     }
   }
 
-  // Listen for comment updates from window events
+  const handleUpvoteClick = async () => {
+    if (!cliqueId || isUpvoteLoading) return
+    setIsUpvoteLoading(true)
+    try {
+      const url = hasUpvoted
+        ? `/api/recommendations/${recommendation.id}/upvotes`
+        : `/api/recommendations/${recommendation.id}/upvotes?cliqueId=${cliqueId}`
+      const res = await fetch(url, { method: hasUpvoted ? "DELETE" : "POST" })
+      if (res.ok) {
+        const data = await res.json()
+        setUpvoteCount(data.upvotes)
+        setHasUpvoted(!hasUpvoted)
+      }
+    } finally {
+      setIsUpvoteLoading(false)
+    }
+  }
+
   useEffect(() => {
     const handleCommentUpdate = (event: Event) => {
       if (event instanceof CustomEvent) {
@@ -68,10 +95,22 @@ export function ActionsSidebar({
     <Card>
       <CardContent className="pt-6 space-y-3">
         <div className="flex items-start justify-around pt-2">
-          <Button variant="ghost" size="icon" className="flex flex-col h-auto py-2">
-            <ArrowUp className="h-5 w-5" />
-            <span className="text-xs mt-1">{upvoteCount}</span>
-          </Button>
+          {cliqueId && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "flex flex-col h-auto py-2",
+                hasUpvoted && "text-indigo-500"
+              )}
+              onClick={handleUpvoteClick}
+              disabled={isUpvoteLoading}
+              aria-label={hasUpvoted ? "Remove upvote" : "Upvote"}
+            >
+              <ArrowUp className={cn("h-5 w-5", hasUpvoted && "fill-current")} />
+              <span className="text-xs mt-1">{upvoteCount}</span>
+            </Button>
+          )}
           <Button variant="ghost" size="icon" className="flex flex-col h-auto py-2">
             <MessageCircle className="h-5 w-5" />
             <span className="text-xs mt-1">{commentCount}</span>

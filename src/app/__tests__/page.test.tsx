@@ -65,6 +65,16 @@ jest.mock('@/components/clique-sidebar-wrapper', () => ({
   },
 }))
 
+jest.mock('@/components/clique-panel-wrapper', () => ({
+  CliquePanelWrapper: function MockCliquePanelWrapper({
+    cliqueName,
+  }: {
+    cliqueName: string
+  }) {
+    return <aside data-testid="mock-clique-panel">{cliqueName}</aside>
+  },
+}))
+
 // Mock getRecommendations so tests don't hit the database
 jest.mock('@/lib/recommendations', () => ({
   getRecommendations: jest.fn(),
@@ -91,9 +101,30 @@ jest.mock('@/lib/prisma', () => ({
     cliqueMember: {
       findMany: jest.fn(),
     },
+    upVote: {
+      findMany: jest.fn(),
+    },
     $queryRaw: jest.fn(),
   },
   getPrismaClient: jest.fn(),
+}))
+
+jest.mock('@/components/upvote-button', () => ({
+  UpvoteButton: function MockUpvoteButton({
+    initialCount,
+    initialHasUpvoted,
+  }: {
+    recommendationId: string
+    cliqueId: string
+    initialCount: number
+    initialHasUpvoted: boolean
+  }) {
+    return (
+      <button aria-label={initialHasUpvoted ? 'Remove upvote' : 'Upvote'}>
+        {initialCount}
+      </button>
+    )
+  },
 }))
 
 import { getRecommendations } from '@/lib/recommendations'
@@ -213,6 +244,7 @@ describe('HomePage - Server Component', () => {
     mockFindFirstClique.mockResolvedValue(null)
     mockFindUniqueClique.mockResolvedValue(null)
     mockQueryRaw.mockResolvedValue([])
+    ;(prisma.upVote.findMany as jest.Mock).mockResolvedValue([])
   })
 
   afterEach(() => {
@@ -327,13 +359,13 @@ describe('HomePage - Server Component', () => {
     expect(screen.getByText('+2 more')).toBeInTheDocument()
   })
 
-  it('shows Anonymous when user has no name and session is non-null', async () => {
+  it('does not show submitter name on public feed even when session is non-null', async () => {
     mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
     const recAnon = { ...mockMovieRec, user: { name: null } }
     ;(getRecommendations as jest.Mock).mockResolvedValue([recAnon])
     await renderHomePage()
 
-    expect(screen.getByText('by Anonymous')).toBeInTheDocument()
+    expect(screen.queryByText('by Anonymous')).not.toBeInTheDocument()
     expect(screen.getByTestId('mock-clique-sidebar')).toBeInTheDocument()
   })
 
@@ -465,12 +497,12 @@ describe('HomePage - submitter name auth gating', () => {
     jest.clearAllMocks()
   })
 
-  it('shows "by [name]" on cards when session is non-null', async () => {
+  it('does not show "by [name]" on public feed cards even when session is non-null', async () => {
     mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
     ;(getRecommendations as jest.Mock).mockResolvedValue([mockMovieRec])
     await renderHomePage()
 
-    expect(screen.getByText('by Test User')).toBeInTheDocument()
+    expect(screen.queryByText('by Test User')).not.toBeInTheDocument()
   })
 
   it('does not show "by [name]" on cards when session is null', async () => {
