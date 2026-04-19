@@ -106,17 +106,6 @@ export async function POST(
 
     const cliqueId = invite.cliqueId
 
-    const alreadyMember = await prisma.cliqueMember.findUnique({
-      where: { cliqueId_userId: { cliqueId, userId } },
-      select: { cliqueId: true },
-    })
-    if (alreadyMember) {
-      return NextResponse.json(
-        { error: "You are already a member of this clique" },
-        { status: 409 }
-      )
-    }
-
     await prisma.$transaction(async (tx) => {
       // Acquire advisory locks for both the user and the clique.
       // The user lock (acquired first, consistent with POST /api/cliques)
@@ -133,6 +122,15 @@ export async function POST(
         SELECT 1
         FROM (SELECT pg_advisory_xact_lock(${cliqueLockKey})) AS clique_lock_acquired
       `
+
+      // Check already-member inside the transaction (after locks) to be race-safe
+      const alreadyMember = await tx.cliqueMember.findUnique({
+        where: { cliqueId_userId: { cliqueId, userId } },
+        select: { cliqueId: true },
+      })
+      if (alreadyMember) {
+        throw new LimitExceededError("You are already a member of this clique")
+      }
 
       // Check 50-member limit
       const memberCount = await tx.cliqueMember.count({ where: { cliqueId } })

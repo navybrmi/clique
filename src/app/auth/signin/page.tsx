@@ -13,12 +13,19 @@ export default async function SignInPage({
   const session = await auth()
   const { callbackUrl } = await searchParams
 
-  // If already signed in, redirect to callbackUrl or home
+  // Only allow relative in-app paths to prevent open redirects
+  const safeCallback =
+    typeof callbackUrl === "string" &&
+    callbackUrl.startsWith("/") &&
+    !callbackUrl.startsWith("//")
+      ? callbackUrl
+      : "/"
+
   if (session) {
-    redirect(callbackUrl ?? '/')
+    redirect(safeCallback)
   }
 
-  const redirectTo = callbackUrl ?? "/"
+  const redirectTo = safeCallback
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black flex items-center justify-center p-4">

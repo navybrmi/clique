@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom"
 import React from "react"
 import userEvent from "@testing-library/user-event"
-import { render, screen, waitFor, within, fireEvent, act } from "@testing-library/react"
+import { render, screen, waitFor, fireEvent, act } from "@testing-library/react"
 
 jest.mock("@radix-ui/react-portal", () => ({
   __esModule: true,

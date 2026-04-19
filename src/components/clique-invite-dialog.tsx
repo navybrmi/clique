@@ -80,7 +80,11 @@ export function CliqueInviteDialog({
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      // fallback: select the text
+      // Clipboard API unavailable — select the input text so the user can copy manually
+      const input = document.querySelector<HTMLInputElement>(
+        '[data-testid="invite-link-input"]'
+      )
+      input?.select()
     }
   }
 

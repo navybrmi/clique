@@ -48,8 +48,10 @@ export function NotificationBell() {
 
   const handleMarkAllRead = async () => {
     try {
-      await fetch("/api/notifications", { method: "PATCH" })
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+      const response = await fetch("/api/notifications", { method: "PATCH" })
+      if (response.ok) {
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+      }
     } catch {
       // Best-effort
     }
@@ -57,14 +59,16 @@ export function NotificationBell() {
 
   const handleMarkRead = async (id: string) => {
     try {
-      await fetch("/api/notifications", {
+      const response = await fetch("/api/notifications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: [id] }),
       })
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-      )
+      if (response.ok) {
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+        )
+      }
     } catch {
       // Best-effort
     }
