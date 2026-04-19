@@ -18,13 +18,18 @@ export default async function RecommendationDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams?: Promise<{ cliqueId?: string }>
+  searchParams?: Promise<{ cliqueId?: string | string[] }>
 }) {
   const [{ id }, resolvedSearch] = await Promise.all([
     params,
-    (searchParams ?? Promise.resolve({})) as Promise<{ cliqueId?: string }>,
+    (searchParams ?? Promise.resolve({})) as Promise<{
+      cliqueId?: string | string[]
+    }>,
   ])
-  const cliqueId = resolvedSearch.cliqueId ?? null
+  const rawCliqueId = resolvedSearch.cliqueId
+  const cliqueId = Array.isArray(rawCliqueId)
+    ? (rawCliqueId[0] ?? null)
+    : (rawCliqueId ?? null)
 
   const [recommendation, session] = await Promise.all([
     prisma.recommendation.findUnique({
@@ -81,10 +86,14 @@ export default async function RecommendationDetailPage({
   let isCliqueContext = false
   let userHasUpvoted = false
   if (cliqueId && currentUserId) {
-    const [membership, existingUpvote] = await Promise.all([
+    const [membership, cliqueRec, existingUpvote] = await Promise.all([
       prisma.cliqueMember.findUnique({
         where: { cliqueId_userId: { cliqueId, userId: currentUserId } },
         select: { userId: true },
+      }),
+      prisma.cliqueRecommendation.findUnique({
+        where: { cliqueId_recommendationId: { cliqueId, recommendationId: id } },
+        select: { recommendationId: true },
       }),
       prisma.upVote.findUnique({
         where: {
@@ -93,7 +102,7 @@ export default async function RecommendationDetailPage({
         select: { id: true },
       }),
     ])
-    isCliqueContext = !!membership
+    isCliqueContext = !!membership && !!cliqueRec
     userHasUpvoted = !!existingUpvote
   }
 

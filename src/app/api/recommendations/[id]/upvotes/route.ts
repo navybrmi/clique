@@ -5,10 +5,12 @@ import { auth } from "@/lib/auth"
 /**
  * POST /api/recommendations/[id]/upvotes?cliqueId=<id>
  *
- * Upvotes a recommendation. The caller must be a member of the given clique
- * and the recommendation must belong to that clique.
+ * Clique-gated upvote: the caller must be a member of the given clique and the
+ * recommendation must belong to that clique. The upvote itself is persisted as a
+ * global (userId, recommendationId) record — one vote per user per recommendation
+ * across all cliques — consistent with the UpVote schema constraint.
  *
- * @returns { upvotes: number } — current upvote count after the operation
+ * @returns { upvotes: number } — total upvote count for the recommendation
  */
 export async function POST(
   request: NextRequest,
@@ -68,9 +70,11 @@ export async function POST(
 /**
  * DELETE /api/recommendations/[id]/upvotes
  *
- * Removes the authenticated user's upvote from a recommendation.
+ * Removes the authenticated user's upvote. Because the UpVote model enforces
+ * @@unique([userId, recommendationId]), each user has at most one upvote record
+ * per recommendation, so no clique scoping is required here.
  *
- * @returns { upvotes: number } — current upvote count after the operation
+ * @returns { upvotes: number } — total upvote count for the recommendation
  */
 export async function DELETE(
   request: NextRequest,

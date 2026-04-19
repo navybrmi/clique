@@ -6,15 +6,29 @@ import { Button } from "@/components/ui/button"
 import { ArrowUp, MessageCircle, Share2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+/**
+ * Renders the recommendation action rail for upvotes, comments, and sharing.
+ *
+ * In clique contexts (`cliqueId` provided), the upvote control is visible and
+ * interactive, with the gate enforced by the `/upvotes` API route. In public
+ * contexts (`cliqueId` absent), the upvote control is intentionally hidden so
+ * the component does not imply global voting behaviour. The component also
+ * refreshes comment counts when a `commentUpdated` browser event is dispatched.
+ *
+ * @param props.recommendation - Recommendation data with `_count` values used to initialise the UI.
+ * @param props.onCommentCountChange - Optional callback invoked after the latest comment count is fetched.
+ * @param props.cliqueId - Clique identifier that enables clique-gated upvoting when present.
+ * @param props.initialHasUpvoted - Whether the current user has already upvoted in the active clique context.
+ */
 interface ActionsSidebarProps {
   /** Initial recommendation data with counts */
   recommendation: any
   /** Callback when comment count changes */
   onCommentCountChange?: (count: number) => void
   /**
-   * When provided, the upvote button becomes interactive and votes are
-   * scoped to this clique. When absent, the upvote button is hidden
-   * (public feed context).
+   * When provided, the upvote button becomes interactive. The API enforces
+   * clique membership before persisting the vote. When absent, the upvote
+   * button is hidden (public feed context).
    */
   cliqueId?: string | null
   /** Whether the current user has already upvoted this recommendation */
