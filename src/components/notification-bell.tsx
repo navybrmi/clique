@@ -101,7 +101,7 @@ export function NotificationBell() {
       {isOpen && (
         <div
           data-testid="notification-panel"
-          className="absolute right-0 top-full z-50 mt-1 w-80 rounded-lg border bg-white shadow-lg dark:bg-zinc-950"
+          className="absolute right-0 top-full z-[200] mt-1 w-80 rounded-lg border bg-white shadow-lg dark:bg-zinc-950"
         >
           <div className="flex items-center justify-between border-b px-3 py-2">
             <span className="text-sm font-semibold">Notifications</span>

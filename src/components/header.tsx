@@ -44,7 +44,7 @@ export function Header({ showBack, showCliqueHint, session, pageTitle }: HeaderP
   }
 
   return (
-    <header className="border-b bg-white/50 backdrop-blur-sm dark:bg-black/50">
+    <header className="sticky top-0 z-[100] border-b bg-white/50 backdrop-blur-sm dark:bg-black/50">
       <div className="container mx-auto flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-4">
           {showBack && (
