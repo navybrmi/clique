@@ -16,6 +16,55 @@ if [[ "$remote_name" != "origin" && "$remote_url" != *"github.com"* ]]; then
   exit 0
 fi
 
+# SHA used to diff against when a new branch has no merge-base with origin/main
+empty_tree=$(git hash-object -t tree /dev/null)
+
+# Collect all files changed across the refs being pushed.
+# stdin format: <local-ref> <local-sha> <remote-ref> <remote-sha>
+changed_files=""
+while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
+  [[ -z "$local_sha" ]] && continue
+
+  # Branch deletion — local_sha is all zeros; nothing to build
+  if [[ "$local_sha" == "0000000000000000000000000000000000000000" ]]; then
+    continue
+  fi
+
+  if [[ "$remote_sha" == "0000000000000000000000000000000000000000" ]]; then
+    # New branch — diff the pushed commit against its merge-base with main
+    base=$(git merge-base "$local_sha" origin/main 2>/dev/null || echo "")
+    if [[ -n "$base" ]]; then
+      changed_files+=$(git diff --name-only "$base" "$local_sha")$'\n'
+    else
+      changed_files+=$(git diff --name-only "$empty_tree" "$local_sha")$'\n'
+    fi
+  else
+    # Guard: if remote SHA isn't in the local object DB (e.g. branch never fetched),
+    # we can't compute the diff — run verify-build as the safe default.
+    if ! git cat-file -e "$remote_sha" 2>/dev/null; then
+      echo "pre-push: remote SHA $remote_sha not found locally; running verify-build to be safe"
+      changed_files+="unknown.ts"$'\n'
+    else
+      changed_files+=$(git diff --name-only "$remote_sha" "$local_sha")$'\n'
+    fi
+  fi
+done
+
+# Strip blank lines
+changed_files=$(echo "$changed_files" | grep -v '^$' || true)
+
+if [[ -z "$changed_files" ]]; then
+  echo "pre-push: no changed files detected; skipping verify-build"
+  exit 0
+fi
+
+# Skip if every changed file is a markdown file
+non_md=$(echo "$changed_files" | grep -v '\.md$' || true)
+if [[ -z "$non_md" ]]; then
+  echo "pre-push: only *.md files changed; skipping verify-build"
+  exit 0
+fi
+
 # If Docker isn't available, fail fast with a clear message.
 if ! command -v docker >/dev/null 2>&1; then
   echo "pre-push: docker not found. Install Docker Desktop or push with --no-verify." >&2
@@ -23,5 +72,4 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 echo "pre-push: running 'npm run verify-build' (Docker-based Vercel simulation)"
-
 npm run verify-build
