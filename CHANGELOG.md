@@ -3,6 +3,21 @@
 All notable changes to Clique will be documented in this file.
 Each version links to its GitHub Release.
 
+## [v0.10.3](https://github.com/navybrmi/clique/releases/tag/v0.10.3) — 2026-04-20
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.10.3 -->
+
+## What's Changed
+### Other Changes
+* chore: update CHANGELOG for v0.10.2 by @github-actions[bot] in https://github.com/navybrmi/clique/pull/62
+
+## New Contributors
+* @github-actions[bot] made their first contribution in https://github.com/navybrmi/clique/pull/62
+
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.10.2...v0.10.3
+
+---
+
 ## [v0.10.2](https://github.com/navybrmi/clique/releases/tag/v0.10.2) — 2026-04-19
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.10.2 -->
