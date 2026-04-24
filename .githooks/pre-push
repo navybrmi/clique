@@ -16,19 +16,27 @@ if [[ "$remote_name" != "origin" && "$remote_url" != *"github.com"* ]]; then
   exit 0
 fi
 
+# SHA used to diff against when a new branch has no merge-base with origin/main
+empty_tree=$(git hash-object -t tree /dev/null)
+
 # Collect all files changed across the refs being pushed.
 # stdin format: <local-ref> <local-sha> <remote-ref> <remote-sha>
 changed_files=""
 while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
   [[ -z "$local_sha" ]] && continue
 
+  # Branch deletion — local_sha is all zeros; nothing to build
+  if [[ "$local_sha" == "0000000000000000000000000000000000000000" ]]; then
+    continue
+  fi
+
   if [[ "$remote_sha" == "0000000000000000000000000000000000000000" ]]; then
-    # New branch — diff against its merge-base with the default branch
-    base=$(git merge-base HEAD origin/main 2>/dev/null || echo "")
+    # New branch — diff the pushed commit against its merge-base with main
+    base=$(git merge-base "$local_sha" origin/main 2>/dev/null || echo "")
     if [[ -n "$base" ]]; then
       changed_files+=$(git diff --name-only "$base" "$local_sha")$'\n'
     else
-      changed_files+=$(git diff --name-only "$local_sha")$'\n'
+      changed_files+=$(git diff --name-only "$empty_tree" "$local_sha")$'\n'
     fi
   else
     changed_files+=$(git diff --name-only "$remote_sha" "$local_sha")$'\n'
