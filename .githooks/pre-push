@@ -39,7 +39,14 @@ while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
       changed_files+=$(git diff --name-only "$empty_tree" "$local_sha")$'\n'
     fi
   else
-    changed_files+=$(git diff --name-only "$remote_sha" "$local_sha")$'\n'
+    # Guard: if remote SHA isn't in the local object DB (e.g. branch never fetched),
+    # we can't compute the diff — run verify-build as the safe default.
+    if ! git cat-file -e "$remote_sha" 2>/dev/null; then
+      echo "pre-push: remote SHA $remote_sha not found locally; running verify-build to be safe"
+      changed_files+="unknown.ts"$'\n'
+    else
+      changed_files+=$(git diff --name-only "$remote_sha" "$local_sha")$'\n'
+    fi
   fi
 done
 
