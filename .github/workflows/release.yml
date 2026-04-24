@@ -3,6 +3,8 @@ name: Create Release
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'CHANGELOG.md'
 
 concurrency:
   group: release-${{ github.ref }}
@@ -11,8 +13,6 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
-    # Skip runs triggered by the bot's own CHANGELOG commit to prevent infinite loops
-    if: github.actor != 'github-actions[bot]'
     permissions:
       contents: write
       pull-requests: write
