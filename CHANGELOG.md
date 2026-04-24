@@ -3,6 +3,19 @@
 All notable changes to Clique will be documented in this file.
 Each version links to its GitHub Release.
 
+## [v0.10.7](https://github.com/navybrmi/clique/releases/tag/v0.10.7) — 2026-04-24
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.10.7 -->
+
+## What's Changed
+### Other Changes
+* fix(ci): skip build and coverage checks for markdown-only changes by @navybrmi in https://github.com/navybrmi/clique/pull/68
+
+
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.10.6...v0.10.7
+
+---
+
 ## [v0.10.4](https://github.com/navybrmi/clique/releases/tag/v0.10.4) — 2026-04-24
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.10.4 -->
