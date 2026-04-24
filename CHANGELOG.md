@@ -3,6 +3,19 @@
 All notable changes to Clique will be documented in this file.
 Each version links to its GitHub Release.
 
+## [v0.10.4](https://github.com/navybrmi/clique/releases/tag/v0.10.4) — 2026-04-24
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.10.4 -->
+
+## What's Changed
+### Other Changes
+* fix(ui): fix notification panel hidden behind clique panel by @navybrmi in https://github.com/navybrmi/clique/pull/64
+
+
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.10.3...v0.10.4
+
+---
+
 ## [v0.10.3](https://github.com/navybrmi/clique/releases/tag/v0.10.3) — 2026-04-20
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.10.3 -->
