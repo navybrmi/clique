@@ -57,15 +57,13 @@ npm run db:seed              # Seed database
 ```mermaid
 graph TB
     subgraph Client["Browser / Client"]
-        SC[Server Components<br/>page.tsx files]
         CC[Client Components<br/>'use client']
     end
 
-    subgraph NextJS["Next.js 16 App Router"]
-        SC
-        CC
+    subgraph NextJS["Next.js 16 App Router (Server)"]
+        SC[Server Components<br/>page.tsx files]
         subgraph API["API Routes (/api)"]
-            AUTH[auth/nextauth]
+            AUTH[auth/[...nextauth]]
             REC[recommendations/]
             CLIQ[cliques/]
             NOTIF[notifications/]
@@ -113,7 +111,7 @@ graph TB
     end
 
     CC -->|fetch| API
-    SC -->|direct Prisma calls| Lib
+    SC -->|imports/uses lib utilities| Lib
     API --> Lib
     Lib --> PRISMA_CLIENT
     PRISMA_CLIENT --> DB
