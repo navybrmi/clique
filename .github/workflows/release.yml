@@ -51,6 +51,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MODELS_TOKEN: ${{ secrets.MODELS_TOKEN }}
           VERSION: ${{ steps.tag_version.outputs.new_tag }}
           PREV_TAG: ${{ steps.tag_version.outputs.previous_tag }}
         run: |
@@ -67,7 +68,7 @@ jobs:
 
           commits = open("/tmp/commits.txt").read().strip() or "No commits found."
           version = os.environ["VERSION"]
-          github_token = os.environ.get("GITHUB_TOKEN", "")
+          github_token = os.environ.get("MODELS_TOKEN", "")
 
           if not github_token:
               print("GITHUB_TOKEN not available — skipping funny notes", file=sys.stderr)
