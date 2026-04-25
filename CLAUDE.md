@@ -54,6 +54,84 @@ npm run db:seed              # Seed database
 
 ## Architecture
 
+```mermaid
+graph TB
+    subgraph Client["Browser / Client"]
+        SC[Server Components<br/>page.tsx files]
+        CC[Client Components<br/>'use client']
+    end
+
+    subgraph NextJS["Next.js 16 App Router"]
+        SC
+        CC
+        subgraph API["API Routes (/api)"]
+            AUTH[auth/nextauth]
+            REC[recommendations/]
+            CLIQ[cliques/]
+            NOTIF[notifications/]
+            MOV[movies/search]
+            REST[restaurants/search]
+            CAT[categories/]
+            TAGS[tags/]
+            INV[invites/]
+        end
+    end
+
+    subgraph Lib["src/lib (shared utilities)"]
+        PRISMA_CLIENT[prisma.ts<br/>singleton]
+        AUTH_CFG[auth.ts<br/>NextAuth config]
+        TAG_SVC[tag-service.ts]
+        CLIQUE_SVC[clique-service.ts]
+        INVITE_SVC[invite-service.ts]
+        REC_UTIL[recommendations.ts]
+    end
+
+    subgraph DB["PostgreSQL via Prisma ORM"]
+        direction LR
+        USER_T[User / Account / Session]
+        ENTITY_T[Entity]
+        subgraph CategoryTables["Category-specific tables"]
+            MOVIE_T[Movie]
+            REST_T[Restaurant]
+            FASH_T[Fashion]
+            HOUSE_T[Household]
+            OTHER_T[Other]
+        end
+        REC_T[Recommendation]
+        CLIQUE_T[Clique / CliqueMember<br/>CliqueInvite / CliqueRecommendation]
+        TAG_T[CommunityTag]
+        COMMENT_T[Comment]
+        UPVOTE_T[UpVote]
+        NOTIF_T[Notification]
+    end
+
+    subgraph External["External Services"]
+        GOOGLE_OAUTH[Google OAuth]
+        FB_OAUTH[Facebook OAuth]
+        TMDB[TMDB API<br/>movie search]
+        GPLACES[Google Places API<br/>restaurant search]
+    end
+
+    CC -->|fetch| API
+    SC -->|direct Prisma calls| Lib
+    API --> Lib
+    Lib --> PRISMA_CLIENT
+    PRISMA_CLIENT --> DB
+
+    ENTITY_T -->|1-to-1| MOVIE_T
+    ENTITY_T -->|1-to-1| REST_T
+    ENTITY_T -->|1-to-1| FASH_T
+    ENTITY_T -->|1-to-1| HOUSE_T
+    ENTITY_T -->|1-to-1| OTHER_T
+    REC_T -->|points to| ENTITY_T
+
+    AUTH_CFG -->|Prisma adapter| DB
+    AUTH --> GOOGLE_OAUTH
+    AUTH --> FB_OAUTH
+    MOV -->|TMDB_API_KEY| TMDB
+    REST -->|GOOGLE_PLACES_API_KEY| GPLACES
+```
+
 ### App Structure (src/)
 - **`app/`** — Next.js App Router pages and API routes
   - **`api/`** — RESTful endpoints: `recommendations/`, `movies/search`, `restaurants/search`, `categories/`, `tags/`, `auth/[...nextauth]`
