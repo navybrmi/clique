@@ -298,6 +298,7 @@ export default async function RecommendationDetailPage({
               recommendation={recommendation}
               cliqueId={isCliqueContext ? cliqueId : null}
               initialHasUpvoted={userHasUpvoted}
+              currentUserId={currentUserId}
             />
             <Card>
               <CardContent className="pt-6 space-y-3">

@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowUp, MessageCircle, Share2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { AddToCliquesDialog } from "@/components/add-to-cliques-dialog"
 
 /**
  * Renders the recommendation action rail for upvotes, comments, and sharing.
@@ -33,6 +34,8 @@ interface ActionsSidebarProps {
   cliqueId?: string | null
   /** Whether the current user has already upvoted this recommendation */
   initialHasUpvoted?: boolean
+  /** When provided, shows the "Add to Clique" button for logged-in users. */
+  currentUserId?: string | null
 }
 
 export function ActionsSidebar({
@@ -40,6 +43,7 @@ export function ActionsSidebar({
   onCommentCountChange,
   cliqueId,
   initialHasUpvoted = false,
+  currentUserId,
 }: ActionsSidebarProps) {
   const [commentCount, setCommentCount] = useState(recommendation._count.comments)
   const [upvoteCount, setUpvoteCount] = useState(recommendation._count.upvotes)
@@ -118,6 +122,13 @@ export function ActionsSidebar({
           <Button variant="ghost" size="icon" className="py-2">
             <Share2 className="h-5 w-5" />
           </Button>
+          {currentUserId && (
+            <AddToCliquesDialog
+              recommendationId={recommendation.id}
+              recommendationName={recommendation.entity?.name ?? "this recommendation"}
+              variant="icon"
+            />
+          )}
         </div>
       </CardContent>
     </Card>
