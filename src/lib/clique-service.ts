@@ -1,8 +1,13 @@
 import { getPrismaClient } from "@/lib/prisma"
 import type { CliqueFeedItem } from "@/types/clique"
 
+export interface CliqueFeedPage {
+  items: CliqueFeedItem[]
+  total: number
+}
+
 /**
- * Returns the recommendation feed for a clique, ordered newest-first.
+ * Returns a paginated recommendation feed for a clique, ordered newest-first.
  *
  * Each item includes:
  * - The name of the member who added/bookmarked the recommendation (`addedByName`)
@@ -10,19 +15,24 @@ import type { CliqueFeedItem } from "@/types/clique"
  *   submitter is currently a member of the clique; null otherwise to preserve
  *   privacy for users who have since left or were never members.
  *
- * @param cliqueId     The clique whose feed to fetch
- * @param _currentUserId  Reserved for future per-user visibility rules (unused now)
+ * @param cliqueId       The clique whose feed to fetch
+ * @param _currentUserId Reserved for future per-user visibility rules (unused now)
+ * @param options        Optional pagination: skip (offset) and take (page size)
  */
 export async function getCliqueFeed(
   cliqueId: string,
-  _currentUserId: string
-): Promise<CliqueFeedItem[]> {
+  _currentUserId: string,
+  options: { skip?: number; take?: number } = {}
+): Promise<CliqueFeedPage> {
   void _currentUserId
   const prisma = getPrismaClient()
+  const { skip = 0, take } = options
 
-  const [rows, members] = await Promise.all([
+  const [rows, members, total] = await Promise.all([
     prisma.cliqueRecommendation.findMany({
       where: { cliqueId },
+      ...(skip > 0 ? { skip } : {}),
+      ...(take !== undefined ? { take } : {}),
       include: {
         addedBy: { select: { name: true } },
         recommendation: {
@@ -71,11 +81,12 @@ export async function getCliqueFeed(
       where: { cliqueId },
       select: { userId: true },
     }),
+    prisma.cliqueRecommendation.count({ where: { cliqueId } }),
   ])
 
   const memberIds = new Set(members.map((m) => m.userId))
 
-  return rows.map((row): CliqueFeedItem => ({
+  const items = rows.map((row): CliqueFeedItem => ({
     id: row.recommendationId,
     recommendationId: row.recommendationId,
     addedAt: row.addedAt,
@@ -132,4 +143,6 @@ export async function getCliqueFeed(
       },
     },
   }))
+
+  return { items, total }
 }

@@ -240,7 +240,7 @@ describe('HomePage - Server Component', () => {
   beforeEach(() => {
     mockGetPrismaClient.mockReturnValue(prisma)
     mockAuth.mockResolvedValue(null)
-    mockGetCliqueFeed.mockResolvedValue([])
+    mockGetCliqueFeed.mockResolvedValue({ items: [], total: 0 })
     mockFindFirstClique.mockResolvedValue(null)
     mockFindUniqueClique.mockResolvedValue(null)
     mockQueryRaw.mockResolvedValue([])
@@ -390,7 +390,7 @@ describe('HomePage - Server Component', () => {
   it('renders a clique feed and preserves cliqueId in recommendation links', async () => {
     mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
     mockFindFirstClique.mockResolvedValue({ id: 'clique-1', name: 'Weekend Crew' })
-    mockGetCliqueFeed.mockResolvedValue([mockCliqueFeedItem])
+    mockGetCliqueFeed.mockResolvedValue({ items: [mockCliqueFeedItem], total: 1 })
 
     await renderHomePage({ cliqueId: 'clique-1' })
 

@@ -224,7 +224,7 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
         typeof cliqueDelegate.cliqueRecommendation?.findMany === "function" &&
         typeof cliqueDelegate.cliqueMember?.findMany === "function"
       ) {
-        const cliqueFeed = await getCliqueFeed(activeCliqueId, userId)
+        const { items: cliqueFeed } = await getCliqueFeed(activeCliqueId, userId)
         const recIds = cliqueFeed.map((item) => item.recommendation.id)
         const userUpvoteRows =
           recIds.length > 0

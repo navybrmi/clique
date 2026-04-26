@@ -63,8 +63,10 @@ export async function GET(
  *
  * Creates a new invite. Two types:
  * - `{ type: "link" }` — generates a shareable link invite (no email)
- * - `{ type: "user", emailOrUsername }` — looks up a user and sends an in-app
- *   notification + email
+ * - `{ type: "user", emailOrUsername }` — looks up a user by email or username
+ *   and sends an in-app notification + email. When the value contains "@" it is
+ *   treated as an email address; otherwise it is treated as a username. Inviting
+ *   by username requires the user to already have an account.
  *
  * Only clique members can create invites.
  *
@@ -105,44 +107,54 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { type, email } = body
+    const { type, emailOrUsername } = body
 
     if (type === "user") {
-      if (!email || typeof email !== "string") {
+      if (!emailOrUsername || typeof emailOrUsername !== "string") {
         return NextResponse.json(
-          { error: "email is required for user invites" },
+          { error: "emailOrUsername is required for user invites" },
           { status: 400 }
         )
       }
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(email)) {
-        return NextResponse.json(
-          { error: "email must be a valid email address" },
-          { status: 400 }
-        )
+      const isEmail = emailOrUsername.includes("@")
+
+      // Resolve the invitee. Email invites may target users without an account
+      // yet (invite stored, email sent, they sign up later). Username invites
+      // require an existing account — we need their email to contact them.
+      let invitee: { id: string; name: string | null; email: string | null } | null = null
+      let resolvedEmail: string
+
+      if (isEmail) {
+        resolvedEmail = emailOrUsername
+        invitee = await prisma.user.findUnique({
+          where: { email: emailOrUsername },
+          select: { id: true, name: true, email: true },
+        })
+      } else {
+        invitee = await prisma.user.findFirst({
+          where: { name: emailOrUsername },
+          select: { id: true, name: true, email: true },
+        })
+        if (!invitee?.email) {
+          return NextResponse.json(
+            { error: "No user found with that username" },
+            { status: 404 }
+          )
+        }
+        resolvedEmail = invitee.email
       }
 
-      // Look up user by email — may not have an account yet (that's fine)
-      const invitee = await prisma.user.findUnique({
-        where: { email },
-        select: { id: true, name: true, email: true },
-      })
-
-      const clique = await prisma.clique.findUnique({
-        where: { id },
-        select: { name: true },
-      })
-      const inviter = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { name: true },
-      })
+      const [clique, inviter] = await Promise.all([
+        prisma.clique.findUnique({ where: { id }, select: { name: true } }),
+        prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
+      ])
 
       const token = generateInviteToken()
       const expiresAt = getInviteExpiry()
 
       // If invitee has an account, create invite + in-app notification atomically.
-      // If not, create just the invite — they can sign up and use the link.
+      // If not (email invite only), create just the invite — they sign up later.
       const invite = invitee
         ? await prisma.$transaction(async (tx) => {
             const inv = await tx.cliqueInvite.create({
@@ -150,7 +162,7 @@ export async function POST(
                 token,
                 cliqueId: id,
                 createdById: userId,
-                email,
+                email: resolvedEmail,
                 status: "PENDING",
                 expiresAt,
               },
@@ -159,7 +171,7 @@ export async function POST(
 
             await tx.notification.create({
               data: {
-                userId: invitee.id,
+                userId: invitee!.id,
                 type: "CLIQUE_INVITE",
                 payload: {
                   type: "CLIQUE_INVITE",
@@ -179,7 +191,7 @@ export async function POST(
               token,
               cliqueId: id,
               createdById: userId,
-              email,
+              email: resolvedEmail,
               status: "PENDING",
               expiresAt,
             },
@@ -189,7 +201,7 @@ export async function POST(
       // Send email best-effort — failure must not roll back the invite
       try {
         await sendInviteEmail({
-          toEmail: invitee?.email ?? email,
+          toEmail: resolvedEmail,
           inviterName: inviter?.name ?? null,
           cliqueName: clique?.name ?? "",
           inviteToken: token,

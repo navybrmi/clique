@@ -21,13 +21,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Star, X, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
-/**
- * Category data structure
- */
 interface Category {
   id: string
   name: string
   displayName: string
+}
+
+interface UserClique {
+  id: string
+  name: string
 }
 
 /**
@@ -173,6 +175,7 @@ export function AddRecommendationDialog({
       setHouseholdData({ productType: "", model: "", purchaseLink: "" })
       setConflictRecommendationId(null)
       setConflictEntityName("")
+      setSelectedCliqueIds(currentCliqueId ? new Set([currentCliqueId]) : new Set())
     }
   const [loading, setLoading] = useState(false)
   const [conflictRecommendationId, setConflictRecommendationId] = useState<string | null>(null)
@@ -227,6 +230,10 @@ export function AddRecommendationDialog({
 
   // Suggested tags state (combination of hardcoded and promoted community tags)
   const [suggestedTags, setSuggestedTags] = useState<string[]>([])
+
+  // Clique selection state (create mode only)
+  const [userCliques, setUserCliques] = useState<UserClique[]>([])
+  const [selectedCliqueIds, setSelectedCliqueIds] = useState<Set<string>>(new Set())
 
   // Abort in-flight detail fetches on unmount
   useEffect(() => {
@@ -317,6 +324,23 @@ export function AddRecommendationDialog({
 
     fetchSuggestedTags()
   }, [selectedCategoryId, categories, open])
+
+  // Fetch user's cliques when dialog opens in create mode
+  useEffect(() => {
+    if (!open || editMode) return
+    const fetchCliques = async () => {
+      try {
+        const res = await fetch("/api/cliques")
+        if (res.ok) {
+          const data = await res.json()
+          setUserCliques(data)
+        }
+      } catch {
+        // Non-fatal — clique selector simply won't appear
+      }
+    }
+    fetchCliques()
+  }, [open, editMode])
 
   /**
    * Searches for movies using TMDB API with debouncing.
@@ -576,8 +600,8 @@ export function AddRecommendationDialog({
       rating: rating ? parseInt(rating, 10) : null,
     }
 
-    if (!editMode && currentCliqueId) {
-      payload.cliqueIds = [currentCliqueId]
+    if (!editMode && selectedCliqueIds.size > 0) {
+      payload.cliqueIds = Array.from(selectedCliqueIds)
     }
 
     if (!editMode && forceCreateNew) {
@@ -608,15 +632,15 @@ export function AddRecommendationDialog({
    * Navigates to the existing recommendation for the active clique.
    */
   const handleUseExistingRecommendation = () => {
-    if (!currentCliqueId || !conflictRecommendationId) {
-      return
-    }
-
+    if (!conflictRecommendationId) return
     setOpen(false)
     resetForm()
-    router.push(
-      `/recommendations/${conflictRecommendationId}?cliqueId=${currentCliqueId}`
-    )
+    // Navigate to the existing recommendation; prefer the active clique context
+    const cliqueId = currentCliqueId ?? Array.from(selectedCliqueIds)[0]
+    const path = cliqueId
+      ? `/recommendations/${conflictRecommendationId}?cliqueId=${cliqueId}`
+      : `/recommendations/${conflictRecommendationId}`
+    router.push(path)
   }
 
   /**
@@ -686,7 +710,7 @@ export function AddRecommendationDialog({
       const error = await res.json()
       if (
         !editMode &&
-        currentCliqueId &&
+        selectedCliqueIds.size > 0 &&
         res.status === 409 &&
         error.code === "CLIQUE_RECOMMENDATION_EXISTS" &&
         typeof error.existingRecommendationId === "string"
@@ -1152,7 +1176,33 @@ export function AddRecommendationDialog({
 
           </div>
 
-          {conflictRecommendationId && currentCliqueId && !editMode && (
+          {!editMode && userCliques.length > 0 && (
+            <div className="space-y-2 border-t pt-4">
+              <Label>Add to Cliques</Label>
+              <div className="flex flex-col gap-2">
+                {userCliques.map((clique) => (
+                  <label key={clique.id} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300"
+                      checked={selectedCliqueIds.has(clique.id)}
+                      onChange={(e) => {
+                        setSelectedCliqueIds((prev) => {
+                          const next = new Set(prev)
+                          if (e.target.checked) next.add(clique.id)
+                          else next.delete(clique.id)
+                          return next
+                        })
+                      }}
+                    />
+                    <span className="text-sm">{clique.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {conflictRecommendationId && selectedCliqueIds.size > 0 && !editMode && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
               <p className="font-medium">
                 &quot;{conflictEntityName || entityName}&quot; already exists in this clique.

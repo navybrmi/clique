@@ -4,25 +4,32 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import { getCliqueFeed } from "@/lib/clique-service"
 import type { CliqueFeedItem } from "@/types/clique"
+import type { CliqueFeedPage } from "@/lib/clique-service"
+
+const DEFAULT_PAGE_SIZE = 20
 
 /**
  * GET /api/cliques/[id]/recommendations
  *
- * Returns the recommendation feed for the clique. Only accessible by members.
+ * Returns the paginated recommendation feed for the clique. Only accessible by members.
+ *
+ * Query params:
+ * - `page`  — 1-based page number (default: 1)
+ * - `limit` — items per page (default: 20, max: 100)
  *
  * Each item exposes the submitter's name only when they are a current member
  * of the clique; otherwise `submitterName` is null.
  *
- * @returns {Promise<NextResponse>} Array of clique feed items ordered newest-first
+ * @returns {Promise<NextResponse>} `{ items, total }` ordered newest-first
  * @throws {401} If unauthenticated
  * @throws {403} If requester is not a clique member
  * @throws {404} If clique not found
  * @throws {500} If database query fails
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-): Promise<NextResponse<CliqueFeedItem[] | { error: string }>> {
+): Promise<NextResponse<CliqueFeedPage | { error: string }>> {
   try {
     const session = await auth()
     if (!session?.user?.id) {
@@ -47,7 +54,12 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const feed = await getCliqueFeed(id, userId)
+    const { searchParams } = new URL(request.url)
+    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1)
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? String(DEFAULT_PAGE_SIZE), 10) || DEFAULT_PAGE_SIZE))
+    const skip = (page - 1) * limit
+
+    const feed = await getCliqueFeed(id, userId, { skip, take: limit })
     return NextResponse.json(feed)
   } catch (error) {
     console.error("Error fetching clique feed:", error)
