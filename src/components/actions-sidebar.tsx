@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ArrowUp, MessageCircle, Share2 } from "lucide-react"
+import { ArrowUp, MessageCircle, Share2, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AddToCliquesDialog } from "@/components/add-to-cliques-dialog"
 
@@ -98,35 +98,52 @@ export function ActionsSidebar({
   return (
     <Card>
       <CardContent className="pt-6 space-y-3">
-        <div className="flex items-start justify-around pt-2">
+        <div className="flex items-center justify-around pt-2">
           {cliqueId && (
             <Button
               variant="ghost"
               size="icon"
               className={cn(
-                "flex flex-col h-auto py-2",
-                hasUpvoted && "text-indigo-500"
+                "flex flex-col h-auto py-3 px-4 text-amber-500 hover:text-amber-600",
+                hasUpvoted && "text-indigo-500 hover:text-indigo-600"
               )}
               onClick={handleUpvoteClick}
               disabled={isUpvoteLoading}
               aria-label={hasUpvoted ? "Remove upvote" : "Upvote"}
             >
-              <ArrowUp className={cn("h-5 w-5", hasUpvoted && "fill-current")} />
-              <span className="text-xs mt-1">{upvoteCount}</span>
+              <ArrowUp className={cn("h-7 w-7", hasUpvoted && "fill-current")} />
+              <span className="text-xs mt-1 font-medium">{upvoteCount}</span>
             </Button>
           )}
-          <Button variant="ghost" size="icon" className="flex flex-col h-auto py-2">
-            <MessageCircle className="h-5 w-5" />
-            <span className="text-xs mt-1">{commentCount}</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="flex flex-col h-auto py-3 px-4 text-amber-500 hover:text-amber-600"
+          >
+            <MessageCircle className="h-7 w-7" />
+            <span className="text-xs mt-1 font-medium">{commentCount}</span>
           </Button>
-          <Button variant="ghost" size="icon" className="py-2">
-            <Share2 className="h-5 w-5" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="flex flex-col h-auto py-3 px-4 text-amber-500 hover:text-amber-600"
+          >
+            <Share2 className="h-7 w-7" />
           </Button>
           {currentUserId && (
             <AddToCliquesDialog
               recommendationId={recommendation.id}
               recommendationName={recommendation.entity?.name ?? "this recommendation"}
-              variant="icon"
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="flex flex-col h-auto py-3 px-4 text-amber-500 hover:text-amber-600"
+                  aria-label="Add to your clique(s)"
+                >
+                  <Plus className="h-7 w-7" />
+                </Button>
+              }
             />
           )}
         </div>
