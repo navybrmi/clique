@@ -17,6 +17,7 @@ jest.mock("@/lib/prisma", () => {
       findMany: jest.fn(),
       findUnique: jest.fn(),
       create: jest.fn(),
+      count: jest.fn(),
     },
     recommendation: {
       findUnique: jest.fn(),
@@ -98,21 +99,18 @@ describe("GET /api/cliques/[id]/recommendations", () => {
   it("should return only recommendations explicitly added to the clique", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
     ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1", userId: "user1" })
-    ;(prisma.cliqueRecommendation.findMany as jest.Mock).mockResolvedValue([
-      mockRecommendationRow("user2"),
-    ])
-    ;(prisma.cliqueMember.findMany as jest.Mock).mockResolvedValue([
-      { userId: "user1" },
-    ])
+    ;(prisma.cliqueRecommendation.findMany as jest.Mock).mockResolvedValue([mockRecommendationRow("user2")])
+    ;(prisma.cliqueMember.findMany as jest.Mock).mockResolvedValue([{ userId: "user1" }])
+    ;(prisma.cliqueRecommendation.count as jest.Mock).mockResolvedValue(1)
 
     const req = new NextRequest("http://localhost/api/cliques/clique1/recommendations")
     const res = await GET(req, { params: Promise.resolve({ id: "clique1" }) })
     const data = await res.json()
 
     expect(res.status).toBe(200)
-    expect(data).toHaveLength(1)
-    expect(data[0].recommendationId).toBe("rec1")
-    // Verify query is scoped to the clique
+    expect(data.items).toHaveLength(1)
+    expect(data.items[0].recommendationId).toBe("rec1")
+    expect(data.total).toBe(1)
     expect(prisma.cliqueRecommendation.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { cliqueId: "clique1" } })
     )
@@ -121,41 +119,50 @@ describe("GET /api/cliques/[id]/recommendations", () => {
   it("should include submitterName when submitter is a clique member", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
     ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1", userId: "user1" })
-    ;(prisma.cliqueRecommendation.findMany as jest.Mock).mockResolvedValue([
-      mockRecommendationRow("user2"),
-    ])
-    // user2 IS in the member list
-    ;(prisma.cliqueMember.findMany as jest.Mock).mockResolvedValue([
-      { userId: "user1" },
-      { userId: "user2" },
-    ])
+    ;(prisma.cliqueRecommendation.findMany as jest.Mock).mockResolvedValue([mockRecommendationRow("user2")])
+    ;(prisma.cliqueMember.findMany as jest.Mock).mockResolvedValue([{ userId: "user1" }, { userId: "user2" }])
+    ;(prisma.cliqueRecommendation.count as jest.Mock).mockResolvedValue(1)
 
     const req = new NextRequest("http://localhost/api/cliques/clique1/recommendations")
     const res = await GET(req, { params: Promise.resolve({ id: "clique1" }) })
     const data = await res.json()
 
     expect(res.status).toBe(200)
-    expect(data[0].submitterName).toBe("Bob")
+    expect(data.items[0].submitterName).toBe("Bob")
   })
 
   it("should set submitterName to null when submitter is not a clique member", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
     ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1", userId: "user1" })
-    ;(prisma.cliqueRecommendation.findMany as jest.Mock).mockResolvedValue([
-      mockRecommendationRow("user2"),
-    ])
-    // user2 is NOT in the member list
-    ;(prisma.cliqueMember.findMany as jest.Mock).mockResolvedValue([
-      { userId: "user1" },
-    ])
+    ;(prisma.cliqueRecommendation.findMany as jest.Mock).mockResolvedValue([mockRecommendationRow("user2")])
+    ;(prisma.cliqueMember.findMany as jest.Mock).mockResolvedValue([{ userId: "user1" }])
+    ;(prisma.cliqueRecommendation.count as jest.Mock).mockResolvedValue(1)
 
     const req = new NextRequest("http://localhost/api/cliques/clique1/recommendations")
     const res = await GET(req, { params: Promise.resolve({ id: "clique1" }) })
     const data = await res.json()
 
     expect(res.status).toBe(200)
-    expect(data[0].submitterName).toBeNull()
-    expect(data[0].addedByName).toBe("Alice")
+    expect(data.items[0].submitterName).toBeNull()
+    expect(data.items[0].addedByName).toBe("Alice")
+  })
+
+  it("should respect page and limit query params", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1", userId: "user1" })
+    ;(prisma.cliqueRecommendation.findMany as jest.Mock).mockResolvedValue([])
+    ;(prisma.cliqueMember.findMany as jest.Mock).mockResolvedValue([])
+    ;(prisma.cliqueRecommendation.count as jest.Mock).mockResolvedValue(45)
+
+    const req = new NextRequest("http://localhost/api/cliques/clique1/recommendations?page=3&limit=10")
+    const res = await GET(req, { params: Promise.resolve({ id: "clique1" }) })
+    const data = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(data.total).toBe(45)
+    expect(prisma.cliqueRecommendation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 20, take: 10 })
+    )
   })
 
   it("should handle database errors", async () => {
