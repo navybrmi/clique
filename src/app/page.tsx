@@ -15,6 +15,7 @@ import { AddRecommendationTrigger } from "@/components/add-recommendation-trigge
 import { AddToCliquesDialog } from "@/components/add-to-cliques-dialog"
 import { CliqueSidebarWrapper } from "@/components/clique-sidebar-wrapper"
 import { CliquePanelWrapper } from "@/components/clique-panel-wrapper"
+import { MobileCliqueActions } from "@/components/mobile-clique-actions"
 import { UpvoteButton } from "@/components/upvote-button"
 import { auth } from "@/lib/auth"
 import { getPrismaClient } from "@/lib/prisma"
@@ -300,7 +301,7 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
       />
 
       {session?.user?.id && (
-        <div className="lg:hidden border-b bg-white px-4 py-2 dark:bg-black">
+        <div className="lg:hidden sticky top-[60px] z-40 flex items-center justify-between border-b bg-white px-4 py-2 dark:bg-black">
           <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
             Feed:{" "}
             <span className="font-serif italic text-zinc-800 dark:text-zinc-200">
@@ -309,6 +310,13 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                 : activeClique?.name ?? (activeMine ? "My Recommendations" : "Public")}
             </span>
           </p>
+          {activeClique && session.user?.id && (
+            <MobileCliqueActions
+              cliqueId={activeClique.id}
+              cliqueName={activeClique.name}
+              currentUserId={session.user.id}
+            />
+          )}
         </div>
       )}
 
@@ -549,11 +557,13 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
             </div>
 
             {session?.user?.id && activeClique && (
-              <CliquePanelWrapper
-                cliqueId={activeClique.id}
-                cliqueName={activeClique.name}
-                currentUserId={session.user.id}
-              />
+              <div className="hidden lg:block">
+                <CliquePanelWrapper
+                  cliqueId={activeClique.id}
+                  cliqueName={activeClique.name}
+                  currentUserId={session.user.id}
+                />
+              </div>
             )}
           </div>
         </div>

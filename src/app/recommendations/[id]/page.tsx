@@ -112,7 +112,7 @@ export default async function RecommendationDetailPage({
       <Header showBack={true} session={session} />
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-4 sm:py-8">
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Main Content Column */}
           <div className="lg:col-span-2 space-y-6">
@@ -153,7 +153,7 @@ export default async function RecommendationDetailPage({
               }
             >
               {/* Category badge + rating — shown directly below the entity name */}
-              <div className="mb-4 flex items-center gap-3">
+              <div className="mb-4 flex flex-wrap items-center gap-3">
                 <Badge className="text-sm">{recommendation.entity.category.displayName}</Badge>
                 <div className="flex items-center gap-1">
                   <div className="flex items-center gap-0.5">
