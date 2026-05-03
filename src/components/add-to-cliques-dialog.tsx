@@ -1,8 +1,8 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import React from "react"
-import { Loader2, Plus } from "lucide-react"
+import { CheckCircle2, Loader2, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -65,6 +65,7 @@ export function AddToCliquesDialog({
   const [isLoadingCliques, setIsLoadingCliques] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const allSelected = cliques.length > 0 && selectedCliqueIds.length === cliques.length
 
@@ -74,7 +75,19 @@ export function AddToCliquesDialog({
     setIsLoadingCliques(false)
     setIsSubmitting(false)
     setError(null)
+    setSuccessMessage(null)
   }
+
+  useEffect(() => {
+    if (!successMessage) return
+    const timer = setTimeout(() => {
+      onSuccess?.()
+      handleOpenChange(false)
+    }, 1500)
+    return () => clearTimeout(timer)
+  // handleOpenChange is stable (defined in render scope) — intentionally omitted
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [successMessage])
 
   const loadCliques = async () => {
     setIsLoadingCliques(true)
@@ -202,13 +215,13 @@ export function AddToCliquesDialog({
         return
       }
 
-      const successMessage = buildSuccessMessage(results)
-      if (successMessage) {
-        window.alert(successMessage)
+      const message = buildSuccessMessage(results)
+      if (message) {
+        setSuccessMessage(message)
+      } else {
+        onSuccess?.()
+        handleOpenChange(false)
       }
-
-      onSuccess?.()
-      handleOpenChange(false)
     } finally {
       setIsSubmitting(false)
     }
@@ -262,6 +275,13 @@ export function AddToCliquesDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {successMessage ? (
+            <div className="flex flex-col items-center gap-3 py-4 text-center">
+              <CheckCircle2 className="h-10 w-10 text-green-500" />
+              <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{successMessage}</p>
+            </div>
+          ) : (
+          <>
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           {isLoadingCliques ? (
@@ -323,9 +343,11 @@ export function AddToCliquesDialog({
               </div>
             </>
           )}
+          </>
+          )}
         </div>
 
-        <DialogFooter>
+        {!successMessage && <DialogFooter>
           <Button
             type="button"
             variant="outline"
@@ -348,7 +370,7 @@ export function AddToCliquesDialog({
               "Add to selected cliques"
             )}
           </Button>
-        </DialogFooter>
+        </DialogFooter>}
       </DialogContent>
     </Dialog>
   )
