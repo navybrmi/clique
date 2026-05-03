@@ -299,6 +299,17 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
         ) : undefined}
       />
 
+      {session?.user?.id && (
+        <div className="lg:hidden border-b bg-white px-4 py-2 dark:bg-black">
+          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Feed:{" "}
+            <span className="font-serif italic text-zinc-800 dark:text-zinc-200">
+              {activeClique?.name ?? (activeMine ? "My Recommendations" : "Public")}
+            </span>
+          </p>
+        </div>
+      )}
+
       <main className="container mx-auto px-4 py-6">
         <div className="space-y-6">
           {!session?.user?.id && (

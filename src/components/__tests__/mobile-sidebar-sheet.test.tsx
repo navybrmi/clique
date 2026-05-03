@@ -72,28 +72,28 @@ jest.mock("@/components/ui/sheet", () => {
 })
 
 describe("MobileSidebarSheet", () => {
-  it("shows 'Public' as the active feed name by default", () => {
+  it("sets aria-label to 'Public' by default", () => {
     render(<MobileSidebarSheet cliques={cliques} />)
-    expect(screen.getByText("Public")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /current feed: Public/i })).toBeInTheDocument()
   })
 
-  it("shows the active clique name when activeCliqueId is set", () => {
+  it("sets aria-label to the active clique name when activeCliqueId is set", () => {
     render(
       <MobileSidebarSheet cliques={cliques} activeCliqueId="clique-2" />
     )
-    expect(screen.getByText("Foodies")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /current feed: Foodies/i })).toBeInTheDocument()
   })
 
-  it("shows 'My Recommendations' when activeMine is true", () => {
+  it("sets aria-label to 'My Recommendations' when activeMine is true", () => {
     render(<MobileSidebarSheet cliques={cliques} activeMine />)
-    expect(screen.getByText("My Recommendations")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /current feed: My Recommendations/i })).toBeInTheDocument()
   })
 
-  it("shows 'Feeds' when activeCliqueId does not match any clique", () => {
+  it("sets aria-label to 'Feeds' when activeCliqueId does not match any clique", () => {
     render(
       <MobileSidebarSheet cliques={cliques} activeCliqueId="unknown-id" />
     )
-    expect(screen.getByText("Feeds")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /current feed: Feeds/i })).toBeInTheDocument()
   })
 
   it("opens the sheet when the trigger button is clicked", () => {
