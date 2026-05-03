@@ -753,33 +753,47 @@ describe("AddRecommendationDialog", () => {
     await waitFor(() => expect(window.alert).toHaveBeenCalledWith(expect.stringContaining("Entity name and category are required")))
   })
 
-  it("should render all Fashion and Household fields when those categories are selected", async () => {
+  it("renders Movie and Restaurant before other categories in the dropdown", async () => {
     render(<AddRecommendationDialog onSuccess={jest.fn()} />)
     fireEvent.click(screen.getByText(/add recommendation/i))
     await screen.findByLabelText(/category/i)
-    const combobox = screen.getByRole('combobox')
-    fireEvent.click(combobox)
+
+    fireEvent.click(screen.getByRole("combobox"))
+    const items = screen.getAllByRole("option")
+    const names = items.map((el) => el.textContent?.replace("(coming soon)", "").trim())
+    expect(names[0]).toBe("Movie")
+    expect(names[1]).toBe("Restaurant")
+  })
+
+  it("shows Fashion, Household and Other as disabled with '(coming soon)' in the category dropdown", async () => {
+    render(<AddRecommendationDialog onSuccess={jest.fn()} />)
+    fireEvent.click(screen.getByText(/add recommendation/i))
+    await screen.findByLabelText(/category/i)
+
+    fireEvent.click(screen.getByRole("combobox"))
+
     await waitFor(() => {
-      const options = within(document.body).queryAllByText(/Fashion/i)
-      expect(options.length).toBeGreaterThan(0)
+      expect(within(document.body).queryAllByText(/Fashion/i).length).toBeGreaterThan(0)
     })
-    const fashionOption = within(document.body).queryAllByText(/Fashion/i).find(node => node.tagName === 'OPTION' || node.tagName === 'SPAN')
-    if (fashionOption) fireEvent.click(fashionOption)
-    expect(screen.getByPlaceholderText(/brand/i)).toBeInTheDocument()
-    expect(screen.getByPlaceholderText(/price/i)).toBeInTheDocument()
-    expect(screen.getByPlaceholderText(/size/i)).toBeInTheDocument()
-    expect(screen.getByPlaceholderText(/color/i)).toBeInTheDocument()
-    // Switch to Household
-    fireEvent.click(combobox)
-    await waitFor(() => {
-      const options = within(document.body).queryAllByText(/Household/i)
-      expect(options.length).toBeGreaterThan(0)
-    })
-    const householdOption = within(document.body).queryAllByText(/Household/i).find(node => node.tagName === 'OPTION' || node.tagName === 'SPAN')
-    if (householdOption) fireEvent.click(householdOption)
-    expect(screen.getByPlaceholderText(/product type/i)).toBeInTheDocument()
-    expect(screen.getByPlaceholderText(/model/i)).toBeInTheDocument()
-    expect(screen.getByPlaceholderText(/purchase link/i)).toBeInTheDocument()
+
+    const getSelectItem = (name: RegExp) =>
+      within(document.body)
+        .queryAllByText(name)
+        .map((n) => n.closest("[data-slot='select-item']"))
+        .find(Boolean)
+
+    const fashionItem = getSelectItem(/^Fashion$/i)
+    const householdItem = getSelectItem(/^Household$/i)
+    const otherItem = getSelectItem(/^Other$/i)
+
+    expect(fashionItem).toHaveAttribute("data-disabled")
+    expect(householdItem).toHaveAttribute("data-disabled")
+    expect(otherItem).toHaveAttribute("data-disabled")
+
+    // Each disabled item shows "(coming soon)"
+    expect(fashionItem?.textContent).toContain("(coming soon)")
+    expect(householdItem?.textContent).toContain("(coming soon)")
+    expect(otherItem?.textContent).toContain("(coming soon)")
   })
 
   it("should disable all fields except category when no category is selected", async () => {

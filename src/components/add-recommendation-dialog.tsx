@@ -21,6 +21,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Star, X, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
+const COMING_SOON_CATEGORIES = new Set(["FASHION", "HOUSEHOLD", "OTHER"])
+const CATEGORY_ORDER = ["MOVIE", "RESTAURANT", "FASHION", "HOUSEHOLD", "OTHER"]
+const sortCategories = (cats: Category[]) =>
+  [...cats].sort((a, b) => {
+    const ia = CATEGORY_ORDER.indexOf(a.name)
+    const ib = CATEGORY_ORDER.indexOf(b.name)
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib)
+  })
+
 interface Category {
   id: string
   name: string
@@ -800,11 +809,17 @@ export function AddRecommendationDialog({
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.displayName}
-                    </SelectItem>
-                  ))}
+                  {sortCategories(categories).map((cat) => {
+                    const comingSoon = COMING_SOON_CATEGORIES.has(cat.name)
+                    return (
+                      <SelectItem key={cat.id} value={cat.id} disabled={comingSoon}>
+                        {cat.displayName}
+                        {comingSoon && (
+                          <span className="ml-1.5 text-xs text-zinc-400">(coming soon)</span>
+                        )}
+                      </SelectItem>
+                    )
+                  })}
                 </SelectContent>
               </Select>
             </div>

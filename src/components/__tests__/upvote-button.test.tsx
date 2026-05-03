@@ -2,6 +2,13 @@ import React from "react"
 import { render, screen, waitFor, fireEvent } from "@testing-library/react"
 import { UpvoteButton } from "@/components/upvote-button"
 
+jest.mock("@/components/ui/tooltip", () => ({
+  TooltipProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => <>{children}</>,
+  TooltipContent: ({ children }: { children: React.ReactNode }) => <span data-testid="tooltip-content">{children}</span>,
+}))
+
 global.fetch = jest.fn()
 
 const defaultProps = {
@@ -74,6 +81,32 @@ describe("UpvoteButton", () => {
     await waitFor(() => expect(global.fetch).toHaveBeenCalled())
     expect(screen.getByText("5")).toBeInTheDocument()
     expect(screen.getByLabelText("Upvote")).toBeInTheDocument()
+  })
+
+  it("shows 'Upvote' tooltip content when not upvoted", () => {
+    render(<UpvoteButton {...defaultProps} />)
+    expect(screen.getByTestId("tooltip-content")).toHaveTextContent("Upvote")
+  })
+
+  it("shows 'Remove upvote' tooltip content when already upvoted", () => {
+    render(<UpvoteButton {...defaultProps} initialHasUpvoted={true} />)
+    expect(screen.getByTestId("tooltip-content")).toHaveTextContent("Remove upvote")
+  })
+
+  it("toggles tooltip content from 'Upvote' to 'Remove upvote' after clicking", async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ upvotes: 6 }),
+    })
+
+    render(<UpvoteButton {...defaultProps} />)
+    expect(screen.getByTestId("tooltip-content")).toHaveTextContent("Upvote")
+
+    fireEvent.click(screen.getByLabelText("Upvote"))
+
+    await waitFor(() =>
+      expect(screen.getByTestId("tooltip-content")).toHaveTextContent("Remove upvote")
+    )
   })
 
   it("stops propagation to prevent link navigation", () => {

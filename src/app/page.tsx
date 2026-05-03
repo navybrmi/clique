@@ -4,6 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MessageCircle, Star, MapPin } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Header } from "@/components/header"
 import { AddRecommendationTrigger } from "@/components/add-recommendation-trigger"
 import { AddToCliquesDialog } from "@/components/add-to-cliques-dialog"
@@ -392,7 +398,7 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                           </div>
                         )}
                       </div>
-                      <CardHeader>
+                      <CardHeader className="pt-4">
                         <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
                           <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium dark:bg-zinc-800">
                             {rec.entity.category.displayName}
@@ -443,7 +449,7 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                           </div>
                         )}
                         {rec.entity.movie && (
-                          <div className="mt-3 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+                          <div className="mt-3 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
                             {rec.entity.movie.director && (
                               <p>Director: {rec.entity.movie.director}</p>
                             )}
@@ -489,10 +495,21 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                               />
                             ) : null}
                             {rec.upvoteContext && (
-                              <span className="flex items-center gap-1">
-                                <MessageCircle className="h-4 w-4" />
-                                {rec._count.comments}
-                              </span>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span
+                                      tabIndex={0}
+                                      aria-label={`${rec._count.comments} comments`}
+                                      className="flex items-center gap-1"
+                                    >
+                                      <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                                      {rec._count.comments}
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Comments</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             )}
                           </div>
                           {rec.attribution && (

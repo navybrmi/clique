@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Sparkles, Users, BookMarked, Globe } from "lucide-react"
+import { Sparkles, Users, BookMarked, Globe, UsersRound } from "lucide-react"
 import { AddRecommendationTrigger } from "@/components/add-recommendation-trigger"
 import { CreateCliqueDialog } from "@/components/create-clique-dialog"
 import { buttonVariants } from "@/components/ui/button"
@@ -19,6 +19,8 @@ interface CliqueSidebarProps {
   userId?: string | null
   /** Current clique context forwarded into the Add Recommendation dialog. */
   currentCliqueId?: string
+  /** Called when a feed nav link is clicked — used to close the mobile sheet. */
+  onNavigate?: () => void
 }
 
 /**
@@ -33,6 +35,7 @@ export function CliqueSidebar({
   activeMine,
   userId,
   currentCliqueId,
+  onNavigate,
 }: CliqueSidebarProps) {
   const getNavItemClassName = (isActive: boolean) =>
     cn(
@@ -58,7 +61,7 @@ export function CliqueSidebar({
   )
 
   return (
-    <div className="sticky top-24 space-y-4 rounded-xl border bg-white/70 p-4 backdrop-blur-sm dark:bg-zinc-950/70">
+    <div className="lg:sticky lg:top-24 space-y-4 rounded-xl border bg-white/70 p-4 backdrop-blur-sm dark:bg-zinc-950/70">
       {userId != null && (
         <div className="space-y-3 rounded-lg bg-zinc-50/80 p-3 dark:bg-zinc-900/80">
           <div className="space-y-1">
@@ -101,6 +104,7 @@ export function CliqueSidebar({
               aria-label="Public"
               aria-current={!activeCliqueId && !activeMine ? "page" : undefined}
               className={getNavItemClassName(!activeCliqueId && !activeMine)}
+              onClick={onNavigate}
             >
               <Globe className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
               {renderFeedLabel("Public", !activeCliqueId && !activeMine)}
@@ -112,6 +116,7 @@ export function CliqueSidebar({
                 aria-label="My Recommendations"
                 aria-current={activeMine ? "page" : undefined}
                 className={getNavItemClassName(!!activeMine)}
+                onClick={onNavigate}
               >
                 <BookMarked className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
                 {renderFeedLabel("My Recommendations", !!activeMine)}
@@ -125,6 +130,7 @@ export function CliqueSidebar({
                 aria-label={clique.name}
                 aria-current={activeCliqueId === clique.id ? "page" : undefined}
                 className={getNavItemClassName(activeCliqueId === clique.id)}
+                onClick={onNavigate}
               >
                 <div className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 {renderFeedLabel(clique.name, activeCliqueId === clique.id)}
@@ -135,9 +141,16 @@ export function CliqueSidebar({
       </div>
 
       {cliques.length === 0 && (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Create your first clique to start a private recommendations feed.
-        </p>
+        <div className="rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50/80 p-4 text-center dark:border-zinc-700 dark:bg-zinc-900/50">
+          <UsersRound className="mx-auto mb-2 h-8 w-8 text-zinc-400 dark:text-zinc-500" />
+          <p className="mb-1 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+            No cliques yet
+          </p>
+          <p className="mb-3 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+            Cliques are private groups where you and friends share recommendations with each other.
+          </p>
+          <CreateCliqueDialog />
+        </div>
       )}
     </div>
   )

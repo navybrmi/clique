@@ -13,7 +13,6 @@ import { AddToCliquesDialog } from "@/components/add-to-cliques-dialog"
 describe("AddToCliquesDialog", () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    window.alert = jest.fn()
   })
 
   it("loads cliques on open and adds the recommendation to all selected cliques", async () => {
@@ -85,7 +84,7 @@ describe("AddToCliquesDialog", () => {
         body: JSON.stringify({ recommendationId: "rec-1" }),
       })
     })
-    expect(window.alert).toHaveBeenCalledWith("Added to 2 cliques.")
+    expect(await screen.findByText("Added to 2 cliques.")).toBeInTheDocument()
   })
 
   it("shows an empty-state message when the user has no cliques", async () => {
@@ -195,9 +194,7 @@ describe("AddToCliquesDialog", () => {
     await user.click(within(dialog).getByRole("button", { name: /select all/i }))
     await user.click(within(dialog).getByRole("button", { name: /add to selected cliques/i }))
 
-    await waitFor(() => {
-      expect(window.alert).toHaveBeenCalledWith("Added to 1 clique. Already saved in 1 clique.")
-    })
+    expect(await screen.findByText("Added to 1 clique. Already saved in 1 clique.")).toBeInTheDocument()
   })
 
   it("shows an error when a submit call fails with a non-409 status", async () => {
@@ -327,7 +324,8 @@ describe("AddToCliquesDialog", () => {
   })
 
   it("calls onSuccess after a successful submit", async () => {
-    const user = userEvent.setup()
+    jest.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime })
     const onSuccess = jest.fn()
     const mockFetch = jest
       .fn()
@@ -360,9 +358,15 @@ describe("AddToCliquesDialog", () => {
     await user.click(within(dialog).getByRole("checkbox", { name: /weekend crew/i }))
     await user.click(within(dialog).getByRole("button", { name: /add to selected cliques/i }))
 
+    // Success message appears immediately; onSuccess fires after the 1.5s auto-close delay
+    expect(await screen.findByText("Added to 1 clique.")).toBeInTheDocument()
+    jest.advanceTimersByTime(1500)
+
     await waitFor(() => {
       expect(onSuccess).toHaveBeenCalled()
     })
+
+    jest.useRealTimers()
   })
 
   describe("icon variant", () => {

@@ -3,6 +3,12 @@
 import { useState } from "react"
 import { ArrowUp } from "lucide-react"
 import { cn } from "@/lib/utils"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 /**
  * Inline upvote toggle for recommendation cards in the clique feed.
@@ -56,20 +62,27 @@ export function UpvoteButton({
   }
 
   return (
-    <button
-      onClick={handleClick}
-      disabled={isLoading}
-      className={cn(
-        "flex items-center gap-1 transition-colors",
-        hasUpvoted
-          ? "text-indigo-500"
-          : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300",
-        isLoading && "opacity-50 cursor-not-allowed"
-      )}
-      aria-label={hasUpvoted ? "Remove upvote" : "Upvote"}
-    >
-      <ArrowUp className={cn("h-4 w-4", hasUpvoted && "fill-current")} />
-      {count}
-    </button>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={handleClick}
+            disabled={isLoading}
+            className={cn(
+              "flex items-center gap-1 transition-colors",
+              hasUpvoted
+                ? "text-indigo-500"
+                : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300",
+              isLoading && "opacity-50 cursor-not-allowed"
+            )}
+            aria-label={hasUpvoted ? "Remove upvote" : "Upvote"}
+          >
+            <ArrowUp className={cn("h-4 w-4", hasUpvoted && "fill-current")} />
+            {count}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>{hasUpvoted ? "Remove upvote" : "Upvote"}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
