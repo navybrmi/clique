@@ -392,7 +392,7 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                           </div>
                         )}
                       </div>
-                      <CardHeader>
+                      <CardHeader className="pt-4">
                         <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
                           <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium dark:bg-zinc-800">
                             {rec.entity.category.displayName}
