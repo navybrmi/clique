@@ -53,9 +53,9 @@ export function Header({ showBack, showCliqueHint, session, pageTitle, mobileMen
         {/* Mobile left: hamburger or back button */}
         <div className="flex items-center lg:hidden min-w-[40px]">
           {showBack ? (
-            <Link href="/">
+            <Link href="/" aria-label="Back to home">
               <Button variant="ghost" size="icon" className="h-9 w-9">
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               </Button>
             </Link>
           ) : (

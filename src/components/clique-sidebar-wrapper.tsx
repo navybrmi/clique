@@ -16,6 +16,8 @@ interface CliqueSidebarWrapperProps {
   currentCliqueId?: string
   /** When true, renders only the mobile sheet (for use inside the header). */
   mobileOnly?: boolean
+  /** Pre-fetched cliques — skips the DB query when provided. */
+  prefetchedCliques?: { id: string; name: string }[]
 }
 
 /**
@@ -30,45 +32,52 @@ export async function CliqueSidebarWrapper({
   activeMine,
   currentCliqueId,
   mobileOnly = false,
+  prefetchedCliques,
 }: CliqueSidebarWrapperProps) {
   if (!userId) {
     return null
   }
 
-  const prisma = getPrismaClient()
-  const cliqueDelegate = (
-    prisma as unknown as {
-      clique?: {
-        findMany?: (args: {
-          where: { members: { some: { userId: string } } }
-          select: { id: true; name: true }
-          orderBy: { createdAt: "desc" }
-        }) => Promise<{ id: string; name: string }[]>
-      }
-    }
-  ).clique
+  let cliques: { id: string; name: string }[]
 
-  const cliques =
-    typeof cliqueDelegate?.findMany === "function"
-      ? await cliqueDelegate.findMany({
-          where: {
-            members: {
-              some: { userId },
+  if (prefetchedCliques) {
+    cliques = prefetchedCliques
+  } else {
+    const prisma = getPrismaClient()
+    const cliqueDelegate = (
+      prisma as unknown as {
+        clique?: {
+          findMany?: (args: {
+            where: { members: { some: { userId: string } } }
+            select: { id: true; name: true }
+            orderBy: { createdAt: "desc" }
+          }) => Promise<{ id: string; name: string }[]>
+        }
+      }
+    ).clique
+
+    cliques =
+      typeof cliqueDelegate?.findMany === "function"
+        ? await cliqueDelegate.findMany({
+            where: {
+              members: {
+                some: { userId },
+              },
             },
-          },
-          select: {
-            id: true,
-            name: true,
-          },
-          orderBy: { createdAt: "desc" },
-        })
-      : await prisma.$queryRaw<{ id: string; name: string }[]>`
-          SELECT c.id, c.name
-          FROM "Clique" c
-          INNER JOIN "CliqueMember" cm ON cm."cliqueId" = c.id
-          WHERE cm."userId" = ${userId}
-          ORDER BY c."createdAt" DESC
-        `
+            select: {
+              id: true,
+              name: true,
+            },
+            orderBy: { createdAt: "desc" },
+          })
+        : await prisma.$queryRaw<{ id: string; name: string }[]>`
+            SELECT c.id, c.name
+            FROM "Clique" c
+            INNER JOIN "CliqueMember" cm ON cm."cliqueId" = c.id
+            WHERE cm."userId" = ${userId}
+            ORDER BY c."createdAt" DESC
+          `
+  }
 
   if (mobileOnly) {
     return (

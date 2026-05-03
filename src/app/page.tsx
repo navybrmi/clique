@@ -178,6 +178,38 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
   let activeClique: { id: string; name: string } | null = null
   const prisma = getPrismaClient()
 
+  // Fetch the user's cliques once and share across both sidebar instances
+  // to avoid a duplicate DB query.
+  let userCliques: { id: string; name: string }[] = []
+  if (session?.user?.id) {
+    const cliqueDelegate = (
+      prisma as unknown as {
+        clique?: {
+          findMany?: (args: {
+            where: { members: { some: { userId: string } } }
+            select: { id: true; name: true }
+            orderBy: { createdAt: "desc" }
+          }) => Promise<{ id: string; name: string }[]>
+        }
+      }
+    ).clique
+    const userId = session.user.id
+    userCliques =
+      typeof cliqueDelegate?.findMany === "function"
+        ? await cliqueDelegate.findMany({
+            where: { members: { some: { userId } } },
+            select: { id: true, name: true },
+            orderBy: { createdAt: "desc" },
+          })
+        : await prisma.$queryRaw<{ id: string; name: string }[]>`
+            SELECT c.id, c.name
+            FROM "Clique" c
+            INNER JOIN "CliqueMember" cm ON cm."cliqueId" = c.id
+            WHERE cm."userId" = ${userId}
+            ORDER BY c."createdAt" DESC
+          `
+  }
+
   if (session?.user?.id && activeCliqueId) {
     const userId = session.user.id
     const cliqueDelegate = (
@@ -295,6 +327,7 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
             activeCliqueId={activeCliqueId}
             activeMine={activeMine}
             currentCliqueId={activeCliqueId}
+            prefetchedCliques={userCliques}
             mobileOnly
           />
         ) : undefined}
@@ -352,6 +385,7 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                 activeCliqueId={activeCliqueId}
                 activeMine={activeMine}
                 currentCliqueId={activeCliqueId}
+                prefetchedCliques={userCliques}
               />
             )}
 
