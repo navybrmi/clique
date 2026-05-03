@@ -27,15 +27,21 @@ export function MobileSidebarSheet({
   userId,
   currentCliqueId,
 }: MobileSidebarSheetProps) {
+  const activeFeedName = activeCliqueId
+    ? (cliques.find((c) => c.id === activeCliqueId)?.name ?? "Feeds")
+    : activeMine
+      ? "My Recommendations"
+      : "Public"
+
   return (
     <Sheet>
       <SheetTrigger asChild>
         <button
-          aria-label="Open navigation menu"
+          aria-label={`Open navigation menu — current feed: ${activeFeedName}`}
           className="flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
         >
           <Menu className="h-4 w-4" />
-          Feeds
+          <span className="max-w-[180px] truncate font-serif italic">{activeFeedName}</span>
         </button>
       </SheetTrigger>
       <SheetContent>
