@@ -41,7 +41,7 @@ export function MobileSidebarSheet({
       <SheetTrigger asChild>
         <button
           aria-label={`Open navigation menu — current feed: ${activeFeedName}`}
-          className="flex items-center justify-center rounded-md border border-zinc-200 bg-white p-2 text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
+          className="flex items-center justify-center p-2 text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
         >
           <Menu className="h-5 w-5" />
         </button>
