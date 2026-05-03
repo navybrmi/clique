@@ -30,8 +30,8 @@ interface AddToCliquesDialogProps {
   onSuccess?: () => void
   /** Render mode — "default" shows labelled button, "icon" shows icon-only with tooltip. */
   variant?: "default" | "icon"
-  /** Custom trigger element rendered via DialogTrigger asChild. Overrides variant when provided. */
-  trigger?: React.ReactNode
+  /** Custom trigger element rendered via DialogTrigger asChild. Must be a single React element (Radix asChild requirement). */
+  trigger?: React.ReactElement
 }
 
 type SelectableClique = Pick<CliqueWithMemberCount, "id" | "name" | "_count">

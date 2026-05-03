@@ -13,6 +13,18 @@ import { ArrowUp, MessageCircle, Share2, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AddToCliquesDialog } from "@/components/add-to-cliques-dialog"
 
+/**
+ * Sticky action bar for a recommendation detail page.
+ *
+ * Upvote button: only rendered when `cliqueId` is provided (clique feed context);
+ * hidden on public feeds where the API would reject the vote anyway.
+ *
+ * Comment count: starts from the server-rendered value and refreshes whenever a
+ * `commentUpdated` CustomEvent is dispatched on `window` (fired by the comment form).
+ *
+ * Save button: only rendered when `currentUserId` is provided, allowing logged-in
+ * users to bookmark the recommendation into one or more of their cliques.
+ */
 interface ActionsSidebarProps {
   /** Initial recommendation data with counts */
   recommendation: any
@@ -120,8 +132,8 @@ export function ActionsSidebar({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" className={actionBtn}>
-                  <MessageCircle className={iconCls} />
+                <Button variant="ghost" className={actionBtn} aria-label={`${commentCount} comments`}>
+                  <MessageCircle className={iconCls} aria-hidden="true" />
                   <span className={labelCls}>{commentCount}</span>
                 </Button>
               </TooltipTrigger>
