@@ -27,7 +27,7 @@ describe('Header', () => {
 
   it('should render the header with logo', () => {
     render(<Header />)
-    expect(screen.getByText('Clique')).toBeInTheDocument()
+    expect(screen.getAllByText('Clique').length).toBeGreaterThanOrEqual(1)
   })
 
   it('should show clique hint when explicitly enabled and no pageTitle', () => {

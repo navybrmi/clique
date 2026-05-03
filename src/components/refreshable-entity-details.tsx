@@ -202,12 +202,12 @@ export function RefreshableEntityDetails({
         </div>
       )}
 
-      {/* Entity name (h1) with optional trailing content (e.g. submitter) on the right */}
-      <div className="flex items-start justify-between gap-4">
-        <h1 className={`text-4xl font-bold tracking-tight ${hl("name")}`}>
+      {/* Entity name (h1) with optional submitter info below on mobile, beside on desktop */}
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <h1 className={`text-2xl font-bold tracking-tight sm:text-4xl ${hl("name")}`}>
           {entity.name}
         </h1>
-        {afterImage && <div className="shrink-0 pt-2">{afterImage}</div>}
+        {afterImage && <div className="shrink-0 sm:pt-2">{afterImage}</div>}
       </div>
 
       {/* Slot for recommendation metadata (category, rating, tags) */}

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import type { ReactNode } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { NotificationBell } from "@/components/notification-bell"
@@ -20,6 +21,8 @@ interface HeaderProps {
   session?: { user?: { id?: string; name?: string | null; image?: string | null } } | null
   /** Optional page-level tagline rendered in the header at the same level as the app name. */
   pageTitle?: string
+  /** Slot rendered on the left of the mobile header (e.g. hamburger menu). */
+  mobileMenuSlot?: ReactNode
 }
 
 /**
@@ -32,7 +35,7 @@ interface HeaderProps {
  * @param props - Component props
  * @returns A sticky header with navigation and auth controls
  */
-export function Header({ showBack, showCliqueHint, session, pageTitle }: HeaderProps) {
+export function Header({ showBack, showCliqueHint, session, pageTitle, mobileMenuSlot }: HeaderProps) {
   const [isHydrated, setIsHydrated] = useState(false)
 
   useEffect(() => {
@@ -45,8 +48,30 @@ export function Header({ showBack, showCliqueHint, session, pageTitle }: HeaderP
 
   return (
     <header className="sticky top-0 z-50 border-b bg-white dark:bg-black">
-      <div className="container mx-auto flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-4">
+      <div className="container mx-auto flex items-center justify-between px-4 py-3 relative">
+
+        {/* Mobile left: hamburger or back button */}
+        <div className="flex items-center lg:hidden min-w-[40px]">
+          {showBack ? (
+            <Link href="/" aria-label="Back to home">
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </Link>
+          ) : (
+            mobileMenuSlot ?? <div className="w-10" />
+          )}
+        </div>
+
+        {/* Mobile center: Clique absolutely centered */}
+        <Link href="/" className="lg:hidden absolute left-1/2 -translate-x-1/2">
+          <h1 className="text-xl font-bold cursor-pointer hover:text-zinc-600 transition-colors">
+            Clique
+          </h1>
+        </Link>
+
+        {/* Desktop left: Clique + back + pageTitle/hint */}
+        <div className="hidden lg:flex items-center gap-4">
           {showBack && (
             <Link href="/">
               <Button variant="ghost" size="sm" className="gap-2">
@@ -74,6 +99,8 @@ export function Header({ showBack, showCliqueHint, session, pageTitle }: HeaderP
             </span>
           )}
         </div>
+
+        {/* Right: nav (always visible) */}
         <nav className="flex items-center gap-2">
           {session?.user ? (
             isHydrated ? (

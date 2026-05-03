@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom"
 import React from "react"
-import { render } from "@testing-library/react"
+import { render, screen } from "@testing-library/react"
 
 jest.mock("@/lib/prisma", () => ({
   getPrismaClient: jest.fn(),
@@ -26,6 +26,14 @@ jest.mock("@/components/clique-sidebar", () => ({
       data-current-clique={currentCliqueId ?? ""}
     />
   ),
+}))
+
+jest.mock("@/components/mobile-sidebar-sheet", () => ({
+  MobileSidebarSheet: () => <div data-testid="mobile-sidebar-sheet" />,
+}))
+
+jest.mock("@/components/create-clique-dialog", () => ({
+  CreateCliqueDialog: () => <button data-testid="create-clique-dialog">Create Clique</button>,
 }))
 
 import { getPrismaClient } from "@/lib/prisma"
@@ -94,9 +102,53 @@ describe("CliqueSidebarWrapper", () => {
     })
 
     const jsx = await CliqueSidebarWrapper({ userId: "user1" })
-    const { getByTestId } = render(jsx as React.ReactElement)
+    render(jsx as React.ReactElement)
 
-    expect(getByTestId("clique-sidebar")).toBeInTheDocument()
-    expect(getByTestId("clique-sidebar").getAttribute("data-count")).toBe("0")
+    expect(screen.getByTestId("clique-sidebar")).toBeInTheDocument()
+    expect(screen.getByTestId("clique-sidebar").getAttribute("data-count")).toBe("0")
+  })
+
+  it("shows mobile empty-state CTA with CreateCliqueDialog when user has no cliques", async () => {
+    const mockQueryRaw = jest.fn().mockResolvedValue([])
+    ;(getPrismaClient as jest.Mock).mockReturnValue({ $queryRaw: mockQueryRaw })
+
+    const jsx = await CliqueSidebarWrapper({ userId: "user1" })
+    render(jsx as React.ReactElement)
+
+    expect(screen.getByTestId("create-clique-dialog")).toBeInTheDocument()
+    expect(screen.getByText("Create a clique for a better experience")).toBeInTheDocument()
+  })
+
+  it("shows mobile clique switcher banner when user has cliques but no active clique", async () => {
+    const mockCliques = [{ id: "c1", name: "Weekend Crew" }]
+    const mockFindMany = jest.fn().mockResolvedValue(mockCliques)
+    ;(getPrismaClient as jest.Mock).mockReturnValue({ clique: { findMany: mockFindMany } })
+
+    const jsx = await CliqueSidebarWrapper({ userId: "user1" })
+    render(jsx as React.ReactElement)
+
+    expect(screen.getByText("Switch to a clique feed")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Weekend Crew" })).toBeInTheDocument()
+  })
+
+  it("does not show clique switcher banner when user is already viewing a clique feed", async () => {
+    const mockCliques = [{ id: "c1", name: "Weekend Crew" }]
+    const mockFindMany = jest.fn().mockResolvedValue(mockCliques)
+    ;(getPrismaClient as jest.Mock).mockReturnValue({ clique: { findMany: mockFindMany } })
+
+    const jsx = await CliqueSidebarWrapper({ userId: "user1", activeCliqueId: "c1" })
+    render(jsx as React.ReactElement)
+
+    expect(screen.queryByText("Switch to a clique feed")).not.toBeInTheDocument()
+  })
+
+  it("renders MobileSidebarSheet when mobileOnly is true", async () => {
+    const mockFindMany = jest.fn().mockResolvedValue([])
+    ;(getPrismaClient as jest.Mock).mockReturnValue({ clique: { findMany: mockFindMany } })
+
+    const jsx = await CliqueSidebarWrapper({ userId: "user1", mobileOnly: true })
+    render(jsx as React.ReactElement)
+
+    expect(screen.getByTestId("mobile-sidebar-sheet")).toBeInTheDocument()
   })
 })

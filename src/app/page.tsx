@@ -15,6 +15,7 @@ import { AddRecommendationTrigger } from "@/components/add-recommendation-trigge
 import { AddToCliquesDialog } from "@/components/add-to-cliques-dialog"
 import { CliqueSidebarWrapper } from "@/components/clique-sidebar-wrapper"
 import { CliquePanelWrapper } from "@/components/clique-panel-wrapper"
+import { MobileCliqueActions } from "@/components/mobile-clique-actions"
 import { UpvoteButton } from "@/components/upvote-button"
 import { auth } from "@/lib/auth"
 import { getPrismaClient } from "@/lib/prisma"
@@ -177,6 +178,38 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
   let activeClique: { id: string; name: string } | null = null
   const prisma = getPrismaClient()
 
+  // Fetch the user's cliques once and share across both sidebar instances
+  // to avoid a duplicate DB query.
+  let userCliques: { id: string; name: string }[] = []
+  if (session?.user?.id) {
+    const cliqueDelegate = (
+      prisma as unknown as {
+        clique?: {
+          findMany?: (args: {
+            where: { members: { some: { userId: string } } }
+            select: { id: true; name: true }
+            orderBy: { createdAt: "desc" }
+          }) => Promise<{ id: string; name: string }[]>
+        }
+      }
+    ).clique
+    const userId = session.user.id
+    userCliques =
+      typeof cliqueDelegate?.findMany === "function"
+        ? await cliqueDelegate.findMany({
+            where: { members: { some: { userId } } },
+            select: { id: true, name: true },
+            orderBy: { createdAt: "desc" },
+          })
+        : await prisma.$queryRaw<{ id: string; name: string }[]>`
+            SELECT c.id, c.name
+            FROM "Clique" c
+            INNER JOIN "CliqueMember" cm ON cm."cliqueId" = c.id
+            WHERE cm."userId" = ${userId}
+            ORDER BY c."createdAt" DESC
+          `
+  }
+
   if (session?.user?.id && activeCliqueId) {
     const userId = session.user.id
     const cliqueDelegate = (
@@ -284,7 +317,41 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black">
-      <Header session={session} showCliqueHint pageTitle="Share Your Favorite Things" />
+      <Header
+        session={session}
+        showCliqueHint
+        pageTitle="Share Your Favorite Things"
+        mobileMenuSlot={session?.user?.id ? (
+          <CliqueSidebarWrapper
+            userId={session.user.id}
+            activeCliqueId={activeCliqueId}
+            activeMine={activeMine}
+            currentCliqueId={activeCliqueId}
+            prefetchedCliques={userCliques}
+            mobileOnly
+          />
+        ) : undefined}
+      />
+
+      {session?.user?.id && (
+        <div className="lg:hidden sticky top-[60px] z-40 flex items-center justify-between border-b bg-white px-4 py-2 dark:bg-black">
+          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Feed:{" "}
+            <span className="font-serif italic text-zinc-800 dark:text-zinc-200">
+              {cliqueError
+                ? "Unavailable"
+                : activeClique?.name ?? (activeMine ? "My Recommendations" : "Public")}
+            </span>
+          </p>
+          {activeClique && session.user?.id && (
+            <MobileCliqueActions
+              cliqueId={activeClique.id}
+              cliqueName={activeClique.name}
+              currentUserId={session.user.id}
+            />
+          )}
+        </div>
+      )}
 
       <main className="container mx-auto px-4 py-6">
         <div className="space-y-6">
@@ -318,6 +385,7 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                 activeCliqueId={activeCliqueId}
                 activeMine={activeMine}
                 currentCliqueId={activeCliqueId}
+                prefetchedCliques={userCliques}
               />
             )}
 
@@ -399,11 +467,11 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                         )}
                       </div>
                       <CardHeader className="pt-4">
-                        <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                           <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium dark:bg-zinc-800">
                             {rec.entity.category.displayName}
                           </span>
-                          <div className="flex min-w-fit items-center gap-1">
+                          <div className="flex items-center gap-1">
                             <div className="flex items-center gap-0.5">
                               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
                                 <Star
@@ -470,11 +538,9 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                               <p>Cuisine: {rec.entity.restaurant.cuisine}</p>
                             )}
                             {rec.entity.restaurant.location && (
-                              <p className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3 flex-shrink-0" />
-                                <span className="truncate">
-                                  {rec.entity.restaurant.location}
-                                </span>
+                              <p className="flex items-start gap-1">
+                                <MapPin className="mt-0.5 h-3 w-3 flex-shrink-0" />
+                                <span>{rec.entity.restaurant.location}</span>
                               </p>
                             )}
                             {rec.entity.restaurant.priceRange && (
@@ -525,11 +591,13 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
             </div>
 
             {session?.user?.id && activeClique && (
-              <CliquePanelWrapper
-                cliqueId={activeClique.id}
-                cliqueName={activeClique.name}
-                currentUserId={session.user.id}
-              />
+              <div className="hidden lg:block">
+                <CliquePanelWrapper
+                  cliqueId={activeClique.id}
+                  cliqueName={activeClique.name}
+                  currentUserId={session.user.id}
+                />
+              </div>
             )}
           </div>
         </div>
