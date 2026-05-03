@@ -1206,6 +1206,193 @@ describe("AddRecommendationDialog", () => {
     // No error thrown
   })
 
+  it("fetches /api/cliques on open and renders checkboxes for each clique", async () => {
+    ;(global.fetch as jest.Mock).mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : (input as Request).url
+      if (url.includes("/api/auth/session")) {
+        return Promise.resolve(new Response(JSON.stringify({ user: { id: "u1" } })) as unknown as Response)
+      }
+      if (url === "/api/cliques") {
+        return Promise.resolve(new Response(JSON.stringify([
+          { id: "clique-a", name: "Movie Club" },
+          { id: "clique-b", name: "Foodies" },
+        ])) as unknown as Response)
+      }
+      if (url.includes("/api/categories")) {
+        return Promise.resolve(new Response(JSON.stringify([
+          { id: "1", name: "MOVIE", displayName: "Movie" },
+        ])) as unknown as Response)
+      }
+      if (url.includes("/api/tags")) {
+        return Promise.resolve(new Response(JSON.stringify({ tags: [] })) as unknown as Response)
+      }
+      return Promise.resolve(new Response(JSON.stringify([])) as unknown as Response)
+    })
+
+    render(<AddRecommendationDialog onSuccess={jest.fn()} initialCategoryId="1" />)
+    fireEvent.click(screen.getByText(/add recommendation/i))
+    await screen.findByLabelText(/category/i)
+
+    await waitFor(() => {
+      expect(screen.getByText("Movie Club")).toBeInTheDocument()
+      expect(screen.getByText("Foodies")).toBeInTheDocument()
+    })
+
+    expect(screen.getByText(/add to cliques/i)).toBeInTheDocument()
+    const checkboxes = screen.getAllByRole("checkbox")
+    expect(checkboxes).toHaveLength(2)
+  })
+
+  it("toggles clique selection when checkboxes are checked and unchecked", async () => {
+    ;(global.fetch as jest.Mock).mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : (input as Request).url
+      if (url.includes("/api/auth/session")) {
+        return Promise.resolve(new Response(JSON.stringify({ user: { id: "u1" } })) as unknown as Response)
+      }
+      if (url === "/api/cliques") {
+        return Promise.resolve(new Response(JSON.stringify([
+          { id: "clique-a", name: "Movie Club" },
+        ])) as unknown as Response)
+      }
+      if (url.includes("/api/categories")) {
+        return Promise.resolve(new Response(JSON.stringify([
+          { id: "1", name: "MOVIE", displayName: "Movie" },
+        ])) as unknown as Response)
+      }
+      if (url.includes("/api/tags")) {
+        return Promise.resolve(new Response(JSON.stringify({ tags: [] })) as unknown as Response)
+      }
+      return Promise.resolve(new Response(JSON.stringify([])) as unknown as Response)
+    })
+
+    render(<AddRecommendationDialog onSuccess={jest.fn()} initialCategoryId="1" />)
+    fireEvent.click(screen.getByText(/add recommendation/i))
+    await screen.findByLabelText(/category/i)
+
+    await waitFor(() => expect(screen.getByText("Movie Club")).toBeInTheDocument())
+
+    const checkbox = screen.getByRole("checkbox")
+    expect(checkbox).not.toBeChecked()
+
+    // Check it
+    fireEvent.click(checkbox)
+    expect(checkbox).toBeChecked()
+
+    // Uncheck it
+    fireEvent.click(checkbox)
+    expect(checkbox).not.toBeChecked()
+  })
+
+  it("navigates using selectedCliqueIds fallback when currentCliqueId is not set", async () => {
+    const onSuccess = jest.fn()
+
+    ;(global.fetch as jest.Mock).mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : (input as Request).url
+      if (url.includes("/api/auth/session")) {
+        return Promise.resolve(new Response(JSON.stringify({ user: { id: "u1" } })) as unknown as Response)
+      }
+      if (url === "/api/cliques") {
+        return Promise.resolve(new Response(JSON.stringify([
+          { id: "clique-a", name: "Movie Club" },
+        ])) as unknown as Response)
+      }
+      if (url.includes("/api/categories")) {
+        return Promise.resolve(new Response(JSON.stringify([
+          { id: "1", name: "MOVIE", displayName: "Movie" },
+        ])) as unknown as Response)
+      }
+      if (url.includes("/api/tags")) {
+        return Promise.resolve(new Response(JSON.stringify({ tags: [] })) as unknown as Response)
+      }
+      if (url.includes("/api/recommendations") && init?.method === "POST") {
+        return Promise.resolve(new Response(JSON.stringify({
+          error: "exists",
+          code: "CLIQUE_RECOMMENDATION_EXISTS",
+          existingRecommendationId: "rec-existing",
+          entityName: "Inception",
+        }), { status: 409 }) as unknown as Response)
+      }
+      return Promise.resolve(new Response(JSON.stringify([])) as unknown as Response)
+    })
+
+    // No currentCliqueId prop
+    render(<AddRecommendationDialog onSuccess={onSuccess} initialCategoryId="1" />)
+    fireEvent.click(screen.getByText(/add recommendation/i))
+    await screen.findByLabelText(/category/i)
+
+    // Wait for the clique checkbox to appear, then check it
+    await waitFor(() => expect(screen.getByText("Movie Club")).toBeInTheDocument())
+    const checkbox = screen.getByRole("checkbox")
+    fireEvent.click(checkbox)
+    expect(checkbox).toBeChecked()
+
+    // Submit to trigger 409 conflict
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: "Inception" } })
+    fireEvent.click(screen.getAllByText(/^create$/i).find((btn) => btn.tagName === "BUTTON")!)
+
+    await screen.findByText(/already exists in this clique/i)
+
+    // Click "Open existing recommendation" — should use clique-a from selectedCliqueIds
+    fireEvent.click(screen.getByRole("button", { name: /open existing recommendation/i }))
+
+    await waitFor(() => {
+      expect(mockRouterPush).toHaveBeenCalledWith(
+        "/recommendations/rec-existing?cliqueId=clique-a"
+      )
+    })
+  })
+
+  it("navigates without cliqueId when no clique is selected on conflict", async () => {
+    ;(global.fetch as jest.Mock).mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : (input as Request).url
+      if (url.includes("/api/auth/session")) {
+        return Promise.resolve(new Response(JSON.stringify({ user: { id: "u1" } })) as unknown as Response)
+      }
+      if (url === "/api/cliques") {
+        return Promise.resolve(new Response(JSON.stringify([])) as unknown as Response)
+      }
+      if (url.includes("/api/categories")) {
+        return Promise.resolve(new Response(JSON.stringify([
+          { id: "1", name: "MOVIE", displayName: "Movie" },
+        ])) as unknown as Response)
+      }
+      if (url.includes("/api/tags")) {
+        return Promise.resolve(new Response(JSON.stringify({ tags: [] })) as unknown as Response)
+      }
+      if (url.includes("/api/recommendations") && init?.method === "POST") {
+        return Promise.resolve(new Response(JSON.stringify({
+          error: "exists",
+          code: "CLIQUE_RECOMMENDATION_EXISTS",
+          existingRecommendationId: "rec-existing",
+          entityName: "Inception",
+        }), { status: 409 }) as unknown as Response)
+      }
+      return Promise.resolve(new Response(JSON.stringify([])) as unknown as Response)
+    })
+
+    render(
+      <AddRecommendationDialog
+        onSuccess={jest.fn()}
+        initialCategoryId="1"
+        currentCliqueId="clique-x"
+      />
+    )
+    fireEvent.click(screen.getByText(/add recommendation/i))
+    await screen.findByLabelText(/category/i)
+
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: "Inception" } })
+    fireEvent.click(screen.getAllByText(/^create$/i).find((btn) => btn.tagName === "BUTTON")!)
+
+    await screen.findByText(/already exists in this clique/i)
+    fireEvent.click(screen.getByRole("button", { name: /open existing recommendation/i }))
+
+    await waitFor(() => {
+      expect(mockRouterPush).toHaveBeenCalledWith(
+        "/recommendations/rec-existing?cliqueId=clique-x"
+      )
+    })
+  })
+
   describe("userId prop auth resolution", () => {
     async function openDialog(userId?: string | null) {
       const user = userEvent.setup({ delay: null })

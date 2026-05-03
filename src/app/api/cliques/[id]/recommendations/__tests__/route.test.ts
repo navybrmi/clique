@@ -165,6 +165,63 @@ describe("GET /api/cliques/[id]/recommendations", () => {
     )
   })
 
+  it("should default page to 1 and limit to 20 when params are non-numeric", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1", userId: "user1" })
+    ;(prisma.cliqueRecommendation.findMany as jest.Mock).mockResolvedValue([])
+    ;(prisma.cliqueMember.findMany as jest.Mock).mockResolvedValue([])
+    ;(prisma.cliqueRecommendation.count as jest.Mock).mockResolvedValue(5)
+
+    const req = new NextRequest("http://localhost/api/cliques/clique1/recommendations?page=abc&limit=xyz")
+    const res = await GET(req, { params: Promise.resolve({ id: "clique1" }) })
+    const data = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(data.total).toBe(5)
+    // NaN || 1 → page=1; NaN || 20 → limit=20; skip=(1-1)*20=0
+    expect(prisma.cliqueRecommendation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 20 })
+    )
+    const callArg = (prisma.cliqueRecommendation.findMany as jest.Mock).mock.calls[0][0]
+    expect(callArg).not.toHaveProperty("skip")
+  })
+
+  it("should default page to 1 when page=0 (falsy parseInt result)", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1", userId: "user1" })
+    ;(prisma.cliqueRecommendation.findMany as jest.Mock).mockResolvedValue([])
+    ;(prisma.cliqueMember.findMany as jest.Mock).mockResolvedValue([])
+    ;(prisma.cliqueRecommendation.count as jest.Mock).mockResolvedValue(5)
+
+    const req = new NextRequest("http://localhost/api/cliques/clique1/recommendations?page=0&limit=0")
+    const res = await GET(req, { params: Promise.resolve({ id: "clique1" }) })
+
+    expect(res.status).toBe(200)
+    // parseInt("0") = 0 → 0 || 1 = 1 for page; 0 || 20 = 20 for limit; skip=0
+    expect(prisma.cliqueRecommendation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 20 })
+    )
+    const callArg = (prisma.cliqueRecommendation.findMany as jest.Mock).mock.calls[0][0]
+    expect(callArg).not.toHaveProperty("skip")
+  })
+
+  it("should clamp limit to 100 when limit exceeds maximum", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1", userId: "user1" })
+    ;(prisma.cliqueRecommendation.findMany as jest.Mock).mockResolvedValue([])
+    ;(prisma.cliqueMember.findMany as jest.Mock).mockResolvedValue([])
+    ;(prisma.cliqueRecommendation.count as jest.Mock).mockResolvedValue(200)
+
+    const req = new NextRequest("http://localhost/api/cliques/clique1/recommendations?limit=500")
+    const res = await GET(req, { params: Promise.resolve({ id: "clique1" }) })
+
+    expect(res.status).toBe(200)
+    // Math.min(100, Math.max(1, 500)) = 100
+    expect(prisma.cliqueRecommendation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 100 })
+    )
+  })
+
   it("should handle database errors", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
     ;(prisma.cliqueMember.findUnique as jest.Mock).mockRejectedValue(new Error("DB error"))

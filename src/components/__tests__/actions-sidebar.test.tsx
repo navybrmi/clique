@@ -2,6 +2,21 @@ import React from "react"
 import { render, screen, waitFor, fireEvent } from "@testing-library/react"
 import { ActionsSidebar } from "@/components/actions-sidebar"
 
+jest.mock("@/components/add-to-cliques-dialog", () => ({
+  AddToCliquesDialog: ({
+    trigger,
+    recommendationId,
+  }: {
+    trigger?: React.ReactElement
+    recommendationId: string
+  }) => (
+    <div>
+      {trigger}
+      <div data-testid={`add-to-cliques-dialog-${recommendationId}`} />
+    </div>
+  ),
+}))
+
 // Mock fetch
 global.fetch = jest.fn()
 
@@ -122,6 +137,35 @@ describe("ActionsSidebar", () => {
       await waitFor(() => expect(global.fetch).toHaveBeenCalled())
       expect(screen.getByText("10")).toBeInTheDocument()
       expect(screen.getByLabelText("Upvote")).toBeInTheDocument()
+    })
+  })
+
+  describe("Save button (Add to Clique)", () => {
+    it("should not render Save button when currentUserId is absent", () => {
+      render(<ActionsSidebar recommendation={mockRecommendation} />)
+      expect(screen.queryByLabelText("Add to your clique(s)")).not.toBeInTheDocument()
+      expect(screen.queryByText("Save")).not.toBeInTheDocument()
+    })
+
+    it("should render Save button when currentUserId is provided", () => {
+      render(
+        <ActionsSidebar recommendation={mockRecommendation} currentUserId="user1" />
+      )
+      expect(screen.getByLabelText("Add to your clique(s)")).toBeInTheDocument()
+      expect(screen.getByText("Save")).toBeInTheDocument()
+    })
+
+    it("should render AddToCliquesDialog trigger when currentUserId is provided", () => {
+      const rec = { ...mockRecommendation, entity: { name: "Test Movie" } }
+      render(<ActionsSidebar recommendation={rec} currentUserId="user1" />)
+      expect(screen.getByTestId(`add-to-cliques-dialog-${rec.id}`)).toBeInTheDocument()
+    })
+
+    it("should not render AddToCliquesDialog when currentUserId is absent", () => {
+      render(<ActionsSidebar recommendation={mockRecommendation} />)
+      expect(
+        screen.queryByTestId(`add-to-cliques-dialog-${mockRecommendation.id}`)
+      ).not.toBeInTheDocument()
     })
   })
 
