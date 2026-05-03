@@ -423,7 +423,7 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                         )}
                       </div>
                       <CardHeader className="pt-4">
-                        <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                           <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium dark:bg-zinc-800">
                             {rec.entity.category.displayName}
                           </span>
@@ -494,11 +494,9 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                               <p>Cuisine: {rec.entity.restaurant.cuisine}</p>
                             )}
                             {rec.entity.restaurant.location && (
-                              <p className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3 flex-shrink-0" />
-                                <span className="truncate">
-                                  {rec.entity.restaurant.location}
-                                </span>
+                              <p className="flex items-start gap-1">
+                                <MapPin className="mt-0.5 h-3 w-3 flex-shrink-0" />
+                                <span>{rec.entity.restaurant.location}</span>
                               </p>
                             )}
                             {rec.entity.restaurant.priceRange && (
