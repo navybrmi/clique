@@ -4,6 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MessageCircle, Star, MapPin } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Header } from "@/components/header"
 import { AddRecommendationTrigger } from "@/components/add-recommendation-trigger"
 import { AddToCliquesDialog } from "@/components/add-to-cliques-dialog"
@@ -489,10 +495,17 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                               />
                             ) : null}
                             {rec.upvoteContext && (
-                              <span className="flex items-center gap-1">
-                                <MessageCircle className="h-4 w-4" />
-                                {rec._count.comments}
-                              </span>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="flex items-center gap-1">
+                                      <MessageCircle className="h-4 w-4" />
+                                      {rec._count.comments}
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Comments</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             )}
                           </div>
                           {rec.attribution && (
