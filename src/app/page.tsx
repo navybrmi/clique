@@ -449,7 +449,7 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                           </div>
                         )}
                         {rec.entity.movie && (
-                          <div className="mt-3 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+                          <div className="mt-3 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
                             {rec.entity.movie.director && (
                               <p>Director: {rec.entity.movie.director}</p>
                             )}
