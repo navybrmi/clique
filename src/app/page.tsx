@@ -304,7 +304,9 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
           <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
             Feed:{" "}
             <span className="font-serif italic text-zinc-800 dark:text-zinc-200">
-              {activeClique?.name ?? (activeMine ? "My Recommendations" : "Public")}
+              {cliqueError
+                ? "Unavailable"
+                : activeClique?.name ?? (activeMine ? "My Recommendations" : "Public")}
             </span>
           </p>
         </div>

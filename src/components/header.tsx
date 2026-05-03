@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import type { ReactNode } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { NotificationBell } from "@/components/notification-bell"
@@ -21,7 +22,7 @@ interface HeaderProps {
   /** Optional page-level tagline rendered in the header at the same level as the app name. */
   pageTitle?: string
   /** Slot rendered on the left of the mobile header (e.g. hamburger menu). */
-  mobileMenuSlot?: React.ReactNode
+  mobileMenuSlot?: ReactNode
 }
 
 /**
