@@ -3,24 +3,16 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { ArrowUp, MessageCircle, Share2, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AddToCliquesDialog } from "@/components/add-to-cliques-dialog"
 
-/**
- * Renders the recommendation action rail for upvotes, comments, and sharing.
- *
- * In clique contexts (`cliqueId` provided), the upvote control is visible and
- * interactive, with the gate enforced by the `/upvotes` API route. In public
- * contexts (`cliqueId` absent), the upvote control is intentionally hidden so
- * the component does not imply global voting behaviour. The component also
- * refreshes comment counts when a `commentUpdated` browser event is dispatched.
- *
- * @param props.recommendation - Recommendation data with `_count` values used to initialise the UI.
- * @param props.onCommentCountChange - Optional callback invoked after the latest comment count is fetched.
- * @param props.cliqueId - Clique identifier that enables clique-gated upvoting when present.
- * @param props.initialHasUpvoted - Whether the current user has already upvoted in the active clique context.
- */
 interface ActionsSidebarProps {
   /** Initial recommendation data with counts */
   recommendation: any
@@ -95,58 +87,81 @@ export function ActionsSidebar({
     }
   }, [recommendation.id])
 
+  const actionBtn = "flex flex-col items-center h-auto py-4 px-5 gap-1.5 rounded-xl text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+  const iconCls = "h-7 w-7"
+  const labelCls = "text-[11px] font-semibold tracking-wide"
+
   return (
     <Card>
-      <CardContent className="pt-6 space-y-3">
-        <div className="flex items-center justify-around pt-2">
-          {cliqueId && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "flex flex-col h-auto py-3 px-4 text-amber-500 hover:text-amber-600",
-                hasUpvoted && "text-indigo-500 hover:text-indigo-600"
-              )}
-              onClick={handleUpvoteClick}
-              disabled={isUpvoteLoading}
-              aria-label={hasUpvoted ? "Remove upvote" : "Upvote"}
-            >
-              <ArrowUp className={cn("h-7 w-7", hasUpvoted && "fill-current")} />
-              <span className="text-xs mt-1 font-medium">{upvoteCount}</span>
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="flex flex-col h-auto py-3 px-4 text-amber-500 hover:text-amber-600"
-          >
-            <MessageCircle className="h-7 w-7" />
-            <span className="text-xs mt-1 font-medium">{commentCount}</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="flex flex-col h-auto py-3 px-4 text-amber-500 hover:text-amber-600"
-          >
-            <Share2 className="h-7 w-7" />
-          </Button>
-          {currentUserId && (
-            <AddToCliquesDialog
-              recommendationId={recommendation.id}
-              recommendationName={recommendation.entity?.name ?? "this recommendation"}
-              trigger={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="flex flex-col h-auto py-3 px-4 text-amber-500 hover:text-amber-600"
-                  aria-label="Add to your clique(s)"
-                >
-                  <Plus className="h-7 w-7" />
+      <CardContent className="pt-5 pb-4">
+        <TooltipProvider delayDuration={400}>
+          <div className="flex items-end justify-around">
+
+            {cliqueId && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      actionBtn,
+                      hasUpvoted && "text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                    )}
+                    onClick={handleUpvoteClick}
+                    disabled={isUpvoteLoading}
+                    aria-label={hasUpvoted ? "Remove upvote" : "Upvote"}
+                  >
+                    <ArrowUp className={cn(iconCls, hasUpvoted && "fill-current")} />
+                    <span className={labelCls}>{upvoteCount}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{hasUpvoted ? "Remove upvote" : "Upvote"}</TooltipContent>
+              </Tooltip>
+            )}
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" className={actionBtn}>
+                  <MessageCircle className={iconCls} />
+                  <span className={labelCls}>{commentCount}</span>
                 </Button>
-              }
-            />
-          )}
-        </div>
+              </TooltipTrigger>
+              <TooltipContent>Comments</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" className={actionBtn}>
+                  <Share2 className={iconCls} />
+                  <span className={labelCls}>Share</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Share this recommendation</TooltipContent>
+            </Tooltip>
+
+            {currentUserId && (
+              <Tooltip>
+                <AddToCliquesDialog
+                  recommendationId={recommendation.id}
+                  recommendationName={recommendation.entity?.name ?? "this recommendation"}
+                  trigger={
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className={actionBtn}
+                        aria-label="Add to your clique(s)"
+                      >
+                        <Plus className={iconCls} />
+                        <span className={labelCls}>Save</span>
+                      </Button>
+                    </TooltipTrigger>
+                  }
+                />
+                <TooltipContent>Add to your clique(s)</TooltipContent>
+              </Tooltip>
+            )}
+
+          </div>
+        </TooltipProvider>
       </CardContent>
     </Card>
   )
