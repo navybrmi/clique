@@ -154,4 +154,18 @@ describe("CliqueSidebar", () => {
     expect(screen.queryByText("Quick start")).not.toBeInTheDocument()
     expect(screen.queryByTestId("add-rec-trigger")).not.toBeInTheDocument()
   })
+
+  it("shows the empty state CTA when the user has no cliques", () => {
+    render(<CliqueSidebar cliques={[]} />)
+
+    expect(screen.getByText("No cliques yet")).toBeInTheDocument()
+    expect(screen.getByText(/Cliques are private groups/i)).toBeInTheDocument()
+    expect(screen.getAllByText("Create new Clique").length).toBeGreaterThanOrEqual(1)
+  })
+
+  it("does not show the empty state CTA when the user has cliques", () => {
+    render(<CliqueSidebar cliques={cliques} />)
+
+    expect(screen.queryByText("No cliques yet")).not.toBeInTheDocument()
+  })
 })

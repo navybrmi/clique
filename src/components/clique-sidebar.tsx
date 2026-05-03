@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Sparkles, Users, BookMarked, Globe } from "lucide-react"
+import { Sparkles, Users, BookMarked, Globe, UsersRound } from "lucide-react"
 import { AddRecommendationTrigger } from "@/components/add-recommendation-trigger"
 import { CreateCliqueDialog } from "@/components/create-clique-dialog"
 import { buttonVariants } from "@/components/ui/button"
@@ -141,9 +141,16 @@ export function CliqueSidebar({
       </div>
 
       {cliques.length === 0 && (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Create your first clique to start a private recommendations feed.
-        </p>
+        <div className="rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50/80 p-4 text-center dark:border-zinc-700 dark:bg-zinc-900/50">
+          <UsersRound className="mx-auto mb-2 h-8 w-8 text-zinc-400 dark:text-zinc-500" />
+          <p className="mb-1 text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+            No cliques yet
+          </p>
+          <p className="mb-3 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+            Cliques are private groups where you and friends share recommendations with each other.
+          </p>
+          <CreateCliqueDialog />
+        </div>
       )}
     </div>
   )
