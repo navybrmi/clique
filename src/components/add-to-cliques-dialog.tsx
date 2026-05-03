@@ -276,7 +276,11 @@ export function AddToCliquesDialog({
 
         <div className="space-y-4">
           {successMessage ? (
-            <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex flex-col items-center gap-3 py-4 text-center"
+            >
               <CheckCircle2 className="h-10 w-10 text-green-500" />
               <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{successMessage}</p>
             </div>

@@ -753,6 +753,18 @@ describe("AddRecommendationDialog", () => {
     await waitFor(() => expect(window.alert).toHaveBeenCalledWith(expect.stringContaining("Entity name and category are required")))
   })
 
+  it("renders Movie and Restaurant before other categories in the dropdown", async () => {
+    render(<AddRecommendationDialog onSuccess={jest.fn()} />)
+    fireEvent.click(screen.getByText(/add recommendation/i))
+    await screen.findByLabelText(/category/i)
+
+    fireEvent.click(screen.getByRole("combobox"))
+    const items = screen.getAllByRole("option")
+    const names = items.map((el) => el.textContent?.replace("(coming soon)", "").trim())
+    expect(names[0]).toBe("Movie")
+    expect(names[1]).toBe("Restaurant")
+  })
+
   it("shows Fashion, Household and Other as disabled with '(coming soon)' in the category dropdown", async () => {
     render(<AddRecommendationDialog onSuccess={jest.fn()} />)
     fireEvent.click(screen.getByText(/add recommendation/i))

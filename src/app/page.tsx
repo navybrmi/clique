@@ -498,8 +498,12 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <span className="flex items-center gap-1">
-                                      <MessageCircle className="h-4 w-4" />
+                                    <span
+                                      tabIndex={0}
+                                      aria-label={`${rec._count.comments} comments`}
+                                      className="flex items-center gap-1"
+                                    >
+                                      <MessageCircle className="h-4 w-4" aria-hidden="true" />
                                       {rec._count.comments}
                                     </span>
                                   </TooltipTrigger>

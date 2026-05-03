@@ -24,10 +24,11 @@ import { Badge } from "@/components/ui/badge"
 const COMING_SOON_CATEGORIES = new Set(["FASHION", "HOUSEHOLD", "OTHER"])
 const CATEGORY_ORDER = ["MOVIE", "RESTAURANT", "FASHION", "HOUSEHOLD", "OTHER"]
 const sortCategories = (cats: Category[]) =>
-  [...cats].sort(
-    (a, b) =>
-      (CATEGORY_ORDER.indexOf(a.name) ?? 99) - (CATEGORY_ORDER.indexOf(b.name) ?? 99)
-  )
+  [...cats].sort((a, b) => {
+    const ia = CATEGORY_ORDER.indexOf(a.name)
+    const ib = CATEGORY_ORDER.indexOf(b.name)
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib)
+  })
 
 interface Category {
   id: string
