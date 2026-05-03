@@ -3,6 +3,20 @@
 All notable changes to Clique will be documented in this file.
 Each version links to its GitHub Release.
 
+## [v0.11.0](https://github.com/navybrmi/clique/releases/tag/v0.11.0) — 2026-04-26
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.11.0 -->
+
+## What's Changed
+### Other Changes
+* chore: update CHANGELOG for v0.10.9 by @github-actions[bot] in https://github.com/navybrmi/clique/pull/73
+* feat(cliques): fill three spec gaps — username invite, multi-clique form, feed pagination by @navybrmi in https://github.com/navybrmi/clique/pull/74
+
+
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.10.9...v0.11.0
+
+---
+
 ## [v0.10.9](https://github.com/navybrmi/clique/releases/tag/v0.10.9) — 2026-04-25
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.10.9 -->
