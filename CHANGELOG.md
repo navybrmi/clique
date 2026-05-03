@@ -3,6 +3,19 @@
 All notable changes to Clique will be documented in this file.
 Each version links to its GitHub Release.
 
+## [v0.12.0](https://github.com/navybrmi/clique/releases/tag/v0.12.0) — 2026-05-03
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.12.0 -->
+
+## What's Changed
+### Other Changes
+* feat: Add to Clique on detail page, action bar polish, sidebar alignment by @navybrmi in https://github.com/navybrmi/clique/pull/76
+
+
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.11.0...v0.12.0
+
+---
+
 ## [v0.10.9](https://github.com/navybrmi/clique/releases/tag/v0.10.9) — 2026-04-25
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.10.9 -->
