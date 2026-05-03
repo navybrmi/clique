@@ -38,6 +38,7 @@ export function CliqueManagementDialog({
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null)
   const [revokingInviteId, setRevokingInviteId] = useState<string | null>(null)
   const [isDeletingClique, setIsDeletingClique] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
 
   const isCreator = clique?.creatorId === currentUserId
@@ -88,6 +89,7 @@ export function CliqueManagementDialog({
       setClique(null)
       setInvites([])
       setError(null)
+      setShowDeleteConfirm(false)
     }
   }
 
@@ -148,14 +150,6 @@ export function CliqueManagementDialog({
   }
 
   const handleDeleteClique = async () => {
-    if (
-      !window.confirm(
-        `Delete "${cliqueName}"? This cannot be undone. Members will lose access to the feed.`
-      )
-    ) {
-      return
-    }
-
     setIsDeletingClique(true)
     setError(null)
     try {
@@ -275,31 +269,61 @@ export function CliqueManagementDialog({
                       ))}
                     </div>
 
-                    <div className="flex items-center justify-between border-t pt-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setInviteDialogOpen(true)}
-                      >
-                        Invite someone
-                      </Button>
-                      {isCreator && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950"
-                          disabled={isDeletingClique}
-                          onClick={handleDeleteClique}
-                        >
-                          {isDeletingClique ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
+                    <div className="border-t pt-3">
+                      {showDeleteConfirm ? (
+                        <div className="space-y-3">
+                          <p className="text-sm text-zinc-700 dark:text-zinc-300">
+                            Delete &ldquo;{cliqueName}&rdquo;? This cannot be undone. Members will lose access to the feed.
+                          </p>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={isDeletingClique}
+                              onClick={() => setShowDeleteConfirm(false)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              disabled={isDeletingClique}
+                              onClick={handleDeleteClique}
+                            >
+                              {isDeletingClique ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setInviteDialogOpen(true)}
+                          >
+                            Invite someone
+                          </Button>
+                          {isCreator && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950"
+                              onClick={() => setShowDeleteConfirm(true)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete clique
+                            </Button>
                           )}
-                          Delete clique
-                        </Button>
+                        </div>
                       )}
                     </div>
                   </div>

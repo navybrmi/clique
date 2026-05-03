@@ -63,7 +63,6 @@ const defaultProps = {
 describe("CliqueManagementDialog", () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    window.confirm = jest.fn().mockReturnValue(true)
   })
 
   it("renders the settings trigger button with correct aria-label", () => {
@@ -479,7 +478,27 @@ describe("CliqueManagementDialog", () => {
       expect(screen.queryByRole("button", { name: /delete clique/i })).not.toBeInTheDocument()
     })
 
-    it("deletes the clique after confirmation and refreshes", async () => {
+    it("shows inline confirmation when Delete clique is clicked", async () => {
+      const user = userEvent.setup()
+      global.fetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify(mockClique), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      ) as typeof fetch
+
+      render(<CliqueManagementDialog {...defaultProps} />)
+      await user.click(screen.getByRole("button", { name: /manage weekend crew/i }))
+      await screen.findByText("Alice")
+
+      await user.click(screen.getByRole("button", { name: /delete clique/i }))
+
+      expect(screen.getByText(/this cannot be undone/i)).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /^delete$/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument()
+    })
+
+    it("deletes the clique after inline confirmation and refreshes", async () => {
       const user = userEvent.setup()
       const mockFetch = jest
         .fn()
@@ -502,6 +521,7 @@ describe("CliqueManagementDialog", () => {
       await screen.findByText("Alice")
 
       await user.click(screen.getByRole("button", { name: /delete clique/i }))
+      await user.click(screen.getByRole("button", { name: /^delete$/i }))
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith("/api/cliques/clique-1", {
@@ -511,9 +531,8 @@ describe("CliqueManagementDialog", () => {
       expect(mockRefresh).toHaveBeenCalled()
     })
 
-    it("does not delete when the user cancels the confirmation", async () => {
+    it("cancels deletion and returns to normal view", async () => {
       const user = userEvent.setup()
-      window.confirm = jest.fn().mockReturnValue(false)
       global.fetch = jest.fn().mockResolvedValue(
         new Response(JSON.stringify(mockClique), {
           status: 200,
@@ -526,7 +545,12 @@ describe("CliqueManagementDialog", () => {
       await screen.findByText("Alice")
 
       await user.click(screen.getByRole("button", { name: /delete clique/i }))
+      expect(screen.getByText(/this cannot be undone/i)).toBeInTheDocument()
 
+      await user.click(screen.getByRole("button", { name: /cancel/i }))
+
+      expect(screen.queryByText(/this cannot be undone/i)).not.toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /delete clique/i })).toBeInTheDocument()
       expect(global.fetch).toHaveBeenCalledTimes(1) // only the initial load
       expect(mockRefresh).not.toHaveBeenCalled()
     })
@@ -554,6 +578,7 @@ describe("CliqueManagementDialog", () => {
       await screen.findByText("Alice")
 
       await user.click(screen.getByRole("button", { name: /delete clique/i }))
+      await user.click(screen.getByRole("button", { name: /^delete$/i }))
 
       expect(await screen.findByText("Forbidden")).toBeInTheDocument()
     })
