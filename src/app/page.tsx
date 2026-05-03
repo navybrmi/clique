@@ -427,7 +427,7 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
                           <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium dark:bg-zinc-800">
                             {rec.entity.category.displayName}
                           </span>
-                          <div className="flex min-w-fit items-center gap-1">
+                          <div className="flex items-center gap-1">
                             <div className="flex items-center gap-0.5">
                               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
                                 <Star
