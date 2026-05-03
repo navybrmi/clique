@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { Menu } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { CliqueSidebar } from "@/components/clique-sidebar"
@@ -27,6 +28,8 @@ export function MobileSidebarSheet({
   userId,
   currentCliqueId,
 }: MobileSidebarSheetProps) {
+  const [open, setOpen] = useState(false)
+
   const activeFeedName = activeCliqueId
     ? (cliques.find((c) => c.id === activeCliqueId)?.name ?? "Feeds")
     : activeMine
@@ -34,7 +37,7 @@ export function MobileSidebarSheet({
       : "Public"
 
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <button
           aria-label={`Open navigation menu — current feed: ${activeFeedName}`}
@@ -52,6 +55,7 @@ export function MobileSidebarSheet({
             activeMine={activeMine}
             userId={userId}
             currentCliqueId={currentCliqueId}
+            onNavigate={() => setOpen(false)}
           />
         </div>
       </SheetContent>

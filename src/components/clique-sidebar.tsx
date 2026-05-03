@@ -19,6 +19,8 @@ interface CliqueSidebarProps {
   userId?: string | null
   /** Current clique context forwarded into the Add Recommendation dialog. */
   currentCliqueId?: string
+  /** Called when a feed nav link is clicked — used to close the mobile sheet. */
+  onNavigate?: () => void
 }
 
 /**
@@ -33,6 +35,7 @@ export function CliqueSidebar({
   activeMine,
   userId,
   currentCliqueId,
+  onNavigate,
 }: CliqueSidebarProps) {
   const getNavItemClassName = (isActive: boolean) =>
     cn(
@@ -101,6 +104,7 @@ export function CliqueSidebar({
               aria-label="Public"
               aria-current={!activeCliqueId && !activeMine ? "page" : undefined}
               className={getNavItemClassName(!activeCliqueId && !activeMine)}
+              onClick={onNavigate}
             >
               <Globe className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
               {renderFeedLabel("Public", !activeCliqueId && !activeMine)}
@@ -112,6 +116,7 @@ export function CliqueSidebar({
                 aria-label="My Recommendations"
                 aria-current={activeMine ? "page" : undefined}
                 className={getNavItemClassName(!!activeMine)}
+                onClick={onNavigate}
               >
                 <BookMarked className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
                 {renderFeedLabel("My Recommendations", !!activeMine)}
@@ -125,6 +130,7 @@ export function CliqueSidebar({
                 aria-label={clique.name}
                 aria-current={activeCliqueId === clique.id ? "page" : undefined}
                 className={getNavItemClassName(activeCliqueId === clique.id)}
+                onClick={onNavigate}
               >
                 <div className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 {renderFeedLabel(clique.name, activeCliqueId === clique.id)}
