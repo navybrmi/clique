@@ -1,5 +1,6 @@
 import { getPrismaClient } from "@/lib/prisma"
 import { CliqueSidebar } from "@/components/clique-sidebar"
+import { MobileSidebarSheet } from "@/components/mobile-sidebar-sheet"
 
 interface CliqueSidebarWrapperProps {
   /** Authenticated user ID. If absent, the sidebar is not rendered. */
@@ -64,14 +65,25 @@ export async function CliqueSidebarWrapper({
         `
 
   return (
-    <aside>
-      <CliqueSidebar
-        cliques={cliques}
-        activeCliqueId={activeCliqueId}
-        activeMine={activeMine}
-        userId={userId}
-        currentCliqueId={currentCliqueId}
-      />
-    </aside>
+    <div>
+      <aside className="hidden lg:block">
+        <CliqueSidebar
+          cliques={cliques}
+          activeCliqueId={activeCliqueId}
+          activeMine={activeMine}
+          userId={userId}
+          currentCliqueId={currentCliqueId}
+        />
+      </aside>
+      <div className="lg:hidden py-2">
+        <MobileSidebarSheet
+          cliques={cliques}
+          activeCliqueId={activeCliqueId}
+          activeMine={activeMine}
+          userId={userId}
+          currentCliqueId={currentCliqueId}
+        />
+      </div>
+    </div>
   )
 }
