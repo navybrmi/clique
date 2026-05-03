@@ -3,6 +3,19 @@
 All notable changes to Clique will be documented in this file.
 Each version links to its GitHub Release.
 
+## [v0.13.3](https://github.com/navybrmi/clique/releases/tag/v0.13.3) — 2026-05-03
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.13.3 -->
+
+## What's Changed
+### Other Changes
+* fix(ui): mobile header layout, restaurant card fix, and clique prompts by @navybrmi in https://github.com/navybrmi/clique/pull/84
+
+
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.13.2...v0.13.3
+
+---
+
 ## [v0.13.0](https://github.com/navybrmi/clique/releases/tag/v0.13.0) — 2026-05-03
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.13.0 -->
