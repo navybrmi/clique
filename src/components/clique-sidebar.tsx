@@ -126,6 +126,7 @@ export function CliqueSidebar({
                 aria-current={activeCliqueId === clique.id ? "page" : undefined}
                 className={getNavItemClassName(activeCliqueId === clique.id)}
               >
+                <div className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 {renderFeedLabel(clique.name, activeCliqueId === clique.id)}
               </Link>
             ))}
