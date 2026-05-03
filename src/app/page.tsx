@@ -284,7 +284,20 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black">
-      <Header session={session} showCliqueHint pageTitle="Share Your Favorite Things" />
+      <Header
+        session={session}
+        showCliqueHint
+        pageTitle="Share Your Favorite Things"
+        mobileMenuSlot={session?.user?.id ? (
+          <CliqueSidebarWrapper
+            userId={session.user.id}
+            activeCliqueId={activeCliqueId}
+            activeMine={activeMine}
+            currentCliqueId={activeCliqueId}
+            mobileOnly
+          />
+        ) : undefined}
+      />
 
       <main className="container mx-auto px-4 py-6">
         <div className="space-y-6">

@@ -11,6 +11,8 @@ interface CliqueSidebarWrapperProps {
   activeMine?: boolean
   /** Current clique context forwarded into the Add Recommendation dialog. */
   currentCliqueId?: string
+  /** When true, renders only the mobile sheet (for use inside the header). */
+  mobileOnly?: boolean
 }
 
 /**
@@ -24,6 +26,7 @@ export async function CliqueSidebarWrapper({
   activeCliqueId,
   activeMine,
   currentCliqueId,
+  mobileOnly = false,
 }: CliqueSidebarWrapperProps) {
   if (!userId) {
     return null
@@ -64,26 +67,27 @@ export async function CliqueSidebarWrapper({
           ORDER BY c."createdAt" DESC
         `
 
+  if (mobileOnly) {
+    return (
+      <MobileSidebarSheet
+        cliques={cliques}
+        activeCliqueId={activeCliqueId}
+        activeMine={activeMine}
+        userId={userId}
+        currentCliqueId={currentCliqueId}
+      />
+    )
+  }
+
   return (
-    <div>
-      <aside className="hidden lg:block">
-        <CliqueSidebar
-          cliques={cliques}
-          activeCliqueId={activeCliqueId}
-          activeMine={activeMine}
-          userId={userId}
-          currentCliqueId={currentCliqueId}
-        />
-      </aside>
-      <div className="lg:hidden py-2">
-        <MobileSidebarSheet
-          cliques={cliques}
-          activeCliqueId={activeCliqueId}
-          activeMine={activeMine}
-          userId={userId}
-          currentCliqueId={currentCliqueId}
-        />
-      </div>
-    </div>
+    <aside className="hidden lg:block">
+      <CliqueSidebar
+        cliques={cliques}
+        activeCliqueId={activeCliqueId}
+        activeMine={activeMine}
+        userId={userId}
+        currentCliqueId={currentCliqueId}
+      />
+    </aside>
   )
 }
