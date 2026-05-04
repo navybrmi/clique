@@ -3,6 +3,19 @@
 All notable changes to Clique will be documented in this file.
 Each version links to its GitHub Release.
 
+## [v0.13.4](https://github.com/navybrmi/clique/releases/tag/v0.13.4) — 2026-05-04
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.13.4 -->
+
+## What's Changed
+### Other Changes
+* fix(ci): fix inverted ignoreCommand logic in vercel.json by @navybrmi in https://github.com/navybrmi/clique/pull/86
+
+
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.13.3...v0.13.4
+
+---
+
 ## [v0.13.0](https://github.com/navybrmi/clique/releases/tag/v0.13.0) — 2026-05-03
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.13.0 -->
