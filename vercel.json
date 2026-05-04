@@ -1,3 +1,3 @@
 {
-  "ignoreCommand": "[ -z \"$VERCEL_GIT_PREVIOUS_SHA\" ] && exit 1; CHANGED=$(git diff --name-only \"$VERCEL_GIT_PREVIOUS_SHA\" \"$VERCEL_GIT_COMMIT_SHA\" 2>/dev/null); [ -z \"$CHANGED\" ] && exit 0; ! echo \"$CHANGED\" | grep -qv '\\.md$'"
+  "ignoreCommand": "[ -z \"$VERCEL_GIT_PREVIOUS_SHA\" ] && exit 1; CHANGED=$(git diff --name-only \"$VERCEL_GIT_PREVIOUS_SHA\" \"$VERCEL_GIT_COMMIT_SHA\" 2>/dev/null) || exit 1; [ -z \"$CHANGED\" ] && exit 0; ! printf '%s\\n' \"$CHANGED\" | grep -qv '\\.md$'"
 }
