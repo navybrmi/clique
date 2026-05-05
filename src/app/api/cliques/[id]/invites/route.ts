@@ -213,9 +213,9 @@ export async function POST(
       return NextResponse.json(invite, { status: 201 })
     }
 
-    // Default: link invite
+    // Default: link invite — expires after 1 week
     const token = generateInviteToken()
-    const expiresAt = getInviteExpiry()
+    const expiresAt = getInviteExpiry(1)
 
     const invite = await prisma.cliqueInvite.create({
       data: {

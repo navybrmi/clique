@@ -24,15 +24,24 @@ describe("generateInviteToken", () => {
 // getInviteExpiry
 // ──────────────────────────────────────────────────────────────────────────────
 describe("getInviteExpiry", () => {
-  it("returns a date approximately 1 year from now", () => {
+  const weekMs = 7 * 24 * 60 * 60 * 1000
+
+  it("returns a date approximately 52 weeks from now with no argument", () => {
     const before = Date.now()
     const expiry = getInviteExpiry()
     const after = Date.now()
 
-    const oneYearMs = 365 * 24 * 60 * 60 * 1000
-    // Allow ±1 second of clock drift
-    expect(expiry.getTime()).toBeGreaterThanOrEqual(before + oneYearMs - 1000)
-    expect(expiry.getTime()).toBeLessThanOrEqual(after + oneYearMs + 1000)
+    expect(expiry.getTime()).toBeGreaterThanOrEqual(before + 52 * weekMs - 1000)
+    expect(expiry.getTime()).toBeLessThanOrEqual(after + 52 * weekMs + 1000)
+  })
+
+  it("returns a date approximately 1 week from now when weeks=1", () => {
+    const before = Date.now()
+    const expiry = getInviteExpiry(1)
+    const after = Date.now()
+
+    expect(expiry.getTime()).toBeGreaterThanOrEqual(before + weekMs - 1000)
+    expect(expiry.getTime()).toBeLessThanOrEqual(after + weekMs + 1000)
   })
 
   it("returns a Date instance", () => {

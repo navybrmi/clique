@@ -21,11 +21,12 @@ export function generateInviteToken(): string {
 }
 
 /**
- * Returns the invite expiry date: 1 year from now.
+ * Returns the invite expiry date.
+ * @param weeks - Number of weeks until expiry (default: 52 = ~1 year)
  */
-export function getInviteExpiry(): Date {
+export function getInviteExpiry(weeks = 52): Date {
   const expiry = new Date()
-  expiry.setFullYear(expiry.getFullYear() + 1)
+  expiry.setDate(expiry.getDate() + weeks * 7)
   return expiry
 }
 
