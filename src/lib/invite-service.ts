@@ -25,9 +25,7 @@ export function generateInviteToken(): string {
  * @param weeks - Number of weeks until expiry (default: 52 = ~1 year)
  */
 export function getInviteExpiry(weeks = 52): Date {
-  const expiry = new Date()
-  expiry.setDate(expiry.getDate() + weeks * 7)
-  return expiry
+  return new Date(Date.now() + weeks * 7 * 24 * 60 * 60 * 1000)
 }
 
 /**
