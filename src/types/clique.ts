@@ -5,9 +5,10 @@ import type {
   Notification as PrismaNotification,
   CliqueInviteStatus,
   NotificationType,
+  CliqueMembershipRequestStatus,
 } from "@/lib/generated/prisma/client"
 
-export type { CliqueInviteStatus, NotificationType }
+export type { CliqueInviteStatus, NotificationType, CliqueMembershipRequestStatus }
 
 /** Clique with member count */
 export interface CliqueWithMemberCount extends PrismaClique {
@@ -97,8 +98,28 @@ export interface CliqueFeedItem {
   }
 }
 
+/** Pending join request returned by GET /api/cliques/[id]/membership-requests */
+export interface CliqueMembershipRequest {
+  id: string
+  cliqueId: string
+  userId: string
+  inviteToken: string
+  status: CliqueMembershipRequestStatus
+  createdAt: Date
+  resolvedAt: Date | null
+  user: {
+    id: string
+    name: string | null
+    image: string | null
+  }
+}
+
 /** Discriminated union for notification payloads */
-export type NotificationPayload = CliqueInvitePayload
+export type NotificationPayload =
+  | CliqueInvitePayload
+  | CliqueJoinRequestPayload
+  | CliqueJoinApprovedPayload
+  | CliqueJoinRejectedPayload
 
 export interface CliqueInvitePayload {
   type: "CLIQUE_INVITE"
@@ -107,6 +128,28 @@ export interface CliqueInvitePayload {
   invitedById: string
   invitedByName: string | null
   inviteToken: string
+}
+
+export interface CliqueJoinRequestPayload {
+  type: "CLIQUE_JOIN_REQUEST"
+  cliqueId: string
+  cliqueName: string
+  requestId: string
+  requesterId: string
+  requesterName: string | null
+  requesterImage: string | null
+}
+
+export interface CliqueJoinApprovedPayload {
+  type: "CLIQUE_JOIN_APPROVED"
+  cliqueId: string
+  cliqueName: string
+}
+
+export interface CliqueJoinRejectedPayload {
+  type: "CLIQUE_JOIN_REJECTED"
+  cliqueId: string
+  cliqueName: string
 }
 
 /** Notification with typed payload */

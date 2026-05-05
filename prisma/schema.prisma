@@ -28,11 +28,12 @@ model User {
   recommendations Recommendation[]
   comments      Comment[]
   upvotes       UpVote[]
-  cliquesCreated       Clique[]              @relation("CliquesCreated")
-  cliqueMembers        CliqueMember[]
-  invitesCreated       CliqueInvite[]        @relation("InvitesCreated")
-  cliqueRecommendations CliqueRecommendation[]
-  notifications        Notification[]
+  cliquesCreated         Clique[]                   @relation("CliquesCreated")
+  cliqueMembers          CliqueMember[]
+  invitesCreated         CliqueInvite[]             @relation("InvitesCreated")
+  cliqueRecommendations  CliqueRecommendation[]
+  notifications          Notification[]
+  membershipRequests     CliqueMembershipRequest[]
 }
 
 // NextAuth.js models
@@ -263,6 +264,15 @@ enum CliqueInviteStatus {
 
 enum NotificationType {
   CLIQUE_INVITE
+  CLIQUE_JOIN_REQUEST
+  CLIQUE_JOIN_APPROVED
+  CLIQUE_JOIN_REJECTED
+}
+
+enum CliqueMembershipRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 // Clique model - a named friend group
@@ -273,10 +283,11 @@ model Clique {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  creator         User                   @relation("CliquesCreated", fields: [creatorId], references: [id])
-  members         CliqueMember[]
-  invites         CliqueInvite[]
-  recommendations CliqueRecommendation[]
+  creator            User                     @relation("CliquesCreated", fields: [creatorId], references: [id])
+  members            CliqueMember[]
+  invites            CliqueInvite[]
+  recommendations    CliqueRecommendation[]
+  membershipRequests CliqueMembershipRequest[]
 
   @@index([creatorId])
 }
@@ -325,6 +336,23 @@ model CliqueRecommendation {
   @@id([cliqueId, recommendationId])
   @@index([recommendationId])
   @@index([addedById])
+}
+
+// CliqueMembershipRequest model - tracks pending/approved/rejected join requests via link invites
+model CliqueMembershipRequest {
+  id          String                        @id @default(cuid())
+  cliqueId    String
+  userId      String
+  inviteToken String
+  status      CliqueMembershipRequestStatus @default(PENDING)
+  createdAt   DateTime                      @default(now())
+  resolvedAt  DateTime?
+
+  clique Clique @relation(fields: [cliqueId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([cliqueId, userId])
+  @@index([cliqueId, status])
 }
 
 // Notification model - in-app notifications for users
