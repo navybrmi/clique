@@ -3,6 +3,19 @@
 All notable changes to Clique will be documented in this file.
 Each version links to its GitHub Release.
 
+## [v0.14.0](https://github.com/navybrmi/clique/releases/tag/v0.14.0) — 2026-05-05
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.14.0 -->
+
+## What's Changed
+### Other Changes
+* feat(clique-invite-links): PR 1 — schema, types, and service layer by @navybrmi in https://github.com/navybrmi/clique/pull/88
+
+
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.13.4...v0.14.0
+
+---
+
 ## [v0.13.0](https://github.com/navybrmi/clique/releases/tag/v0.13.0) — 2026-05-03
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.13.0 -->
