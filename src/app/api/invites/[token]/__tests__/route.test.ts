@@ -400,6 +400,22 @@ describe("POST /api/invites/[token] — link-type invite", () => {
     expect(data.error).toContain("expired")
   })
 
+  it("should return 404 when the clique no longer exists", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.cliqueInvite.findUnique as jest.Mock).mockResolvedValue(linkInvite)
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue(null)
+    ;(prisma.cliqueMembershipRequest.findUnique as jest.Mock).mockResolvedValue(null)
+    ;(prisma.clique.findUnique as jest.Mock).mockResolvedValue(null)
+    ;(prisma.user.findUnique as jest.Mock).mockResolvedValue({ name: "Alice", image: null })
+
+    const req = new NextRequest("http://localhost/api/invites/linktoken", { method: "POST" })
+    const res = await POST(req, { params: Promise.resolve({ token: "linktoken" }) })
+    const data = await res.json()
+
+    expect(res.status).toBe(404)
+    expect(data.error).toContain("Clique not found")
+  })
+
   it("should return 409 when user is already a member via link invite", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
     ;(prisma.cliqueInvite.findUnique as jest.Mock).mockResolvedValue(linkInvite)

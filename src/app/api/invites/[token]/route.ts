@@ -126,6 +126,10 @@ export async function POST(
         }),
       ])
 
+      if (!clique) {
+        return NextResponse.json({ error: "Clique not found" }, { status: 404 })
+      }
+
       if (alreadyMember) {
         return NextResponse.json({ error: "You are already a member of this clique" }, { status: 409 })
       }
@@ -144,7 +148,7 @@ export async function POST(
         const payload: CliqueJoinRequestPayload = {
           type: "CLIQUE_JOIN_REQUEST",
           cliqueId,
-          cliqueName: clique?.name ?? "",
+          cliqueName: clique.name,
           requestId: request.id,
           requesterId: userId,
           requesterName: requester?.name ?? null,
@@ -153,7 +157,7 @@ export async function POST(
 
         await tx.notification.create({
           data: {
-            userId: clique!.creatorId,
+            userId: clique.creatorId,
             type: "CLIQUE_JOIN_REQUEST",
             payload: payload as object,
           },
