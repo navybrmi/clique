@@ -20,7 +20,19 @@ export type CliqueInviteStatus = (typeof CliqueInviteStatus)[keyof typeof Clique
 
 
 export const NotificationType = {
-  CLIQUE_INVITE: 'CLIQUE_INVITE'
+  CLIQUE_INVITE: 'CLIQUE_INVITE',
+  CLIQUE_JOIN_REQUEST: 'CLIQUE_JOIN_REQUEST',
+  CLIQUE_JOIN_APPROVED: 'CLIQUE_JOIN_APPROVED',
+  CLIQUE_JOIN_REJECTED: 'CLIQUE_JOIN_REJECTED'
 } as const
 
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType]
+
+
+export const CliqueMembershipRequestStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED'
+} as const
+
+export type CliqueMembershipRequestStatus = (typeof CliqueMembershipRequestStatus)[keyof typeof CliqueMembershipRequestStatus]

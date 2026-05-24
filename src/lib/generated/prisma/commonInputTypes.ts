@@ -270,6 +270,23 @@ export type EnumCliqueInviteStatusWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumCliqueInviteStatusFilter<$PrismaModel>
 }
 
+export type EnumCliqueMembershipRequestStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.CliqueMembershipRequestStatus | Prisma.EnumCliqueMembershipRequestStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.CliqueMembershipRequestStatus[] | Prisma.ListEnumCliqueMembershipRequestStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.CliqueMembershipRequestStatus[] | Prisma.ListEnumCliqueMembershipRequestStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumCliqueMembershipRequestStatusFilter<$PrismaModel> | $Enums.CliqueMembershipRequestStatus
+}
+
+export type EnumCliqueMembershipRequestStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CliqueMembershipRequestStatus | Prisma.EnumCliqueMembershipRequestStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.CliqueMembershipRequestStatus[] | Prisma.ListEnumCliqueMembershipRequestStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.CliqueMembershipRequestStatus[] | Prisma.ListEnumCliqueMembershipRequestStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumCliqueMembershipRequestStatusWithAggregatesFilter<$PrismaModel> | $Enums.CliqueMembershipRequestStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCliqueMembershipRequestStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCliqueMembershipRequestStatusFilter<$PrismaModel>
+}
+
 export type EnumNotificationTypeFilter<$PrismaModel = never> = {
   equals?: $Enums.NotificationType | Prisma.EnumNotificationTypeFieldRefInput<$PrismaModel>
   in?: $Enums.NotificationType[] | Prisma.ListEnumNotificationTypeFieldRefInput<$PrismaModel>
@@ -578,6 +595,23 @@ export type NestedEnumCliqueInviteStatusWithAggregatesFilter<$PrismaModel = neve
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumCliqueInviteStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumCliqueInviteStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumCliqueMembershipRequestStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.CliqueMembershipRequestStatus | Prisma.EnumCliqueMembershipRequestStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.CliqueMembershipRequestStatus[] | Prisma.ListEnumCliqueMembershipRequestStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.CliqueMembershipRequestStatus[] | Prisma.ListEnumCliqueMembershipRequestStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumCliqueMembershipRequestStatusFilter<$PrismaModel> | $Enums.CliqueMembershipRequestStatus
+}
+
+export type NestedEnumCliqueMembershipRequestStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CliqueMembershipRequestStatus | Prisma.EnumCliqueMembershipRequestStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.CliqueMembershipRequestStatus[] | Prisma.ListEnumCliqueMembershipRequestStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.CliqueMembershipRequestStatus[] | Prisma.ListEnumCliqueMembershipRequestStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumCliqueMembershipRequestStatusWithAggregatesFilter<$PrismaModel> | $Enums.CliqueMembershipRequestStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCliqueMembershipRequestStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCliqueMembershipRequestStatusFilter<$PrismaModel>
 }
 
 export type NestedEnumNotificationTypeFilter<$PrismaModel = never> = {
