@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import { LimitExceededError, hashStringToInt } from "@/lib/clique-utils"
 import type { CliqueInviteLookup } from "@/types/clique"
+import type { CliqueJoinRequestPayload } from "@/types/clique"
 
 /**
  * GET /api/invites/[token]
@@ -83,13 +84,86 @@ export async function POST(
 
     const invite = await prisma.cliqueInvite.findUnique({
       where: { token },
-      select: { id: true, cliqueId: true, status: true, expiresAt: true },
+      select: { id: true, cliqueId: true, status: true, expiresAt: true, email: true },
     })
 
     if (!invite) {
       return NextResponse.json({ error: "Invite not found" }, { status: 404 })
     }
 
+    const cliqueId = invite.cliqueId
+    const isLinkInvite = invite.email === null
+
+    // ── Link-type invite: create a membership request, require creator approval ──
+    if (isLinkInvite) {
+      if (invite.status !== "PENDING") {
+        return NextResponse.json(
+          { error: `Invite is ${invite.status.toLowerCase()} and can no longer be used` },
+          { status: 409 }
+        )
+      }
+
+      if (invite.expiresAt < new Date()) {
+        return NextResponse.json({ error: "This invite link has expired" }, { status: 410 })
+      }
+
+      const [alreadyMember, existingRequest, clique, requester] = await Promise.all([
+        prisma.cliqueMember.findUnique({
+          where: { cliqueId_userId: { cliqueId, userId } },
+          select: { cliqueId: true },
+        }),
+        prisma.cliqueMembershipRequest.findUnique({
+          where: { cliqueId_userId: { cliqueId, userId } },
+          select: { id: true, status: true },
+        }),
+        prisma.clique.findUnique({
+          where: { id: cliqueId },
+          select: { name: true, creatorId: true },
+        }),
+        prisma.user.findUnique({
+          where: { id: userId },
+          select: { name: true, image: true },
+        }),
+      ])
+
+      if (alreadyMember) {
+        return NextResponse.json({ error: "You are already a member of this clique" }, { status: 409 })
+      }
+
+      if (existingRequest?.status === "PENDING") {
+        return NextResponse.json({ status: "already_pending" })
+      }
+
+      await prisma.$transaction(async (tx) => {
+        const request = await tx.cliqueMembershipRequest.upsert({
+          where: { cliqueId_userId: { cliqueId, userId } },
+          create: { cliqueId, userId, inviteToken: token, status: "PENDING" },
+          update: { status: "PENDING", inviteToken: token, resolvedAt: null },
+        })
+
+        const payload: CliqueJoinRequestPayload = {
+          type: "CLIQUE_JOIN_REQUEST",
+          cliqueId,
+          cliqueName: clique?.name ?? "",
+          requestId: request.id,
+          requesterId: userId,
+          requesterName: requester?.name ?? null,
+          requesterImage: requester?.image ?? null,
+        }
+
+        await tx.notification.create({
+          data: {
+            userId: clique!.creatorId,
+            type: "CLIQUE_JOIN_REQUEST",
+            payload,
+          },
+        })
+      })
+
+      return NextResponse.json({ status: "pending" })
+    }
+
+    // ── User-type invite: existing single-use direct-add behaviour ──
     if (invite.status !== "PENDING") {
       return NextResponse.json(
         { error: `Invite is ${invite.status.toLowerCase()} and can no longer be accepted` },
@@ -103,8 +177,6 @@ export async function POST(
         { status: 409 }
       )
     }
-
-    const cliqueId = invite.cliqueId
 
     await prisma.$transaction(async (tx) => {
       // Acquire advisory locks for both the user and the clique.

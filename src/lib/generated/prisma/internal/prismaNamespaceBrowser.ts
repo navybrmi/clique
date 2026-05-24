@@ -70,6 +70,7 @@ export const ModelName = {
   CliqueMember: 'CliqueMember',
   CliqueInvite: 'CliqueInvite',
   CliqueRecommendation: 'CliqueRecommendation',
+  CliqueMembershipRequest: 'CliqueMembershipRequest',
   Notification: 'Notification'
 } as const
 
@@ -326,6 +327,19 @@ export const CliqueRecommendationScalarFieldEnum = {
 } as const
 
 export type CliqueRecommendationScalarFieldEnum = (typeof CliqueRecommendationScalarFieldEnum)[keyof typeof CliqueRecommendationScalarFieldEnum]
+
+
+export const CliqueMembershipRequestScalarFieldEnum = {
+  id: 'id',
+  cliqueId: 'cliqueId',
+  userId: 'userId',
+  inviteToken: 'inviteToken',
+  status: 'status',
+  createdAt: 'createdAt',
+  resolvedAt: 'resolvedAt'
+} as const
+
+export type CliqueMembershipRequestScalarFieldEnum = (typeof CliqueMembershipRequestScalarFieldEnum)[keyof typeof CliqueMembershipRequestScalarFieldEnum]
 
 
 export const NotificationScalarFieldEnum = {

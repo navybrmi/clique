@@ -113,6 +113,11 @@ export type CliqueInvite = Prisma.CliqueInviteModel
  */
 export type CliqueRecommendation = Prisma.CliqueRecommendationModel
 /**
+ * Model CliqueMembershipRequest
+ * 
+ */
+export type CliqueMembershipRequest = Prisma.CliqueMembershipRequestModel
+/**
  * Model Notification
  * 
  */

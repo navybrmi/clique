@@ -403,6 +403,7 @@ export const ModelName = {
   CliqueMember: 'CliqueMember',
   CliqueInvite: 'CliqueInvite',
   CliqueRecommendation: 'CliqueRecommendation',
+  CliqueMembershipRequest: 'CliqueMembershipRequest',
   Notification: 'Notification'
 } as const
 
@@ -419,7 +420,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "account" | "session" | "verificationToken" | "category" | "entity" | "recommendation" | "restaurant" | "movie" | "fashion" | "household" | "other" | "communityTag" | "comment" | "upVote" | "clique" | "cliqueMember" | "cliqueInvite" | "cliqueRecommendation" | "notification"
+    modelProps: "user" | "account" | "session" | "verificationToken" | "category" | "entity" | "recommendation" | "restaurant" | "movie" | "fashion" | "household" | "other" | "communityTag" | "comment" | "upVote" | "clique" | "cliqueMember" | "cliqueInvite" | "cliqueRecommendation" | "cliqueMembershipRequest" | "notification"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1829,6 +1830,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    CliqueMembershipRequest: {
+      payload: Prisma.$CliqueMembershipRequestPayload<ExtArgs>
+      fields: Prisma.CliqueMembershipRequestFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CliqueMembershipRequestFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CliqueMembershipRequestPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CliqueMembershipRequestFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CliqueMembershipRequestPayload>
+        }
+        findFirst: {
+          args: Prisma.CliqueMembershipRequestFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CliqueMembershipRequestPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CliqueMembershipRequestFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CliqueMembershipRequestPayload>
+        }
+        findMany: {
+          args: Prisma.CliqueMembershipRequestFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CliqueMembershipRequestPayload>[]
+        }
+        create: {
+          args: Prisma.CliqueMembershipRequestCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CliqueMembershipRequestPayload>
+        }
+        createMany: {
+          args: Prisma.CliqueMembershipRequestCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CliqueMembershipRequestCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CliqueMembershipRequestPayload>[]
+        }
+        delete: {
+          args: Prisma.CliqueMembershipRequestDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CliqueMembershipRequestPayload>
+        }
+        update: {
+          args: Prisma.CliqueMembershipRequestUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CliqueMembershipRequestPayload>
+        }
+        deleteMany: {
+          args: Prisma.CliqueMembershipRequestDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CliqueMembershipRequestUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CliqueMembershipRequestUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CliqueMembershipRequestPayload>[]
+        }
+        upsert: {
+          args: Prisma.CliqueMembershipRequestUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CliqueMembershipRequestPayload>
+        }
+        aggregate: {
+          args: Prisma.CliqueMembershipRequestAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCliqueMembershipRequest>
+        }
+        groupBy: {
+          args: Prisma.CliqueMembershipRequestGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CliqueMembershipRequestGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CliqueMembershipRequestCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CliqueMembershipRequestCountAggregateOutputType> | number
+        }
+      }
+    }
     Notification: {
       payload: Prisma.$NotificationPayload<ExtArgs>
       fields: Prisma.NotificationFieldRefs
@@ -2181,6 +2256,19 @@ export const CliqueRecommendationScalarFieldEnum = {
 export type CliqueRecommendationScalarFieldEnum = (typeof CliqueRecommendationScalarFieldEnum)[keyof typeof CliqueRecommendationScalarFieldEnum]
 
 
+export const CliqueMembershipRequestScalarFieldEnum = {
+  id: 'id',
+  cliqueId: 'cliqueId',
+  userId: 'userId',
+  inviteToken: 'inviteToken',
+  status: 'status',
+  createdAt: 'createdAt',
+  resolvedAt: 'resolvedAt'
+} as const
+
+export type CliqueMembershipRequestScalarFieldEnum = (typeof CliqueMembershipRequestScalarFieldEnum)[keyof typeof CliqueMembershipRequestScalarFieldEnum]
+
+
 export const NotificationScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2325,6 +2413,20 @@ export type ListEnumCliqueInviteStatusFieldRefInput<$PrismaModel> = FieldRefInpu
 
 
 /**
+ * Reference to a field of type 'CliqueMembershipRequestStatus'
+ */
+export type EnumCliqueMembershipRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CliqueMembershipRequestStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'CliqueMembershipRequestStatus[]'
+ */
+export type ListEnumCliqueMembershipRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CliqueMembershipRequestStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'NotificationType'
  */
 export type EnumNotificationTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'NotificationType'>
@@ -2465,6 +2567,7 @@ export type GlobalOmitConfig = {
   cliqueMember?: Prisma.CliqueMemberOmit
   cliqueInvite?: Prisma.CliqueInviteOmit
   cliqueRecommendation?: Prisma.CliqueRecommendationOmit
+  cliqueMembershipRequest?: Prisma.CliqueMembershipRequestOmit
   notification?: Prisma.NotificationOmit
 }
 
