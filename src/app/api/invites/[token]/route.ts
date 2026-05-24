@@ -155,7 +155,7 @@ export async function POST(
           data: {
             userId: clique!.creatorId,
             type: "CLIQUE_JOIN_REQUEST",
-            payload,
+            payload: payload as object,
           },
         })
       })
