@@ -144,19 +144,44 @@ describe("POST /api/cliques/[id]/membership-requests/[requestId]/reject", () => 
     )
   })
 
-  it("succeeds silently when concurrent rejection wins the race", async () => {
+  it("returns 409 with accurate status when concurrent rejection wins the race", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "creator1" } })
     ;(prisma.clique.findUnique as jest.Mock).mockResolvedValue(clique)
     ;(prisma.cliqueMembershipRequest.findUnique as jest.Mock).mockResolvedValue(pendingRequest)
     ;(prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
       return cb({
-        cliqueMembershipRequest: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+        cliqueMembershipRequest: {
+          updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+          findUnique: jest.fn().mockResolvedValue({ status: "REJECTED" }),
+        },
         notification: { create: jest.fn() },
       })
     })
 
     const res = await POST(makeReq(), makeParams())
-    expect(res.status).toBe(200)
+    const data = await res.json()
+    expect(res.status).toBe(409)
+    expect(data.error).toContain("rejected")
+  })
+
+  it("returns 409 with approved status when concurrent approval wins the race", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "creator1" } })
+    ;(prisma.clique.findUnique as jest.Mock).mockResolvedValue(clique)
+    ;(prisma.cliqueMembershipRequest.findUnique as jest.Mock).mockResolvedValue(pendingRequest)
+    ;(prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
+      return cb({
+        cliqueMembershipRequest: {
+          updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+          findUnique: jest.fn().mockResolvedValue({ status: "APPROVED" }),
+        },
+        notification: { create: jest.fn() },
+      })
+    })
+
+    const res = await POST(makeReq(), makeParams())
+    const data = await res.json()
+    expect(res.status).toBe(409)
+    expect(data.error).toContain("approved")
   })
 
   it("returns 500 on unexpected database error", async () => {

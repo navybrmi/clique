@@ -70,10 +70,10 @@ export async function POST(
       // Acquire advisory locks — user first (consistent ordering with invite-accept
       // route) to prevent deadlocks under concurrent approvals.
       const userLockKey = hashStringToInt(requesterId)
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${userLockKey})`
+      await tx.$queryRaw`SELECT 1 FROM (SELECT pg_advisory_xact_lock(${userLockKey})) AS _user_lock`
 
       const cliqueLockKey = hashStringToInt(cliqueId)
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${cliqueLockKey})`
+      await tx.$queryRaw`SELECT 1 FROM (SELECT pg_advisory_xact_lock(${cliqueLockKey})) AS _clique_lock`
 
       const alreadyMember = await tx.cliqueMember.findUnique({
         where: { cliqueId_userId: { cliqueId, userId: requesterId } },

@@ -2,13 +2,22 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 
+class AlreadyResolvedError extends Error {
+  constructor(public readonly actualStatus: string) {
+    super(`Request is already ${actualStatus.toLowerCase()}`)
+    this.name = "AlreadyResolvedError"
+  }
+}
+
 /**
  * POST /api/cliques/[id]/membership-requests/[requestId]/reject
  *
  * Rejects a pending membership request. Creator-only.
  *
  * Atomically marks the request REJECTED and sends a CLIQUE_JOIN_REJECTED
- * notification to the requester.
+ * notification to the requester. If a concurrent operation resolved the
+ * request first, re-fetches the actual status and returns 409 with the
+ * correct current state rather than assuming it was also a rejection.
  *
  * @returns {Promise<NextResponse>} Success message
  * @throws {401} If unauthenticated
@@ -69,8 +78,13 @@ export async function POST(
       })
 
       if (updated.count === 0) {
-        // Another concurrent rejection won the race — treat as success
-        return
+        // A concurrent operation resolved the request — re-fetch to find out
+        // whether it was approved or rejected so we can return an accurate error.
+        const current = await tx.cliqueMembershipRequest.findUnique({
+          where: { id: requestId },
+          select: { status: true },
+        })
+        throw new AlreadyResolvedError(current?.status ?? "UNKNOWN")
       }
 
       await tx.notification.create({
@@ -88,6 +102,9 @@ export async function POST(
 
     return NextResponse.json({ message: "Request rejected" })
   } catch (error) {
+    if (error instanceof AlreadyResolvedError) {
+      return NextResponse.json({ error: error.message }, { status: 409 })
+    }
     console.error("Error rejecting membership request:", error)
     return NextResponse.json(
       { error: "Failed to reject membership request" },
