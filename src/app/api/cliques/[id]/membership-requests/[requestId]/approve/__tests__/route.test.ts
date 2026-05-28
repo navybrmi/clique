@@ -121,7 +121,7 @@ describe("POST /api/cliques/[id]/membership-requests/[requestId]/approve", () =>
           create: jest.fn(),
         },
         cliqueMembershipRequest: { updateMany: jest.fn() },
-        notification: { create: jest.fn() },
+        notification: { create: jest.fn(), deleteMany: jest.fn() },
       })
     })
 
@@ -144,7 +144,7 @@ describe("POST /api/cliques/[id]/membership-requests/[requestId]/approve", () =>
           create: jest.fn(),
         },
         cliqueMembershipRequest: { updateMany: jest.fn() },
-        notification: { create: jest.fn() },
+        notification: { create: jest.fn(), deleteMany: jest.fn() },
       })
     })
 
@@ -169,7 +169,7 @@ describe("POST /api/cliques/[id]/membership-requests/[requestId]/approve", () =>
           create: jest.fn(),
         },
         cliqueMembershipRequest: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
-        notification: { create: jest.fn() },
+        notification: { create: jest.fn(), deleteMany: jest.fn() },
       })
     })
 
@@ -192,7 +192,7 @@ describe("POST /api/cliques/[id]/membership-requests/[requestId]/approve", () =>
           create: jest.fn(),
         },
         cliqueMembershipRequest: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
-        notification: { create: jest.fn() },
+        notification: { create: jest.fn(), deleteMany: jest.fn() },
       })
     })
 
@@ -202,7 +202,7 @@ describe("POST /api/cliques/[id]/membership-requests/[requestId]/approve", () =>
     expect(data.error).toContain("already been resolved")
   })
 
-  it("approves the request, adds member, and sends notification", async () => {
+  it("approves the request, adds member, deletes join-request notification, and sends approved notification", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "creator1" } })
     ;(prisma.clique.findUnique as jest.Mock).mockResolvedValue(clique)
     ;(prisma.cliqueMembershipRequest.findUnique as jest.Mock).mockResolvedValue(pendingRequest)
@@ -210,6 +210,7 @@ describe("POST /api/cliques/[id]/membership-requests/[requestId]/approve", () =>
     const updateMany = jest.fn().mockResolvedValue({ count: 1 })
     const createMember = jest.fn().mockResolvedValue({})
     const createNotification = jest.fn().mockResolvedValue({})
+    const deleteNotifications = jest.fn().mockResolvedValue({ count: 1 })
 
     ;(prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
       return cb({
@@ -220,7 +221,7 @@ describe("POST /api/cliques/[id]/membership-requests/[requestId]/approve", () =>
           create: createMember,
         },
         cliqueMembershipRequest: { updateMany },
-        notification: { create: createNotification },
+        notification: { create: createNotification, deleteMany: deleteNotifications },
       })
     })
 
@@ -232,6 +233,14 @@ describe("POST /api/cliques/[id]/membership-requests/[requestId]/approve", () =>
     expect(createMember).toHaveBeenCalledWith({
       data: { cliqueId: "clique1", userId: "requester1" },
     })
+    expect(deleteNotifications).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          userId: "creator1",
+          type: "CLIQUE_JOIN_REQUEST",
+        }),
+      })
+    )
     expect(createNotification).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
