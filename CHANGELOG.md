@@ -3,6 +3,19 @@
 All notable changes to Clique will be documented in this file.
 Each version links to its GitHub Release.
 
+## [v0.17.0](https://github.com/navybrmi/clique/releases/tag/v0.17.0) — 2026-05-28
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.17.0 -->
+
+## What's Changed
+### Other Changes
+* feat(clique-invite-links): PR 3 — frontend for link-type invite flow by @navybrmi in https://github.com/navybrmi/clique/pull/94
+
+
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.16.0...v0.17.0
+
+---
+
 ## [v0.15.0](https://github.com/navybrmi/clique/releases/tag/v0.15.0) — 2026-05-24
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.15.0 -->
