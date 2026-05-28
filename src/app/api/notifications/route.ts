@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
-import type { TypedNotification } from "@/types/clique"
+import type { TypedNotification, CliqueJoinRequestPayload } from "@/types/clique"
 import type { NotificationPayload } from "@/types/clique"
 
 /**
@@ -33,6 +33,34 @@ export async function GET(): Promise<NextResponse<TypedNotification[] | { error:
       ...n,
       payload: n.payload as unknown as NotificationPayload,
     })) as TypedNotification[]
+
+    // Auto-clean CLIQUE_JOIN_REQUEST notifications whose underlying request is
+    // no longer PENDING (approved/rejected via another path, e.g. the management
+    // dialog). This self-heals stale notifications that pre-date the server-side
+    // cleanup added to the approve/reject routes.
+    const joinRequestNotifications = typed.filter(
+      (n): n is TypedNotification & { payload: CliqueJoinRequestPayload } =>
+        n.payload.type === "CLIQUE_JOIN_REQUEST"
+    )
+
+    if (joinRequestNotifications.length > 0) {
+      const requestIds = joinRequestNotifications.map((n) => n.payload.requestId)
+
+      const pendingRequests = await prisma.cliqueMembershipRequest.findMany({
+        where: { id: { in: requestIds }, status: "PENDING" },
+        select: { id: true },
+      })
+
+      const pendingSet = new Set(pendingRequests.map((r) => r.id))
+      const staleIds = joinRequestNotifications
+        .filter((n) => !pendingSet.has(n.payload.requestId))
+        .map((n) => n.id)
+
+      if (staleIds.length > 0) {
+        await prisma.notification.deleteMany({ where: { id: { in: staleIds } } })
+        return NextResponse.json(typed.filter((n) => !staleIds.includes(n.id)))
+      }
+    }
 
     return NextResponse.json(typed)
   } catch (error) {
