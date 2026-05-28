@@ -8,6 +8,10 @@ jest.mock("@/lib/prisma", () => ({
     notification: {
       findMany: jest.fn(),
       updateMany: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    cliqueMembershipRequest: {
+      findMany: jest.fn(),
     },
   },
 }))
@@ -78,6 +82,121 @@ describe("GET /api/notifications", () => {
 
     expect(res.status).toBe(500)
     spy.mockRestore()
+  })
+
+  it("should keep CLIQUE_JOIN_REQUEST notifications whose request is still PENDING", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "creator1" } })
+
+    const joinRequestNotif = {
+      id: "notif1",
+      userId: "creator1",
+      type: "CLIQUE_JOIN_REQUEST",
+      payload: {
+        type: "CLIQUE_JOIN_REQUEST",
+        cliqueId: "c1",
+        cliqueName: "Test",
+        requestId: "req1",
+        requesterId: "user2",
+        requesterName: "Alice",
+        requesterImage: null,
+      },
+      read: false,
+      createdAt: new Date().toISOString(),
+    }
+    ;(prisma.notification.findMany as jest.Mock).mockResolvedValue([joinRequestNotif])
+    ;(prisma.cliqueMembershipRequest.findMany as jest.Mock).mockResolvedValue([{ id: "req1" }])
+
+    const res = await GET()
+    const data = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(data).toHaveLength(1)
+    expect(data[0].id).toBe("notif1")
+    expect(prisma.notification.deleteMany).not.toHaveBeenCalled()
+  })
+
+  it("should delete and exclude CLIQUE_JOIN_REQUEST notifications whose request is no longer PENDING", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "creator1" } })
+
+    const staleNotif = {
+      id: "notif-stale",
+      userId: "creator1",
+      type: "CLIQUE_JOIN_REQUEST",
+      payload: {
+        type: "CLIQUE_JOIN_REQUEST",
+        cliqueId: "c1",
+        cliqueName: "Test",
+        requestId: "req-approved",
+        requesterId: "user2",
+        requesterName: "Alice",
+        requesterImage: null,
+      },
+      read: false,
+      createdAt: new Date().toISOString(),
+    }
+    ;(prisma.notification.findMany as jest.Mock).mockResolvedValue([staleNotif])
+    // No PENDING requests returned — request was already approved/rejected
+    ;(prisma.cliqueMembershipRequest.findMany as jest.Mock).mockResolvedValue([])
+    ;(prisma.notification.deleteMany as jest.Mock).mockResolvedValue({ count: 1 })
+
+    const res = await GET()
+    const data = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(data).toHaveLength(0)
+    expect(prisma.notification.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["notif-stale"] } },
+    })
+  })
+
+  it("should filter only stale CLIQUE_JOIN_REQUEST notifications when mixed with pending ones", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "creator1" } })
+
+    const pendingNotif = {
+      id: "notif-pending",
+      userId: "creator1",
+      type: "CLIQUE_JOIN_REQUEST",
+      payload: {
+        type: "CLIQUE_JOIN_REQUEST",
+        cliqueId: "c1",
+        cliqueName: "Test",
+        requestId: "req-pending",
+        requesterId: "user2",
+        requesterName: "Alice",
+        requesterImage: null,
+      },
+      read: false,
+      createdAt: new Date().toISOString(),
+    }
+    const staleNotif = {
+      id: "notif-stale",
+      userId: "creator1",
+      type: "CLIQUE_JOIN_REQUEST",
+      payload: {
+        type: "CLIQUE_JOIN_REQUEST",
+        cliqueId: "c1",
+        cliqueName: "Test",
+        requestId: "req-approved",
+        requesterId: "user3",
+        requesterName: "Bob",
+        requesterImage: null,
+      },
+      read: false,
+      createdAt: new Date().toISOString(),
+    }
+    ;(prisma.notification.findMany as jest.Mock).mockResolvedValue([pendingNotif, staleNotif])
+    ;(prisma.cliqueMembershipRequest.findMany as jest.Mock).mockResolvedValue([{ id: "req-pending" }])
+    ;(prisma.notification.deleteMany as jest.Mock).mockResolvedValue({ count: 1 })
+
+    const res = await GET()
+    const data = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(data).toHaveLength(1)
+    expect(data[0].id).toBe("notif-pending")
+    expect(prisma.notification.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["notif-stale"] } },
+    })
   })
 })
 

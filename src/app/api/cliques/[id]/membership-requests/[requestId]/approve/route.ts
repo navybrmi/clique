@@ -105,6 +105,16 @@ export async function POST(
 
       await tx.cliqueMember.create({ data: { cliqueId, userId: requesterId } })
 
+      // Remove the pending join-request notification from the creator's inbox now
+      // that it has been resolved, so it no longer shows stale Approve/Decline buttons.
+      await tx.notification.deleteMany({
+        where: {
+          userId: creatorId,
+          type: "CLIQUE_JOIN_REQUEST",
+          payload: { path: ["requestId"], equals: requestId },
+        },
+      })
+
       await tx.notification.create({
         data: {
           userId: requesterId,

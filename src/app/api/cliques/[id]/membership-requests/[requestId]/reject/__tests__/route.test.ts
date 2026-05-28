@@ -108,18 +108,19 @@ describe("POST /api/cliques/[id]/membership-requests/[requestId]/reject", () => 
     expect(res.status).toBe(409)
   })
 
-  it("rejects the request and sends notification", async () => {
+  it("rejects the request, deletes join-request notification, and sends rejected notification", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "creator1" } })
     ;(prisma.clique.findUnique as jest.Mock).mockResolvedValue(clique)
     ;(prisma.cliqueMembershipRequest.findUnique as jest.Mock).mockResolvedValue(pendingRequest)
 
     const updateMany = jest.fn().mockResolvedValue({ count: 1 })
     const createNotification = jest.fn().mockResolvedValue({})
+    const deleteNotifications = jest.fn().mockResolvedValue({ count: 1 })
 
     ;(prisma.$transaction as jest.Mock).mockImplementation(async (cb) => {
       return cb({
         cliqueMembershipRequest: { updateMany },
-        notification: { create: createNotification },
+        notification: { create: createNotification, deleteMany: deleteNotifications },
       })
     })
 
@@ -132,6 +133,14 @@ describe("POST /api/cliques/[id]/membership-requests/[requestId]/reject", () => 
       expect.objectContaining({
         where: { id: "req1", status: "PENDING" },
         data: expect.objectContaining({ status: "REJECTED" }),
+      })
+    )
+    expect(deleteNotifications).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          userId: "creator1",
+          type: "CLIQUE_JOIN_REQUEST",
+        }),
       })
     )
     expect(createNotification).toHaveBeenCalledWith(
@@ -154,7 +163,7 @@ describe("POST /api/cliques/[id]/membership-requests/[requestId]/reject", () => 
           updateMany: jest.fn().mockResolvedValue({ count: 0 }),
           findUnique: jest.fn().mockResolvedValue({ status: "REJECTED" }),
         },
-        notification: { create: jest.fn() },
+        notification: { create: jest.fn(), deleteMany: jest.fn() },
       })
     })
 
@@ -174,7 +183,7 @@ describe("POST /api/cliques/[id]/membership-requests/[requestId]/reject", () => 
           updateMany: jest.fn().mockResolvedValue({ count: 0 }),
           findUnique: jest.fn().mockResolvedValue({ status: "APPROVED" }),
         },
-        notification: { create: jest.fn() },
+        notification: { create: jest.fn(), deleteMany: jest.fn() },
       })
     })
 
