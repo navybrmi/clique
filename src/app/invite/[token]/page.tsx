@@ -67,12 +67,14 @@ export default async function InvitePage({ params }: InvitePageProps) {
           </p>
           <h1 className="text-3xl font-bold">{cliqueName}</h1>
           <p className="text-sm text-zinc-500">
-            Accept to start seeing this clique&apos;s recommendations feed.
+            {invite.email === null
+              ? "Request access to start seeing this clique’s recommendations feed. The creator will approve your request."
+              : "Accept to start seeing this clique’s recommendations feed."}
           </p>
         </div>
 
         {session?.user ? (
-          <AcceptInviteButton token={token} />
+          <AcceptInviteButton token={token} isLinkInvite={invite.email === null} />
         ) : (
           <div className="space-y-3">
             <p className="text-center text-sm text-zinc-500">

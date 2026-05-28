@@ -584,6 +584,139 @@ describe("CliqueManagementDialog", () => {
     })
   })
 
+  describe("Requests tab", () => {
+    const mockRequests = [
+      {
+        id: "req-1",
+        cliqueId: "clique-1",
+        userId: "user-3",
+        inviteToken: "tok",
+        status: "PENDING",
+        createdAt: new Date().toISOString(),
+        resolvedAt: null,
+        user: { id: "user-3", name: "Charlie", image: null },
+      },
+    ]
+
+    it("shows the Requests tab for the creator", async () => {
+      const user = userEvent.setup()
+      global.fetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify(mockClique), { status: 200, headers: { "Content-Type": "application/json" } })
+      ) as typeof fetch
+
+      render(<CliqueManagementDialog {...defaultProps} />)
+      await user.click(screen.getByRole("button", { name: /manage weekend crew/i }))
+      await screen.findByText("Alice")
+
+      expect(screen.getByTestId("tab-requests")).toBeInTheDocument()
+    })
+
+    it("does not show the Requests tab for non-creators", async () => {
+      const user = userEvent.setup()
+      global.fetch = jest.fn().mockResolvedValue(
+        new Response(JSON.stringify(mockClique), { status: 200, headers: { "Content-Type": "application/json" } })
+      ) as typeof fetch
+
+      render(<CliqueManagementDialog {...defaultProps} currentUserId="user-2" />)
+      await user.click(screen.getByRole("button", { name: /manage weekend crew/i }))
+      await screen.findByText("Alice")
+
+      expect(screen.queryByTestId("tab-requests")).not.toBeInTheDocument()
+    })
+
+    it("loads and shows pending requests when the Requests tab is clicked", async () => {
+      const user = userEvent.setup()
+      global.fetch = jest.fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify(mockClique), { status: 200, headers: { "Content-Type": "application/json" } })
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify(mockRequests), { status: 200, headers: { "Content-Type": "application/json" } })
+        ) as typeof fetch
+
+      render(<CliqueManagementDialog {...defaultProps} />)
+      await user.click(screen.getByRole("button", { name: /manage weekend crew/i }))
+      await screen.findByText("Alice")
+
+      await user.click(screen.getByTestId("tab-requests"))
+
+      expect(await screen.findByText("Charlie")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /approve/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /decline/i })).toBeInTheDocument()
+    })
+
+    it("shows empty state when there are no pending requests", async () => {
+      const user = userEvent.setup()
+      global.fetch = jest.fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify(mockClique), { status: 200, headers: { "Content-Type": "application/json" } })
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } })
+        ) as typeof fetch
+
+      render(<CliqueManagementDialog {...defaultProps} />)
+      await user.click(screen.getByRole("button", { name: /manage weekend crew/i }))
+      await screen.findByText("Alice")
+
+      await user.click(screen.getByTestId("tab-requests"))
+
+      expect(await screen.findByText(/no pending join requests/i)).toBeInTheDocument()
+    })
+
+    it("approves a request and removes it from the list", async () => {
+      const user = userEvent.setup()
+      global.fetch = jest.fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify(mockClique), { status: 200, headers: { "Content-Type": "application/json" } })
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify(mockRequests), { status: 200, headers: { "Content-Type": "application/json" } })
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ message: "Request approved", cliqueId: "clique-1" }), { status: 200, headers: { "Content-Type": "application/json" } })
+        ) as typeof fetch
+
+      render(<CliqueManagementDialog {...defaultProps} />)
+      await user.click(screen.getByRole("button", { name: /manage weekend crew/i }))
+      await screen.findByText("Alice")
+      await user.click(screen.getByTestId("tab-requests"))
+      await screen.findByText("Charlie")
+
+      await user.click(screen.getByRole("button", { name: /approve/i }))
+
+      await waitFor(() => {
+        expect(screen.queryByText("Charlie")).not.toBeInTheDocument()
+      })
+    })
+
+    it("rejects a request and removes it from the list", async () => {
+      const user = userEvent.setup()
+      global.fetch = jest.fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify(mockClique), { status: 200, headers: { "Content-Type": "application/json" } })
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify(mockRequests), { status: 200, headers: { "Content-Type": "application/json" } })
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ message: "Request rejected" }), { status: 200, headers: { "Content-Type": "application/json" } })
+        ) as typeof fetch
+
+      render(<CliqueManagementDialog {...defaultProps} />)
+      await user.click(screen.getByRole("button", { name: /manage weekend crew/i }))
+      await screen.findByText("Alice")
+      await user.click(screen.getByTestId("tab-requests"))
+      await screen.findByText("Charlie")
+
+      await user.click(screen.getByRole("button", { name: /decline/i }))
+
+      await waitFor(() => {
+        expect(screen.queryByText("Charlie")).not.toBeInTheDocument()
+      })
+    })
+  })
+
   it("opens the invite dialog when 'Invite someone' is clicked", async () => {
     const user = userEvent.setup()
     global.fetch = jest.fn().mockResolvedValue(

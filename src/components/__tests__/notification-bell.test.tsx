@@ -319,7 +319,7 @@ describe("NotificationBell", () => {
     expect(await screen.findByText(/someone invited you to/i)).toBeInTheDocument()
   })
 
-  it("renders a fallback div for unknown notification types", async () => {
+  it("renders nothing for unknown notification types", async () => {
     const user = userEvent.setup()
     const unknownNotif = {
       id: "notif-unknown",
@@ -339,7 +339,8 @@ describe("NotificationBell", () => {
     await screen.findByTestId("unread-badge")
     await user.click(screen.getByRole("button", { name: /1 unread notification/i }))
 
-    expect(await screen.findByText("New notification")).toBeInTheDocument()
+    // Unknown types render null — panel is open but no text content for the notification
+    expect(screen.queryByText("New notification")).not.toBeInTheDocument()
   })
 
   it("calls handleMarkRead and marks the notification read when clicking an unread invite link", async () => {
