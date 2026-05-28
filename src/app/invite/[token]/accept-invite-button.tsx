@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button"
 
 interface AcceptInviteButtonProps {
   token: string
+  isLinkInvite: boolean
 }
 
-export function AcceptInviteButton({ token }: AcceptInviteButtonProps) {
+export function AcceptInviteButton({ token, isLinkInvite }: AcceptInviteButtonProps) {
   const [isAccepting, setIsAccepting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
 
   const handleAccept = async () => {
     setIsAccepting(true)
@@ -25,6 +27,11 @@ export function AcceptInviteButton({ token }: AcceptInviteButtonProps) {
         return
       }
 
+      if (body?.status === "pending" || body?.status === "already_pending") {
+        setPending(true)
+        return
+      }
+
       const cliqueId = body?.cliqueId as string | undefined
       // Hard redirect so the server re-renders CliqueSidebarWrapper with the new membership
       window.location.href = cliqueId ? `/?cliqueId=${cliqueId}` : "/"
@@ -33,6 +40,21 @@ export function AcceptInviteButton({ token }: AcceptInviteButtonProps) {
     } finally {
       setIsAccepting(false)
     }
+  }
+
+  if (pending) {
+    return (
+      <div className="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-center dark:border-zinc-800 dark:bg-zinc-900">
+        <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+          Request submitted!
+        </p>
+        <p className="text-sm text-zinc-500">
+          {isLinkInvite
+            ? "The clique creator will review your request. You'll be notified once it's approved."
+            : "Your request is pending approval."}
+        </p>
+      </div>
+    )
   }
 
   return (
@@ -47,8 +69,10 @@ export function AcceptInviteButton({ token }: AcceptInviteButtonProps) {
         {isAccepting ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Joining...
+            Sending request...
           </>
+        ) : isLinkInvite ? (
+          "Request to join"
         ) : (
           "Accept invite"
         )}

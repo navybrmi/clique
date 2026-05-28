@@ -2,16 +2,27 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { Bell, X } from "lucide-react"
+import { Bell, Loader2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { TypedNotification } from "@/types/clique"
+
+const KNOWN_PAYLOAD_TYPES = new Set([
+  "CLIQUE_INVITE",
+  "CLIQUE_JOIN_REQUEST",
+  "CLIQUE_JOIN_APPROVED",
+  "CLIQUE_JOIN_REJECTED",
+])
 
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<TypedNotification[]>([])
   const [isOpen, setIsOpen] = useState(false)
+  const [resolvingId, setResolvingId] = useState<string | null>(null)
+  const [resolveError, setResolveError] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const unreadCount = notifications.filter((n) => !n.read).length
+  const unreadCount = notifications.filter(
+    (n) => !n.read && KNOWN_PAYLOAD_TYPES.has(n.payload.type)
+  ).length
 
   const loadNotifications = async () => {
     try {
@@ -54,6 +65,52 @@ export function NotificationBell() {
       }
     } catch {
       // Best-effort
+    }
+  }
+
+  const handleApproveRequest = async (notificationId: string, cliqueId: string, requestId: string) => {
+    setResolvingId(notificationId)
+    setResolveError(null)
+    try {
+      const response = await fetch(
+        `/api/cliques/${cliqueId}/membership-requests/${requestId}/approve`,
+        { method: "POST" }
+      )
+      if (response.ok) {
+        setNotifications((prev) => prev.filter((n) => n.id !== notificationId))
+      } else {
+        const body = await response.json().catch(() => null)
+        setResolveError(body?.error ?? "Failed to approve request")
+        void loadNotifications()
+      }
+    } catch {
+      setResolveError("Failed to approve request")
+      void loadNotifications()
+    } finally {
+      setResolvingId(null)
+    }
+  }
+
+  const handleRejectRequest = async (notificationId: string, cliqueId: string, requestId: string) => {
+    setResolvingId(notificationId)
+    setResolveError(null)
+    try {
+      const response = await fetch(
+        `/api/cliques/${cliqueId}/membership-requests/${requestId}/reject`,
+        { method: "POST" }
+      )
+      if (response.ok) {
+        setNotifications((prev) => prev.filter((n) => n.id !== notificationId))
+      } else {
+        const body = await response.json().catch(() => null)
+        setResolveError(body?.error ?? "Failed to decline request")
+        void loadNotifications()
+      }
+    } catch {
+      setResolveError("Failed to decline request")
+      void loadNotifications()
+    } finally {
+      setResolvingId(null)
     }
   }
 
@@ -128,6 +185,15 @@ export function NotificationBell() {
             </div>
           </div>
 
+          {resolveError && (
+            <p
+              data-testid="resolve-error"
+              className="border-b px-3 py-2 text-xs text-red-600"
+            >
+              {resolveError}
+            </p>
+          )}
+
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
               <p className="px-3 py-4 text-center text-sm text-zinc-500">
@@ -162,14 +228,97 @@ export function NotificationBell() {
                   )
                 }
 
-                return (
-                  <div
-                    key={notification.id}
-                    className="px-3 py-2.5 text-sm text-zinc-700 dark:text-zinc-300"
-                  >
-                    New notification
-                  </div>
-                )
+                if (payload.type === "CLIQUE_JOIN_REQUEST") {
+                  const isResolving = resolvingId === notification.id
+                  return (
+                    <div
+                      key={notification.id}
+                      className={`flex flex-col gap-1.5 px-3 py-2.5 text-sm ${
+                        !notification.read ? "bg-zinc-50 dark:bg-zinc-900/60" : ""
+                      }`}
+                    >
+                      <span className="font-medium">
+                        <span className="font-semibold">{payload.requesterName ?? "Someone"}</span>
+                        {" wants to join "}
+                        <span className="font-semibold">{payload.cliqueName}</span>
+                      </span>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="h-7 px-3 text-xs"
+                          disabled={isResolving}
+                          onClick={() =>
+                            void handleApproveRequest(notification.id, payload.cliqueId, payload.requestId)
+                          }
+                        >
+                          {isResolving ? <Loader2 className="h-3 w-3 animate-spin" /> : "Approve"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-3 text-xs"
+                          disabled={isResolving}
+                          onClick={() =>
+                            void handleRejectRequest(notification.id, payload.cliqueId, payload.requestId)
+                          }
+                        >
+                          Decline
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                }
+
+                if (payload.type === "CLIQUE_JOIN_APPROVED") {
+                  return (
+                    <Link
+                      key={notification.id}
+                      href={`/?cliqueId=${payload.cliqueId}`}
+                      onClick={() => {
+                        if (!notification.read) void handleMarkRead(notification.id)
+                        setIsOpen(false)
+                      }}
+                      className={`flex flex-col gap-0.5 px-3 py-2.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900 ${
+                        !notification.read ? "bg-zinc-50 dark:bg-zinc-900/60" : ""
+                      }`}
+                    >
+                      <span className="font-medium">
+                        Your request to join{" "}
+                        <span className="font-semibold">{payload.cliqueName}</span>
+                        {" was approved!"}
+                      </span>
+                      <span className="text-xs text-zinc-500">Tap to view clique</span>
+                      {!notification.read && (
+                        <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-blue-500" />
+                      )}
+                    </Link>
+                  )
+                }
+
+                if (payload.type === "CLIQUE_JOIN_REJECTED") {
+                  return (
+                    <div
+                      key={notification.id}
+                      onClick={() => {
+                        if (!notification.read) void handleMarkRead(notification.id)
+                      }}
+                      className={`flex flex-col gap-0.5 px-3 py-2.5 text-sm ${
+                        !notification.read ? "bg-zinc-50 dark:bg-zinc-900/60" : ""
+                      }`}
+                    >
+                      <span className="font-medium">
+                        Your request to join{" "}
+                        <span className="font-semibold">{payload.cliqueName}</span>
+                        {" was declined."}
+                      </span>
+                      {!notification.read && (
+                        <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-blue-500" />
+                      )}
+                    </div>
+                  )
+                }
+
+                return null
               })
             )}
           </div>

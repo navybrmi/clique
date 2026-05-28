@@ -13,7 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { CliqueInviteDialog } from "@/components/clique-invite-dialog"
-import type { CliqueInviteWithCreator, CliqueWithMembers } from "@/types/clique"
+import type { CliqueInviteWithCreator, CliqueWithMembers, CliqueMembershipRequest } from "@/types/clique"
 
 interface CliqueManagementDialogProps {
   cliqueId: string
@@ -21,7 +21,7 @@ interface CliqueManagementDialogProps {
   currentUserId: string
 }
 
-type ManagementTab = "members" | "invites"
+type ManagementTab = "members" | "invites" | "requests"
 
 export function CliqueManagementDialog({
   cliqueId,
@@ -37,6 +37,9 @@ export function CliqueManagementDialog({
   const [error, setError] = useState<string | null>(null)
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null)
   const [revokingInviteId, setRevokingInviteId] = useState<string | null>(null)
+  const [requests, setRequests] = useState<CliqueMembershipRequest[]>([])
+  const [approvingId, setApprovingId] = useState<string | null>(null)
+  const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [isDeletingClique, setIsDeletingClique] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
@@ -79,6 +82,68 @@ export function CliqueManagementDialog({
     }
   }
 
+  const loadRequests = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await fetch(`/api/cliques/${cliqueId}/membership-requests`, { cache: "no-store" })
+      const body = await response.json().catch(() => null)
+      if (!response.ok) {
+        setError(body?.error ?? "Failed to load requests")
+        return
+      }
+      setRequests(Array.isArray(body) ? (body as CliqueMembershipRequest[]) : [])
+    } catch {
+      setError("Failed to load requests")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleApproveRequest = async (requestId: string) => {
+    setApprovingId(requestId)
+    setError(null)
+    try {
+      const response = await fetch(
+        `/api/cliques/${cliqueId}/membership-requests/${requestId}/approve`,
+        { method: "POST" }
+      )
+      const body = await response.json().catch(() => null)
+      if (!response.ok) {
+        setError(body?.error ?? "Failed to approve request")
+        return
+      }
+      setRequests((prev) => prev.filter((r) => r.id !== requestId))
+      router.refresh()
+    } catch {
+      setError("Failed to approve request")
+    } finally {
+      setApprovingId(null)
+    }
+  }
+
+  const handleRejectRequest = async (requestId: string) => {
+    setRejectingId(requestId)
+    setError(null)
+    try {
+      const response = await fetch(
+        `/api/cliques/${cliqueId}/membership-requests/${requestId}/reject`,
+        { method: "POST" }
+      )
+      const body = await response.json().catch(() => null)
+      if (!response.ok) {
+        setError(body?.error ?? "Failed to reject request")
+        return
+      }
+      setRequests((prev) => prev.filter((r) => r.id !== requestId))
+      router.refresh()
+    } catch {
+      setError("Failed to reject request")
+    } finally {
+      setRejectingId(null)
+    }
+  }
+
   const handleOpenChange = (next: boolean) => {
     setOpen(next)
     if (next) {
@@ -88,6 +153,7 @@ export function CliqueManagementDialog({
     } else {
       setClique(null)
       setInvites([])
+      setRequests([])
       setError(null)
       setShowDeleteConfirm(false)
     }
@@ -100,6 +166,8 @@ export function CliqueManagementDialog({
       void loadClique()
     } else if (next === "invites") {
       void loadInvites()
+    } else if (next === "requests") {
+      void loadRequests()
     }
   }
 
@@ -219,6 +287,20 @@ export function CliqueManagementDialog({
                   }`}
                 >
                   Invites
+                </button>
+              )}
+              {isCreator && (
+                <button
+                  type="button"
+                  data-testid="tab-requests"
+                  onClick={() => handleTabChange("requests")}
+                  className={`flex-1 rounded px-3 py-1.5 text-sm font-medium transition-colors ${
+                    tab === "requests"
+                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                      : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                  }`}
+                >
+                  Requests
                 </button>
               )}
             </div>
@@ -378,6 +460,56 @@ export function CliqueManagementDialog({
                         Invite someone
                       </Button>
                     </div>
+                  </div>
+                )}
+
+                {tab === "requests" && (
+                  <div className="space-y-2">
+                    {requests.length === 0 ? (
+                      <p className="text-sm text-zinc-500">No pending join requests.</p>
+                    ) : (
+                      <div className="max-h-64 space-y-1 overflow-y-auto">
+                        {requests.map((req) => (
+                          <div
+                            key={req.id}
+                            className="flex items-center justify-between gap-2 rounded-md px-2 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                          >
+                            <p className="min-w-0 truncate text-sm text-zinc-800 dark:text-zinc-200">
+                              {req.user.name ?? "Unknown user"}
+                            </p>
+                            <div className="flex shrink-0 gap-1">
+                              <Button
+                                type="button"
+                                size="sm"
+                                className="h-7 px-3 text-xs"
+                                disabled={approvingId === req.id || rejectingId === req.id}
+                                onClick={() => handleApproveRequest(req.id)}
+                              >
+                                {approvingId === req.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  "Approve"
+                                )}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-7 px-3 text-xs"
+                                disabled={approvingId === req.id || rejectingId === req.id}
+                                onClick={() => handleRejectRequest(req.id)}
+                              >
+                                {rejectingId === req.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  "Decline"
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </>

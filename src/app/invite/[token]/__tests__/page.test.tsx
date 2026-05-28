@@ -23,9 +23,9 @@ jest.mock("@/lib/auth", () => ({
 }))
 
 jest.mock("@/app/invite/[token]/accept-invite-button", () => ({
-  AcceptInviteButton: ({ token }: { token: string }) => (
-    <button data-testid="accept-btn" data-token={token}>
-      Accept invite
+  AcceptInviteButton: ({ token, isLinkInvite }: { token: string; isLinkInvite: boolean }) => (
+    <button data-testid="accept-btn" data-token={token} data-is-link-invite={String(isLinkInvite)}>
+      {isLinkInvite ? "Request to join" : "Accept invite"}
     </button>
   ),
 }))
@@ -124,5 +124,33 @@ describe("InvitePage", () => {
       "href",
       "/auth/signin?callbackUrl=/invite/tok123"
     )
+  })
+
+  it("passes isLinkInvite=false for a user-type invite (email set)", async () => {
+    mockPrisma.cliqueInvite.findUnique.mockResolvedValue({
+      ...pendingInvite,
+      email: "bob@example.com",
+    })
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } })
+
+    render(await InvitePage({ params: Promise.resolve({ token: "tok123" }) }))
+
+    expect(screen.getByTestId("accept-btn")).toHaveAttribute("data-is-link-invite", "false")
+    expect(screen.getByText("Accept invite")).toBeInTheDocument()
+    expect(screen.getByText(/accept to start seeing/i)).toBeInTheDocument()
+  })
+
+  it("passes isLinkInvite=true and shows request description for a link-type invite (email null)", async () => {
+    mockPrisma.cliqueInvite.findUnique.mockResolvedValue({
+      ...pendingInvite,
+      email: null,
+    })
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } })
+
+    render(await InvitePage({ params: Promise.resolve({ token: "tok123" }) }))
+
+    expect(screen.getByTestId("accept-btn")).toHaveAttribute("data-is-link-invite", "true")
+    expect(screen.getByText("Request to join")).toBeInTheDocument()
+    expect(screen.getByText(/request access/i)).toBeInTheDocument()
   })
 })

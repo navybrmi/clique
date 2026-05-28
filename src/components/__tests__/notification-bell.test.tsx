@@ -319,7 +319,7 @@ describe("NotificationBell", () => {
     expect(await screen.findByText(/someone invited you to/i)).toBeInTheDocument()
   })
 
-  it("renders a fallback div for unknown notification types", async () => {
+  it("renders nothing for unknown notification types and excludes them from the unread count", async () => {
     const user = userEvent.setup()
     const unknownNotif = {
       id: "notif-unknown",
@@ -336,10 +336,15 @@ describe("NotificationBell", () => {
     }) as typeof fetch
 
     render(<NotificationBell />)
-    await screen.findByTestId("unread-badge")
-    await user.click(screen.getByRole("button", { name: /1 unread notification/i }))
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
 
-    expect(await screen.findByText("New notification")).toBeInTheDocument()
+    // Unknown types are filtered from unreadCount — no badge should appear
+    expect(screen.queryByTestId("unread-badge")).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: /notifications/i }))
+
+    // Panel opens, unknown notification renders null — no notification content visible
+    expect(screen.queryByText("New notification")).not.toBeInTheDocument()
   })
 
   it("calls handleMarkRead and marks the notification read when clicking an unread invite link", async () => {
@@ -531,6 +536,307 @@ describe("NotificationBell", () => {
     // Badge count drops from 2 to 1 — the second notification (notif-other) is still unread
     await waitFor(() => {
       expect(screen.getByTestId("unread-badge")).toHaveTextContent("1")
+    })
+  })
+
+  // ── CLIQUE_JOIN_REQUEST ──────────────────────────────────────────────────────
+
+  const mockJoinRequestNotification = {
+    id: "notif-req-1",
+    userId: "user-1",
+    type: "CLIQUE_JOIN_REQUEST",
+    read: false,
+    createdAt: new Date().toISOString(),
+    payload: {
+      type: "CLIQUE_JOIN_REQUEST",
+      cliqueId: "clique-1",
+      cliqueName: "Weekend Crew",
+      requestId: "req-1",
+      requesterId: "user-2",
+      requesterName: "Bob",
+    },
+  }
+
+  it("renders a join-request notification with Approve and Decline buttons", async () => {
+    const user = userEvent.setup()
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([mockJoinRequestNotification]),
+    }) as typeof fetch
+
+    render(<NotificationBell />)
+    await screen.findByTestId("unread-badge")
+    await user.click(screen.getByRole("button", { name: /1 unread notification/i }))
+
+    // Text is split across spans: "Bob" / " wants to join " / "Weekend Crew"
+    expect(await screen.findByRole("button", { name: /approve/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /decline/i })).toBeInTheDocument()
+    expect(screen.getByText("Bob")).toBeInTheDocument()
+    expect(screen.getAllByText("Weekend Crew").length).toBeGreaterThan(0)
+  })
+
+  it("removes the join-request notification after approving", async () => {
+    const user = userEvent.setup()
+    const mockFetch = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([mockJoinRequestNotification]) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([mockJoinRequestNotification]) })
+      // POST approve
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ message: "Approved" }) })
+    global.fetch = mockFetch as typeof fetch
+
+    render(<NotificationBell />)
+    await screen.findByTestId("unread-badge")
+    await user.click(screen.getByRole("button", { name: /1 unread notification/i }))
+
+    await user.click(await screen.findByRole("button", { name: /approve/i }))
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/cliques/clique-1/membership-requests/req-1/approve",
+        { method: "POST" }
+      )
+    })
+    await waitFor(() => {
+      expect(screen.queryByText(/bob wants to join/i)).not.toBeInTheDocument()
+    })
+  })
+
+  it("removes the join-request notification after declining", async () => {
+    const user = userEvent.setup()
+    const mockFetch = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([mockJoinRequestNotification]) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([mockJoinRequestNotification]) })
+      // POST reject
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ message: "Rejected" }) })
+    global.fetch = mockFetch as typeof fetch
+
+    render(<NotificationBell />)
+    await screen.findByTestId("unread-badge")
+    await user.click(screen.getByRole("button", { name: /1 unread notification/i }))
+
+    await user.click(await screen.findByRole("button", { name: /decline/i }))
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/cliques/clique-1/membership-requests/req-1/reject",
+        { method: "POST" }
+      )
+    })
+    await waitFor(() => {
+      expect(screen.queryByText(/bob wants to join/i)).not.toBeInTheDocument()
+    })
+  })
+
+  it("shows a spinner on Approve/Decline buttons while the request is in flight", async () => {
+    let resolveApprove!: () => void
+    const approvePromise = new Promise<void>((res) => { resolveApprove = res })
+
+    const mockFetch = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([mockJoinRequestNotification]) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([mockJoinRequestNotification]) })
+      .mockReturnValueOnce(
+        approvePromise.then(() => ({ ok: true, json: () => Promise.resolve({}) }))
+      )
+    global.fetch = mockFetch as typeof fetch
+
+    const user = userEvent.setup()
+    render(<NotificationBell />)
+    await screen.findByTestId("unread-badge")
+    await user.click(screen.getByRole("button", { name: /1 unread notification/i }))
+
+    const approveBtn = await screen.findByRole("button", { name: /approve/i })
+    await user.click(approveBtn)
+
+    // While in-flight the Approve button shows a spinner (text removed) and Decline is still visible but disabled
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /decline/i })).toBeDisabled()
+    })
+
+    // Resolve and verify removal (Bob span disappears along with the notification)
+    await act(async () => { resolveApprove() })
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: /approve/i })).not.toBeInTheDocument()
+    })
+  })
+
+  it("shows an error message and reloads notifications when approve fails", async () => {
+    const user = userEvent.setup()
+    const mockFetch = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([mockJoinRequestNotification]) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([mockJoinRequestNotification]) })
+      // POST approve → non-ok
+      .mockResolvedValueOnce({ ok: false, json: () => Promise.resolve({ error: "Limit reached" }) })
+      // reload GET after error
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([mockJoinRequestNotification]) })
+    global.fetch = mockFetch as typeof fetch
+
+    render(<NotificationBell />)
+    await screen.findByTestId("unread-badge")
+    await user.click(screen.getByRole("button", { name: /1 unread notification/i }))
+
+    await user.click(await screen.findByRole("button", { name: /approve/i }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId("resolve-error")).toHaveTextContent("Limit reached")
+    })
+    // Notification remains (reload brought it back) — check for the action buttons
+    expect(screen.getByRole("button", { name: /approve/i })).toBeInTheDocument()
+  })
+
+  it("shows an error message and reloads notifications when decline fails", async () => {
+    const user = userEvent.setup()
+    const mockFetch = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([mockJoinRequestNotification]) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([mockJoinRequestNotification]) })
+      // POST reject → non-ok
+      .mockResolvedValueOnce({ ok: false, json: () => Promise.resolve({ error: "Already resolved" }) })
+      // reload GET after error
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) })
+    global.fetch = mockFetch as typeof fetch
+
+    render(<NotificationBell />)
+    await screen.findByTestId("unread-badge")
+    await user.click(screen.getByRole("button", { name: /1 unread notification/i }))
+
+    await user.click(await screen.findByRole("button", { name: /decline/i }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId("resolve-error")).toHaveTextContent("Already resolved")
+    })
+  })
+
+  it("shows a generic error and reloads when the approve fetch throws a network error", async () => {
+    const user = userEvent.setup()
+    const mockFetch = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([mockJoinRequestNotification]) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([mockJoinRequestNotification]) })
+      .mockRejectedValueOnce(new Error("Network"))
+      // reload GET after error
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([mockJoinRequestNotification]) })
+    global.fetch = mockFetch as typeof fetch
+
+    render(<NotificationBell />)
+    await screen.findByTestId("unread-badge")
+    await user.click(screen.getByRole("button", { name: /1 unread notification/i }))
+
+    await user.click(await screen.findByRole("button", { name: /approve/i }))
+
+    await waitFor(() => {
+      expect(screen.getByTestId("resolve-error")).toHaveTextContent("Failed to approve request")
+    })
+  })
+
+  // ── CLIQUE_JOIN_APPROVED ─────────────────────────────────────────────────────
+
+  const mockJoinApprovedNotification = {
+    id: "notif-approved-1",
+    userId: "user-2",
+    type: "CLIQUE_JOIN_APPROVED",
+    read: false,
+    createdAt: new Date().toISOString(),
+    payload: {
+      type: "CLIQUE_JOIN_APPROVED",
+      cliqueId: "clique-1",
+      cliqueName: "Weekend Crew",
+    },
+  }
+
+  it("renders a join-approved notification with a link to the clique", async () => {
+    const user = userEvent.setup()
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([mockJoinApprovedNotification]),
+    }) as typeof fetch
+
+    render(<NotificationBell />)
+    await screen.findByTestId("unread-badge")
+    await user.click(screen.getByRole("button", { name: /1 unread notification/i }))
+
+    expect(await screen.findByText(/your request to join/i)).toBeInTheDocument()
+    expect(screen.getByText(/was approved/i)).toBeInTheDocument()
+    const link = screen.getByRole("link", { name: /your request to join/i })
+    expect(link).toHaveAttribute("href", "/?cliqueId=clique-1")
+  })
+
+  it("renders a read join-approved notification without the unread dot", async () => {
+    const user = userEvent.setup()
+    const readApproved = { ...mockJoinApprovedNotification, read: true }
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([readApproved]),
+    }) as typeof fetch
+
+    render(<NotificationBell />)
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
+    await user.click(screen.getByRole("button", { name: /notifications/i }))
+
+    expect(await screen.findByText(/was approved/i)).toBeInTheDocument()
+    expect(screen.queryByTestId("unread-badge")).not.toBeInTheDocument()
+  })
+
+  // ── CLIQUE_JOIN_REJECTED ─────────────────────────────────────────────────────
+
+  const mockJoinRejectedNotification = {
+    id: "notif-rejected-1",
+    userId: "user-2",
+    type: "CLIQUE_JOIN_REJECTED",
+    read: false,
+    createdAt: new Date().toISOString(),
+    payload: {
+      type: "CLIQUE_JOIN_REJECTED",
+      cliqueId: "clique-1",
+      cliqueName: "Weekend Crew",
+    },
+  }
+
+  it("renders a join-rejected notification", async () => {
+    const user = userEvent.setup()
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([mockJoinRejectedNotification]),
+    }) as typeof fetch
+
+    render(<NotificationBell />)
+    await screen.findByTestId("unread-badge")
+    await user.click(screen.getByRole("button", { name: /1 unread notification/i }))
+
+    expect(await screen.findByText(/your request to join/i)).toBeInTheDocument()
+    expect(screen.getByText(/was declined/i)).toBeInTheDocument()
+    // No approve/decline buttons
+    expect(screen.queryByRole("button", { name: /approve/i })).not.toBeInTheDocument()
+  })
+
+  it("marks a join-rejected notification read when clicked", async () => {
+    const mockFetch = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([mockJoinRejectedNotification]) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([mockJoinRejectedNotification]) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ updated: 1 }) })
+    global.fetch = mockFetch as typeof fetch
+
+    const user = userEvent.setup()
+    render(<NotificationBell />)
+    await screen.findByTestId("unread-badge")
+    await user.click(screen.getByRole("button", { name: /1 unread notification/i }))
+
+    const rejectedDiv = await screen.findByText(/was declined/i)
+    fireEvent.click(rejectedDiv)
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith("/api/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: ["notif-rejected-1"] }),
+      })
+    })
+    await waitFor(() => {
+      expect(screen.queryByTestId("unread-badge")).not.toBeInTheDocument()
     })
   })
 

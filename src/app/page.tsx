@@ -285,23 +285,29 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
         cliqueError = getCliqueFeedUnavailableMessage()
       }
     } else {
-      const clique =
+      const [clique, pendingRows] = await Promise.all([
         typeof cliqueDelegate.clique?.findUnique === "function"
-          ? await cliqueDelegate.clique.findUnique({
+          ? cliqueDelegate.clique.findUnique({
               where: { id: activeCliqueId },
               select: { name: true },
             })
-          : (
-              await prisma.$queryRaw<{ name: string }[]>`
-                SELECT c.name
-                FROM "Clique" c
-                WHERE c.id = ${activeCliqueId}
-                LIMIT 1
-              `
-            )[0] ?? null
-      cliqueError = clique
-        ? "You do not have access to this clique feed."
-        : "This clique could not be found."
+          : prisma.$queryRaw<{ name: string }[]>`
+              SELECT c.name FROM "Clique" c WHERE c.id = ${activeCliqueId} LIMIT 1
+            `.then((rows) => rows[0] ?? null),
+        prisma.$queryRaw<[{ count: bigint }]>`
+          SELECT COUNT(*) AS count
+          FROM "CliqueMembershipRequest"
+          WHERE "cliqueId" = ${activeCliqueId}
+            AND "userId" = ${userId}
+            AND status = 'PENDING'
+        `,
+      ])
+      const hasPendingRequest = Number(pendingRows[0]?.count ?? 0) > 0
+      cliqueError = hasPendingRequest
+        ? "Your request to join this clique is pending approval from the creator."
+        : clique
+          ? "You do not have access to this clique feed."
+          : "This clique could not be found."
     }
   } else if (activeMine && session?.user?.id) {
     const myFeed = await getMyRecommendations(session.user.id)
