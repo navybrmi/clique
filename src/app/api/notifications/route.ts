@@ -57,8 +57,9 @@ export async function GET(): Promise<NextResponse<TypedNotification[] | { error:
         .map((n) => n.id)
 
       if (staleIds.length > 0) {
+        const staleIdSet = new Set(staleIds)
         await prisma.notification.deleteMany({ where: { id: { in: staleIds } } })
-        return NextResponse.json(typed.filter((n) => !staleIds.includes(n.id)))
+        return NextResponse.json(typed.filter((n) => !staleIdSet.has(n.id)))
       }
     }
 
