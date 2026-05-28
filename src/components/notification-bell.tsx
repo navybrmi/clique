@@ -6,13 +6,23 @@ import { Bell, Loader2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { TypedNotification } from "@/types/clique"
 
+const KNOWN_PAYLOAD_TYPES = new Set([
+  "CLIQUE_INVITE",
+  "CLIQUE_JOIN_REQUEST",
+  "CLIQUE_JOIN_APPROVED",
+  "CLIQUE_JOIN_REJECTED",
+])
+
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<TypedNotification[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [resolvingId, setResolvingId] = useState<string | null>(null)
+  const [resolveError, setResolveError] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const unreadCount = notifications.filter((n) => !n.read).length
+  const unreadCount = notifications.filter(
+    (n) => !n.read && KNOWN_PAYLOAD_TYPES.has(n.payload.type)
+  ).length
 
   const loadNotifications = async () => {
     try {
@@ -60,6 +70,7 @@ export function NotificationBell() {
 
   const handleApproveRequest = async (notificationId: string, cliqueId: string, requestId: string) => {
     setResolvingId(notificationId)
+    setResolveError(null)
     try {
       const response = await fetch(
         `/api/cliques/${cliqueId}/membership-requests/${requestId}/approve`,
@@ -67,7 +78,14 @@ export function NotificationBell() {
       )
       if (response.ok) {
         setNotifications((prev) => prev.filter((n) => n.id !== notificationId))
+      } else {
+        const body = await response.json().catch(() => null)
+        setResolveError(body?.error ?? "Failed to approve request")
+        void loadNotifications()
       }
+    } catch {
+      setResolveError("Failed to approve request")
+      void loadNotifications()
     } finally {
       setResolvingId(null)
     }
@@ -75,6 +93,7 @@ export function NotificationBell() {
 
   const handleRejectRequest = async (notificationId: string, cliqueId: string, requestId: string) => {
     setResolvingId(notificationId)
+    setResolveError(null)
     try {
       const response = await fetch(
         `/api/cliques/${cliqueId}/membership-requests/${requestId}/reject`,
@@ -82,7 +101,14 @@ export function NotificationBell() {
       )
       if (response.ok) {
         setNotifications((prev) => prev.filter((n) => n.id !== notificationId))
+      } else {
+        const body = await response.json().catch(() => null)
+        setResolveError(body?.error ?? "Failed to decline request")
+        void loadNotifications()
       }
+    } catch {
+      setResolveError("Failed to decline request")
+      void loadNotifications()
     } finally {
       setResolvingId(null)
     }
@@ -158,6 +184,15 @@ export function NotificationBell() {
               </Button>
             </div>
           </div>
+
+          {resolveError && (
+            <p
+              data-testid="resolve-error"
+              className="border-b px-3 py-2 text-xs text-red-600"
+            >
+              {resolveError}
+            </p>
+          )}
 
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (

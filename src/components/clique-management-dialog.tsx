@@ -136,6 +136,7 @@ export function CliqueManagementDialog({
         return
       }
       setRequests((prev) => prev.filter((r) => r.id !== requestId))
+      router.refresh()
     } catch {
       setError("Failed to reject request")
     } finally {
