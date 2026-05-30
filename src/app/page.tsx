@@ -1,41 +1,19 @@
 import Link from "next/link"
-import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MessageCircle, Star, MapPin } from "lucide-react"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import { Header } from "@/components/header"
 import { AddRecommendationTrigger } from "@/components/add-recommendation-trigger"
-import { AddToCliquesDialog } from "@/components/add-to-cliques-dialog"
 import { CliqueSidebarWrapper } from "@/components/clique-sidebar-wrapper"
 import { CliquePanelWrapper } from "@/components/clique-panel-wrapper"
 import { MobileCliqueActions } from "@/components/mobile-clique-actions"
-import { UpvoteButton } from "@/components/upvote-button"
+import { RecommendationFeed } from "@/components/recommendation-feed"
 import { auth } from "@/lib/auth"
 import { getPrismaClient } from "@/lib/prisma"
 import { getCliqueFeed } from "@/lib/clique-service"
 import { getMyRecommendations, getRecommendations, type RecommendationFeedItem } from "@/lib/recommendations"
 import type { CliqueFeedItem } from "@/types/clique"
+import type { HomeFeedItem } from "@/types/feed"
 import { cn } from "@/lib/utils"
-
-/**
- * Category emoji mapping for placeholder images
- */
-const CATEGORY_EMOJIS: Record<string, string> = {
-  Movie: "🎬",
-  Restaurant: "🍽️",
-  Fashion: "👗",
-  Household: "🏠",
-}
-
-const getCategoryEmoji = (categoryName: string): string =>
-  CATEGORY_EMOJIS[categoryName] || "⭐"
 
 const CLIQUE_FEED_UNAVAILABLE_MESSAGE =
   "Clique feed is temporarily unavailable. Please try again shortly."
@@ -61,26 +39,6 @@ function logCliqueFeedDelegateMismatch(): void {
   console.error(
     "Clique feed is temporarily unavailable because the Prisma client is out of date. Run `npx prisma generate` and restart the dev server."
   )
-}
-
-type HomeFeedItem = {
-  id: string
-  tags: string[]
-  rating: number | null
-  imageUrl: string | null
-  link: string | null
-  entity: RecommendationFeedItem["entity"]
-  _count: {
-    upvotes: number
-    comments: number
-  }
-  attribution: string | null
-  href: string
-  /** Present only for clique feed items; enables interactive upvoting. */
-  upvoteContext?: {
-    cliqueId: string
-    hasUpvoted: boolean
-  }
 }
 
 interface HomePageProps {
@@ -399,201 +357,25 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
               data-testid="feed-content-container"
               className={cn(isEmptyFeed && session?.user?.id && !activeClique && "lg:col-span-2")}
             >
-            {cliqueError ? (
-              <Card className="mx-auto max-w-2xl">
-                <CardHeader>
-                  <CardTitle>Unable to open this clique feed</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-zinc-600 dark:text-zinc-400">{cliqueError}</p>
-                  <Button asChild>
-                    <Link href="/">Back to Public Feed</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : isEmptyFeed ? (
-              <div className="text-center">
-                <p className="text-lg text-zinc-500">
-                  {activeMine
-                    ? "You haven't added any recommendations yet."
-                    : "No recommendations yet. Be the first to add one!"}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {recommendations.map((rec, index) => (
-                  <Card
-                    key={rec.id}
-                    className="group relative flex flex-col overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
-                  >
-                    {showAddToCliqueActions && (
-                      <div className="pointer-events-auto absolute right-3 top-3 z-20 translate-y-0 opacity-100 transition-all duration-200 delay-100 md:pointer-events-none md:translate-y-1 md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:translate-y-0 md:group-hover:opacity-100">
-                        <div className="relative">
-                          <div className="pointer-events-none absolute -inset-1 rounded-full border-2 border-zinc-400/40 border-t-white/80 opacity-0 transition-opacity duration-150 delay-200 md:group-hover:animate-spin md:group-hover:opacity-100" />
-                          <AddToCliquesDialog
-                            recommendationId={rec.id}
-                            recommendationName={rec.entity.name}
-                            variant="icon"
-                          />
-                        </div>
-                      </div>
-                    )}
-                    <Link href={rec.href} className="flex h-full cursor-pointer flex-col">
-                      <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900">
-                        {rec.imageUrl ? (
-                          <>
-                            <Image
-                              src={rec.imageUrl}
-                              alt=""
-                              fill
-                              className="scale-110 object-cover opacity-60 blur-2xl"
-                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                              aria-hidden="true"
-                            />
-                            <Image
-                              src={rec.imageUrl}
-                              alt={rec.entity.name}
-                              fill
-                              className="z-10 object-contain"
-                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                              priority={index === 0}
-                            />
-                          </>
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="p-4 text-center">
-                              <div className="mb-2 text-4xl" aria-hidden="true">
-                                {getCategoryEmoji(rec.entity.category.displayName)}
-                              </div>
-                              <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                                {rec.entity.name}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <CardHeader className="pt-4">
-                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                          <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium dark:bg-zinc-800">
-                            {rec.entity.category.displayName}
-                          </span>
-                          <div className="flex items-center gap-1">
-                            <div className="flex items-center gap-0.5">
-                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
-                                <Star
-                                  key={star}
-                                  className={`h-3 w-3 flex-shrink-0 ${
-                                    (rec.rating || 0) >= star
-                                      ? "fill-yellow-400 text-yellow-400 drop-shadow-[0_1px_2px_rgba(234,179,8,0.5)]"
-                                      : "text-gray-300"
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                            <span className="ml-1 whitespace-nowrap text-xs text-zinc-500">
-                              {rec.rating || 0}/10
-                            </span>
-                          </div>
-                        </div>
-                        <CardTitle>{rec.entity.name}</CardTitle>
-                        {rec.tags.length > 0 && (
-                          <div className="mt-2">
-                            <p className="mb-2 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                              Why recommended:
-                            </p>
-                            <div className="flex flex-wrap gap-1">
-                              {rec.tags.slice(0, 3).map((tag) => (
-                                <Badge
-                                  key={tag}
-                                  variant="secondary"
-                                  className="px-2 py-0 text-xs"
-                                >
-                                  {tag}
-                                </Badge>
-                              ))}
-                              {rec.tags.length > 3 && (
-                                <Badge
-                                  variant="secondary"
-                                  className="px-2 py-0 text-xs"
-                                >
-                                  +{rec.tags.length - 3} more
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                        {rec.entity.movie && (
-                          <div className="mt-3 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
-                            {rec.entity.movie.director && (
-                              <p>Director: {rec.entity.movie.director}</p>
-                            )}
-                            {rec.entity.movie.year && (
-                              <p>Year: {rec.entity.movie.year}</p>
-                            )}
-                            {rec.entity.movie.genre && (
-                              <p>Genre: {rec.entity.movie.genre}</p>
-                            )}
-                            {rec.entity.movie.duration && (
-                              <p>Duration: {rec.entity.movie.duration}</p>
-                            )}
-                          </div>
-                        )}
-                        {rec.entity.restaurant && (
-                          <div className="mt-3 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
-                            {rec.entity.restaurant.cuisine && (
-                              <p>Cuisine: {rec.entity.restaurant.cuisine}</p>
-                            )}
-                            {rec.entity.restaurant.location && (
-                              <p className="flex items-start gap-1">
-                                <MapPin className="mt-0.5 h-3 w-3 flex-shrink-0" />
-                                <span>{rec.entity.restaurant.location}</span>
-                              </p>
-                            )}
-                            {rec.entity.restaurant.priceRange && (
-                              <p>Price: {rec.entity.restaurant.priceRange}</p>
-                            )}
-                          </div>
-                        )}
-                      </CardHeader>
-                      <CardContent className="mt-auto">
-                        <div className="flex items-center justify-between text-sm text-zinc-500">
-                          <div className="flex gap-4">
-                            {rec.upvoteContext ? (
-                              <UpvoteButton
-                                recommendationId={rec.id}
-                                cliqueId={rec.upvoteContext.cliqueId}
-                                initialCount={rec._count.upvotes}
-                                initialHasUpvoted={rec.upvoteContext.hasUpvoted}
-                              />
-                            ) : null}
-                            {rec.upvoteContext && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span
-                                      tabIndex={0}
-                                      aria-label={`${rec._count.comments} comments`}
-                                      className="flex items-center gap-1"
-                                    >
-                                      <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                                      {rec._count.comments}
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Comments</TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </div>
-                          {rec.attribution && (
-                            <span className="text-right text-xs">{rec.attribution}</span>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Link>
-                  </Card>
-                ))}
-              </div>
-            )}
+              {cliqueError ? (
+                <Card className="mx-auto max-w-2xl">
+                  <CardHeader>
+                    <CardTitle>Unable to open this clique feed</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-zinc-600 dark:text-zinc-400">{cliqueError}</p>
+                    <Button asChild>
+                      <Link href="/">Back to Public Feed</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <RecommendationFeed
+                  recommendations={recommendations}
+                  showAddToCliqueActions={showAddToCliqueActions}
+                  activeMine={activeMine}
+                />
+              )}
             </div>
 
             {session?.user?.id && activeClique && (
