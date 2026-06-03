@@ -2,12 +2,16 @@
 
 ## Unit Tests — CategoryFilter (`src/components/__tests__/category-filter.test.tsx`)
 
-1. Renders both "Movies" and "Restaurants" toggle chips
-2. Both chips are visually selected by default (when `selectedCategories` contains both)
-3. Clicking a selected chip calls `onChange` with that category removed
-4. Clicking an unselected chip calls `onChange` with that category added
-5. A chip is visually distinguished (aria-pressed or class) when selected vs unselected
-6. Does not render any other category options (Fashion, Household, Other)
+1. Renders the "Filter Category:" label
+2. Trigger button shows "All" when both categories are selected
+3. Trigger button shows "None" when no categories are selected
+4. Trigger button shows the selected category label when only one is selected
+5. Opening the dropdown shows Movies and Restaurants as checkbox items
+6. Does not render any other category options (Fashion, Household, Other) in the dropdown
+7. Checkbox item is marked checked/unchecked based on `selectedCategories`
+8. Clicking an unchecked item calls `onChange` with that category added
+9. Clicking a checked item calls `onChange` with that category removed
+10. Dropdown stays open after selecting an item (allows multi-select without reopening)
 
 ---
 
@@ -48,10 +52,12 @@
 - [ ] "Browse Categories" button no longer appears on the home page (logged in or logged out)
 - [ ] Category filter bar is visible above the recommendation feed when no clique is selected
 - [ ] Category filter bar is visible above the recommendation feed when a clique is active
-- [ ] By default, both "Movies" and "Restaurants" chips appear selected and all recommendations are shown
-- [ ] Clicking "Movies" (deselects it) shows only Restaurant recommendations
-- [ ] Clicking "Restaurants" (deselects it) shows only Movie recommendations
-- [ ] Clicking both chips off shows all recommendations again
+- [ ] By default, the dropdown trigger shows "All" and all recommendations are shown
+- [ ] Opening the dropdown shows Movies and Restaurants both checked
+- [ ] Unchecking "Movies" shows only Restaurant recommendations; trigger updates to "🍽️ Restaurants"
+- [ ] Unchecking "Restaurants" shows only Movie recommendations; trigger updates to "🎬 Movies"
+- [ ] Unchecking both options shows all recommendations; trigger shows "None"
+- [ ] The dropdown stays open after unchecking one option, allowing the second to be unchecked without reopening
 - [ ] A clique feed with only Movie recs filtered to "Restaurants" shows "No recommendations of this type yet."
 - [ ] Refreshing the page resets the filter back to the default (both selected, all shown)
 - [ ] Filter works on the public (unauthenticated) feed
