@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-const FILTER_OPTIONS = [
+export const FILTER_OPTIONS = [
   { label: "🎬 Movies", value: "Movie" },
   { label: "🍽️ Restaurants", value: "Restaurant" },
 ] as const

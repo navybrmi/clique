@@ -12,12 +12,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { CategoryFilter } from "@/components/category-filter"
+import { CategoryFilter, FILTER_OPTIONS } from "@/components/category-filter"
 import { AddToCliquesDialog } from "@/components/add-to-cliques-dialog"
 import { UpvoteButton } from "@/components/upvote-button"
 import type { HomeFeedItem } from "@/types/feed"
-
-const FILTER_OPTIONS = ["Movie", "Restaurant"]
 
 const CATEGORY_EMOJIS: Record<string, string> = {
   Movie: "🎬",
@@ -40,7 +38,9 @@ export function RecommendationFeed({
   showAddToCliqueActions,
   activeMine,
 }: RecommendationFeedProps) {
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([...FILTER_OPTIONS])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(
+    FILTER_OPTIONS.map((o) => o.value)
+  )
 
   const filteredRecommendations = useMemo(() => {
     if (
