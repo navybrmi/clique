@@ -4,7 +4,7 @@
 
 **Extract feed grid into a client component.** `page.tsx` is a server component that fetches and renders everything inline. Client-side filtering requires React state, so the card grid must live in a `"use client"` component. The server component fetches all recommendations, then passes them as a prop to the client component which manages filter state and renders the filtered result.
 
-**Two focused components.** `CategoryFilter` handles the toggle UI only (no knowledge of recommendations). `RecommendationFeed` owns the filter state, applies it to the recommendation list, and renders the grid. This keeps each component testable in isolation.
+**Two focused components.** `CategoryFilter` handles the dropdown UI only (no knowledge of recommendations). `RecommendationFeed` owns the filter state, applies it to the recommendation list, and renders the grid. This keeps each component testable in isolation.
 
 **Move `HomeFeedItem` type.** Currently defined inline in `page.tsx`, it needs to be shared with `RecommendationFeed`. Moving it to `src/types/feed.ts` avoids a circular import.
 
@@ -19,7 +19,7 @@
 | File | Purpose |
 |------|---------|
 | `src/types/feed.ts` | `HomeFeedItem` type, shared between `page.tsx` and `RecommendationFeed` |
-| `src/components/category-filter.tsx` | `"use client"` toggle bar — renders Movies/Restaurants chip buttons, calls `onChange` on toggle |
+| `src/components/category-filter.tsx` | `"use client"` multi-select dropdown — renders a "Filter Category:" label and a `DropdownMenu` with `DropdownMenuCheckboxItem` for Movies/Restaurants; calls `onChange` on toggle; dropdown stays open between selections |
 | `src/components/recommendation-feed.tsx` | `"use client"` wrapper — holds `selectedCategories` state, renders `CategoryFilter` + filtered card grid (card JSX moves here from `page.tsx`) |
 | `src/components/__tests__/category-filter.test.tsx` | Unit tests for `CategoryFilter` |
 | `src/components/__tests__/recommendation-feed.test.tsx` | Unit tests for `RecommendationFeed` |
