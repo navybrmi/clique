@@ -3,6 +3,19 @@
 All notable changes to Clique will be documented in this file.
 Each version links to its GitHub Release.
 
+## [v0.18.0](https://github.com/navybrmi/clique/releases/tag/v0.18.0) — 2026-06-03
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.18.0 -->
+
+## What's Changed
+### Other Changes
+* feat(category-filter): add Movies/Restaurants filter and remove Browse Categories button by @navybrmi in https://github.com/navybrmi/clique/pull/98
+
+
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.17.1...v0.18.0
+
+---
+
 ## [v0.17.0](https://github.com/navybrmi/clique/releases/tag/v0.17.0) — 2026-05-28
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.17.0 -->
