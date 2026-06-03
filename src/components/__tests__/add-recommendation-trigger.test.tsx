@@ -57,16 +57,14 @@ describe('AddRecommendationTrigger', () => {
     mockRouterRefresh.mockClear()
   })
 
-  it('renders the Browse Categories button', () => {
+  it('does not render a Browse Categories button', () => {
     render(<AddRecommendationTrigger />)
-    expect(screen.getByRole('button', { name: /browse categories/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /browse categories/i })).not.toBeInTheDocument()
   })
 
-  it('renders compact full-width actions in the sidebar layout', () => {
+  it('renders compact full-width Add Recommendation button in the sidebar layout', () => {
     render(<AddRecommendationTrigger layout="sidebar" />)
-
     expect(screen.getByRole('button', { name: /add recommendation/i })).toHaveClass('w-full')
-    expect(screen.getByRole('button', { name: /browse categories/i })).toHaveClass('w-full')
   })
 
   it('renders the dialog', () => {

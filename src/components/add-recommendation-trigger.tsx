@@ -28,9 +28,8 @@ interface AddRecommendationTriggerProps {
 /**
  * Top-level trigger section for creating a new recommendation.
  *
- * Renders the primary "Add recommendation" entry point wired to {@link AddRecommendationDialog}
- * and a secondary "Browse Categories" action. Handles showing a login-required alert when an
- * unauthenticated user attempts to open the add recommendation flow.
+ * Renders the primary "Add recommendation" entry point wired to {@link AddRecommendationDialog}.
+ * Handles showing a login-required alert when an unauthenticated user attempts to open the flow.
  *
  * @param props - Component props.
  * @param props.userId - Optional authenticated user ID; forwarded to the dialog to avoid extra session lookups.
@@ -79,14 +78,6 @@ export function AddRecommendationTrigger({
           onDismissLoginAlert={() => setShowLoginAlert(false)}
           onBlockedOpen={() => setShowLoginAlert(true)}
         />
-        <Button
-          type="button"
-          size={isSidebarLayout ? "sm" : "lg"}
-          variant="outline"
-          className={cn(isSidebarLayout && "w-full justify-start")}
-        >
-          Browse Categories
-        </Button>
       </div>
       {showLoginAlert && (
         <div
