@@ -55,7 +55,7 @@ const makeRec = (
 })
 
 describe("RecommendationFeed", () => {
-  it("renders the CategoryFilter bar", () => {
+  it("renders the CategoryFilter bar with label", () => {
     render(
       <RecommendationFeed
         recommendations={[]}
@@ -63,7 +63,7 @@ describe("RecommendationFeed", () => {
         activeMine={false}
       />
     )
-    expect(screen.getByRole("group", { name: /filter by category/i })).toBeInTheDocument()
+    expect(screen.getByText("Filter Category:")).toBeInTheDocument()
   })
 
   it("shows all recommendations by default (both filter options selected)", () => {
@@ -95,7 +95,8 @@ describe("RecommendationFeed", () => {
         activeMine={false}
       />
     )
-    await user.click(screen.getByRole("button", { name: /restaurants/i }))
+    await user.click(screen.getByRole("button", { name: /all/i }))
+    await user.click(screen.getByRole("menuitemcheckbox", { name: /restaurants/i }))
     expect(screen.getAllByText("Movie 1").length).toBeGreaterThan(0)
     expect(screen.queryAllByText("Restaurant 2")).toHaveLength(0)
   })
@@ -110,7 +111,8 @@ describe("RecommendationFeed", () => {
         activeMine={false}
       />
     )
-    await user.click(screen.getByRole("button", { name: /movies/i }))
+    await user.click(screen.getByRole("button", { name: /all/i }))
+    await user.click(screen.getByRole("menuitemcheckbox", { name: /movies/i }))
     expect(screen.queryAllByText("Movie 1")).toHaveLength(0)
     expect(screen.getAllByText("Restaurant 2").length).toBeGreaterThan(0)
   })
@@ -125,8 +127,10 @@ describe("RecommendationFeed", () => {
         activeMine={false}
       />
     )
-    await user.click(screen.getByRole("button", { name: /movies/i }))
-    await user.click(screen.getByRole("button", { name: /restaurants/i }))
+    // Open dropdown and deselect both — dropdown stays open between selections
+    await user.click(screen.getByRole("button", { name: /all/i }))
+    await user.click(screen.getByRole("menuitemcheckbox", { name: /movies/i }))
+    await user.click(screen.getByRole("menuitemcheckbox", { name: /restaurants/i }))
     expect(screen.getAllByText("Movie 1").length).toBeGreaterThan(0)
     expect(screen.getAllByText("Restaurant 2").length).toBeGreaterThan(0)
     expect(screen.getAllByText("Fashion 3").length).toBeGreaterThan(0)
@@ -187,7 +191,8 @@ describe("RecommendationFeed", () => {
       />
     )
     // Deselect Restaurants so only Movies filter is active
-    await user.click(screen.getByRole("button", { name: /restaurants/i }))
+    await user.click(screen.getByRole("button", { name: /all/i }))
+    await user.click(screen.getByRole("menuitemcheckbox", { name: /restaurants/i }))
     expect(
       screen.getByText(/no recommendations of this type yet/i)
     ).toBeInTheDocument()
