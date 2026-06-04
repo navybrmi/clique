@@ -234,9 +234,15 @@ model Comment {
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   recommendationId String
   recommendation   Recommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  // Clique that owns this comment thread. Nullable during the expand phase of the
+  // migration; flipped to required (NOT NULL) once all live comments are clique-scoped.
+  cliqueId         String?
+  clique           Clique?        @relation(fields: [cliqueId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([recommendationId])
+  @@index([recommendationId, cliqueId])
+  @@index([cliqueId])
 }
 
 // UpVote model
@@ -288,6 +294,7 @@ model Clique {
   invites            CliqueInvite[]
   recommendations    CliqueRecommendation[]
   membershipRequests CliqueMembershipRequest[]
+  comments           Comment[]
 
   @@index([creatorId])
 }

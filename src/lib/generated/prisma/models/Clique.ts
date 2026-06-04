@@ -187,6 +187,7 @@ export type CliqueWhereInput = {
   invites?: Prisma.CliqueInviteListRelationFilter
   recommendations?: Prisma.CliqueRecommendationListRelationFilter
   membershipRequests?: Prisma.CliqueMembershipRequestListRelationFilter
+  comments?: Prisma.CommentListRelationFilter
 }
 
 export type CliqueOrderByWithRelationInput = {
@@ -200,6 +201,7 @@ export type CliqueOrderByWithRelationInput = {
   invites?: Prisma.CliqueInviteOrderByRelationAggregateInput
   recommendations?: Prisma.CliqueRecommendationOrderByRelationAggregateInput
   membershipRequests?: Prisma.CliqueMembershipRequestOrderByRelationAggregateInput
+  comments?: Prisma.CommentOrderByRelationAggregateInput
 }
 
 export type CliqueWhereUniqueInput = Prisma.AtLeast<{
@@ -216,6 +218,7 @@ export type CliqueWhereUniqueInput = Prisma.AtLeast<{
   invites?: Prisma.CliqueInviteListRelationFilter
   recommendations?: Prisma.CliqueRecommendationListRelationFilter
   membershipRequests?: Prisma.CliqueMembershipRequestListRelationFilter
+  comments?: Prisma.CommentListRelationFilter
 }, "id">
 
 export type CliqueOrderByWithAggregationInput = {
@@ -250,6 +253,7 @@ export type CliqueCreateInput = {
   invites?: Prisma.CliqueInviteCreateNestedManyWithoutCliqueInput
   recommendations?: Prisma.CliqueRecommendationCreateNestedManyWithoutCliqueInput
   membershipRequests?: Prisma.CliqueMembershipRequestCreateNestedManyWithoutCliqueInput
+  comments?: Prisma.CommentCreateNestedManyWithoutCliqueInput
 }
 
 export type CliqueUncheckedCreateInput = {
@@ -262,6 +266,7 @@ export type CliqueUncheckedCreateInput = {
   invites?: Prisma.CliqueInviteUncheckedCreateNestedManyWithoutCliqueInput
   recommendations?: Prisma.CliqueRecommendationUncheckedCreateNestedManyWithoutCliqueInput
   membershipRequests?: Prisma.CliqueMembershipRequestUncheckedCreateNestedManyWithoutCliqueInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutCliqueInput
 }
 
 export type CliqueUpdateInput = {
@@ -274,6 +279,7 @@ export type CliqueUpdateInput = {
   invites?: Prisma.CliqueInviteUpdateManyWithoutCliqueNestedInput
   recommendations?: Prisma.CliqueRecommendationUpdateManyWithoutCliqueNestedInput
   membershipRequests?: Prisma.CliqueMembershipRequestUpdateManyWithoutCliqueNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutCliqueNestedInput
 }
 
 export type CliqueUncheckedUpdateInput = {
@@ -286,6 +292,7 @@ export type CliqueUncheckedUpdateInput = {
   invites?: Prisma.CliqueInviteUncheckedUpdateManyWithoutCliqueNestedInput
   recommendations?: Prisma.CliqueRecommendationUncheckedUpdateManyWithoutCliqueNestedInput
   membershipRequests?: Prisma.CliqueMembershipRequestUncheckedUpdateManyWithoutCliqueNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutCliqueNestedInput
 }
 
 export type CliqueCreateManyInput = {
@@ -319,6 +326,11 @@ export type CliqueListRelationFilter = {
 
 export type CliqueOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type CliqueNullableScalarRelationFilter = {
+  is?: Prisma.CliqueWhereInput | null
+  isNot?: Prisma.CliqueWhereInput | null
 }
 
 export type CliqueCountOrderByAggregateInput = {
@@ -392,6 +404,22 @@ export type CliqueUncheckedUpdateManyWithoutCreatorNestedInput = {
   deleteMany?: Prisma.CliqueScalarWhereInput | Prisma.CliqueScalarWhereInput[]
 }
 
+export type CliqueCreateNestedOneWithoutCommentsInput = {
+  create?: Prisma.XOR<Prisma.CliqueCreateWithoutCommentsInput, Prisma.CliqueUncheckedCreateWithoutCommentsInput>
+  connectOrCreate?: Prisma.CliqueCreateOrConnectWithoutCommentsInput
+  connect?: Prisma.CliqueWhereUniqueInput
+}
+
+export type CliqueUpdateOneWithoutCommentsNestedInput = {
+  create?: Prisma.XOR<Prisma.CliqueCreateWithoutCommentsInput, Prisma.CliqueUncheckedCreateWithoutCommentsInput>
+  connectOrCreate?: Prisma.CliqueCreateOrConnectWithoutCommentsInput
+  upsert?: Prisma.CliqueUpsertWithoutCommentsInput
+  disconnect?: Prisma.CliqueWhereInput | boolean
+  delete?: Prisma.CliqueWhereInput | boolean
+  connect?: Prisma.CliqueWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CliqueUpdateToOneWithWhereWithoutCommentsInput, Prisma.CliqueUpdateWithoutCommentsInput>, Prisma.CliqueUncheckedUpdateWithoutCommentsInput>
+}
+
 export type CliqueCreateNestedOneWithoutMembersInput = {
   create?: Prisma.XOR<Prisma.CliqueCreateWithoutMembersInput, Prisma.CliqueUncheckedCreateWithoutMembersInput>
   connectOrCreate?: Prisma.CliqueCreateOrConnectWithoutMembersInput
@@ -457,6 +485,7 @@ export type CliqueCreateWithoutCreatorInput = {
   invites?: Prisma.CliqueInviteCreateNestedManyWithoutCliqueInput
   recommendations?: Prisma.CliqueRecommendationCreateNestedManyWithoutCliqueInput
   membershipRequests?: Prisma.CliqueMembershipRequestCreateNestedManyWithoutCliqueInput
+  comments?: Prisma.CommentCreateNestedManyWithoutCliqueInput
 }
 
 export type CliqueUncheckedCreateWithoutCreatorInput = {
@@ -468,6 +497,7 @@ export type CliqueUncheckedCreateWithoutCreatorInput = {
   invites?: Prisma.CliqueInviteUncheckedCreateNestedManyWithoutCliqueInput
   recommendations?: Prisma.CliqueRecommendationUncheckedCreateNestedManyWithoutCliqueInput
   membershipRequests?: Prisma.CliqueMembershipRequestUncheckedCreateNestedManyWithoutCliqueInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutCliqueInput
 }
 
 export type CliqueCreateOrConnectWithoutCreatorInput = {
@@ -507,6 +537,70 @@ export type CliqueScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Clique"> | Date | string
 }
 
+export type CliqueCreateWithoutCommentsInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  creator: Prisma.UserCreateNestedOneWithoutCliquesCreatedInput
+  members?: Prisma.CliqueMemberCreateNestedManyWithoutCliqueInput
+  invites?: Prisma.CliqueInviteCreateNestedManyWithoutCliqueInput
+  recommendations?: Prisma.CliqueRecommendationCreateNestedManyWithoutCliqueInput
+  membershipRequests?: Prisma.CliqueMembershipRequestCreateNestedManyWithoutCliqueInput
+}
+
+export type CliqueUncheckedCreateWithoutCommentsInput = {
+  id?: string
+  name: string
+  creatorId: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  members?: Prisma.CliqueMemberUncheckedCreateNestedManyWithoutCliqueInput
+  invites?: Prisma.CliqueInviteUncheckedCreateNestedManyWithoutCliqueInput
+  recommendations?: Prisma.CliqueRecommendationUncheckedCreateNestedManyWithoutCliqueInput
+  membershipRequests?: Prisma.CliqueMembershipRequestUncheckedCreateNestedManyWithoutCliqueInput
+}
+
+export type CliqueCreateOrConnectWithoutCommentsInput = {
+  where: Prisma.CliqueWhereUniqueInput
+  create: Prisma.XOR<Prisma.CliqueCreateWithoutCommentsInput, Prisma.CliqueUncheckedCreateWithoutCommentsInput>
+}
+
+export type CliqueUpsertWithoutCommentsInput = {
+  update: Prisma.XOR<Prisma.CliqueUpdateWithoutCommentsInput, Prisma.CliqueUncheckedUpdateWithoutCommentsInput>
+  create: Prisma.XOR<Prisma.CliqueCreateWithoutCommentsInput, Prisma.CliqueUncheckedCreateWithoutCommentsInput>
+  where?: Prisma.CliqueWhereInput
+}
+
+export type CliqueUpdateToOneWithWhereWithoutCommentsInput = {
+  where?: Prisma.CliqueWhereInput
+  data: Prisma.XOR<Prisma.CliqueUpdateWithoutCommentsInput, Prisma.CliqueUncheckedUpdateWithoutCommentsInput>
+}
+
+export type CliqueUpdateWithoutCommentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  creator?: Prisma.UserUpdateOneRequiredWithoutCliquesCreatedNestedInput
+  members?: Prisma.CliqueMemberUpdateManyWithoutCliqueNestedInput
+  invites?: Prisma.CliqueInviteUpdateManyWithoutCliqueNestedInput
+  recommendations?: Prisma.CliqueRecommendationUpdateManyWithoutCliqueNestedInput
+  membershipRequests?: Prisma.CliqueMembershipRequestUpdateManyWithoutCliqueNestedInput
+}
+
+export type CliqueUncheckedUpdateWithoutCommentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  creatorId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  members?: Prisma.CliqueMemberUncheckedUpdateManyWithoutCliqueNestedInput
+  invites?: Prisma.CliqueInviteUncheckedUpdateManyWithoutCliqueNestedInput
+  recommendations?: Prisma.CliqueRecommendationUncheckedUpdateManyWithoutCliqueNestedInput
+  membershipRequests?: Prisma.CliqueMembershipRequestUncheckedUpdateManyWithoutCliqueNestedInput
+}
+
 export type CliqueCreateWithoutMembersInput = {
   id?: string
   name: string
@@ -516,6 +610,7 @@ export type CliqueCreateWithoutMembersInput = {
   invites?: Prisma.CliqueInviteCreateNestedManyWithoutCliqueInput
   recommendations?: Prisma.CliqueRecommendationCreateNestedManyWithoutCliqueInput
   membershipRequests?: Prisma.CliqueMembershipRequestCreateNestedManyWithoutCliqueInput
+  comments?: Prisma.CommentCreateNestedManyWithoutCliqueInput
 }
 
 export type CliqueUncheckedCreateWithoutMembersInput = {
@@ -527,6 +622,7 @@ export type CliqueUncheckedCreateWithoutMembersInput = {
   invites?: Prisma.CliqueInviteUncheckedCreateNestedManyWithoutCliqueInput
   recommendations?: Prisma.CliqueRecommendationUncheckedCreateNestedManyWithoutCliqueInput
   membershipRequests?: Prisma.CliqueMembershipRequestUncheckedCreateNestedManyWithoutCliqueInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutCliqueInput
 }
 
 export type CliqueCreateOrConnectWithoutMembersInput = {
@@ -554,6 +650,7 @@ export type CliqueUpdateWithoutMembersInput = {
   invites?: Prisma.CliqueInviteUpdateManyWithoutCliqueNestedInput
   recommendations?: Prisma.CliqueRecommendationUpdateManyWithoutCliqueNestedInput
   membershipRequests?: Prisma.CliqueMembershipRequestUpdateManyWithoutCliqueNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutCliqueNestedInput
 }
 
 export type CliqueUncheckedUpdateWithoutMembersInput = {
@@ -565,6 +662,7 @@ export type CliqueUncheckedUpdateWithoutMembersInput = {
   invites?: Prisma.CliqueInviteUncheckedUpdateManyWithoutCliqueNestedInput
   recommendations?: Prisma.CliqueRecommendationUncheckedUpdateManyWithoutCliqueNestedInput
   membershipRequests?: Prisma.CliqueMembershipRequestUncheckedUpdateManyWithoutCliqueNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutCliqueNestedInput
 }
 
 export type CliqueCreateWithoutInvitesInput = {
@@ -576,6 +674,7 @@ export type CliqueCreateWithoutInvitesInput = {
   members?: Prisma.CliqueMemberCreateNestedManyWithoutCliqueInput
   recommendations?: Prisma.CliqueRecommendationCreateNestedManyWithoutCliqueInput
   membershipRequests?: Prisma.CliqueMembershipRequestCreateNestedManyWithoutCliqueInput
+  comments?: Prisma.CommentCreateNestedManyWithoutCliqueInput
 }
 
 export type CliqueUncheckedCreateWithoutInvitesInput = {
@@ -587,6 +686,7 @@ export type CliqueUncheckedCreateWithoutInvitesInput = {
   members?: Prisma.CliqueMemberUncheckedCreateNestedManyWithoutCliqueInput
   recommendations?: Prisma.CliqueRecommendationUncheckedCreateNestedManyWithoutCliqueInput
   membershipRequests?: Prisma.CliqueMembershipRequestUncheckedCreateNestedManyWithoutCliqueInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutCliqueInput
 }
 
 export type CliqueCreateOrConnectWithoutInvitesInput = {
@@ -614,6 +714,7 @@ export type CliqueUpdateWithoutInvitesInput = {
   members?: Prisma.CliqueMemberUpdateManyWithoutCliqueNestedInput
   recommendations?: Prisma.CliqueRecommendationUpdateManyWithoutCliqueNestedInput
   membershipRequests?: Prisma.CliqueMembershipRequestUpdateManyWithoutCliqueNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutCliqueNestedInput
 }
 
 export type CliqueUncheckedUpdateWithoutInvitesInput = {
@@ -625,6 +726,7 @@ export type CliqueUncheckedUpdateWithoutInvitesInput = {
   members?: Prisma.CliqueMemberUncheckedUpdateManyWithoutCliqueNestedInput
   recommendations?: Prisma.CliqueRecommendationUncheckedUpdateManyWithoutCliqueNestedInput
   membershipRequests?: Prisma.CliqueMembershipRequestUncheckedUpdateManyWithoutCliqueNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutCliqueNestedInput
 }
 
 export type CliqueCreateWithoutRecommendationsInput = {
@@ -636,6 +738,7 @@ export type CliqueCreateWithoutRecommendationsInput = {
   members?: Prisma.CliqueMemberCreateNestedManyWithoutCliqueInput
   invites?: Prisma.CliqueInviteCreateNestedManyWithoutCliqueInput
   membershipRequests?: Prisma.CliqueMembershipRequestCreateNestedManyWithoutCliqueInput
+  comments?: Prisma.CommentCreateNestedManyWithoutCliqueInput
 }
 
 export type CliqueUncheckedCreateWithoutRecommendationsInput = {
@@ -647,6 +750,7 @@ export type CliqueUncheckedCreateWithoutRecommendationsInput = {
   members?: Prisma.CliqueMemberUncheckedCreateNestedManyWithoutCliqueInput
   invites?: Prisma.CliqueInviteUncheckedCreateNestedManyWithoutCliqueInput
   membershipRequests?: Prisma.CliqueMembershipRequestUncheckedCreateNestedManyWithoutCliqueInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutCliqueInput
 }
 
 export type CliqueCreateOrConnectWithoutRecommendationsInput = {
@@ -674,6 +778,7 @@ export type CliqueUpdateWithoutRecommendationsInput = {
   members?: Prisma.CliqueMemberUpdateManyWithoutCliqueNestedInput
   invites?: Prisma.CliqueInviteUpdateManyWithoutCliqueNestedInput
   membershipRequests?: Prisma.CliqueMembershipRequestUpdateManyWithoutCliqueNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutCliqueNestedInput
 }
 
 export type CliqueUncheckedUpdateWithoutRecommendationsInput = {
@@ -685,6 +790,7 @@ export type CliqueUncheckedUpdateWithoutRecommendationsInput = {
   members?: Prisma.CliqueMemberUncheckedUpdateManyWithoutCliqueNestedInput
   invites?: Prisma.CliqueInviteUncheckedUpdateManyWithoutCliqueNestedInput
   membershipRequests?: Prisma.CliqueMembershipRequestUncheckedUpdateManyWithoutCliqueNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutCliqueNestedInput
 }
 
 export type CliqueCreateWithoutMembershipRequestsInput = {
@@ -696,6 +802,7 @@ export type CliqueCreateWithoutMembershipRequestsInput = {
   members?: Prisma.CliqueMemberCreateNestedManyWithoutCliqueInput
   invites?: Prisma.CliqueInviteCreateNestedManyWithoutCliqueInput
   recommendations?: Prisma.CliqueRecommendationCreateNestedManyWithoutCliqueInput
+  comments?: Prisma.CommentCreateNestedManyWithoutCliqueInput
 }
 
 export type CliqueUncheckedCreateWithoutMembershipRequestsInput = {
@@ -707,6 +814,7 @@ export type CliqueUncheckedCreateWithoutMembershipRequestsInput = {
   members?: Prisma.CliqueMemberUncheckedCreateNestedManyWithoutCliqueInput
   invites?: Prisma.CliqueInviteUncheckedCreateNestedManyWithoutCliqueInput
   recommendations?: Prisma.CliqueRecommendationUncheckedCreateNestedManyWithoutCliqueInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutCliqueInput
 }
 
 export type CliqueCreateOrConnectWithoutMembershipRequestsInput = {
@@ -734,6 +842,7 @@ export type CliqueUpdateWithoutMembershipRequestsInput = {
   members?: Prisma.CliqueMemberUpdateManyWithoutCliqueNestedInput
   invites?: Prisma.CliqueInviteUpdateManyWithoutCliqueNestedInput
   recommendations?: Prisma.CliqueRecommendationUpdateManyWithoutCliqueNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutCliqueNestedInput
 }
 
 export type CliqueUncheckedUpdateWithoutMembershipRequestsInput = {
@@ -745,6 +854,7 @@ export type CliqueUncheckedUpdateWithoutMembershipRequestsInput = {
   members?: Prisma.CliqueMemberUncheckedUpdateManyWithoutCliqueNestedInput
   invites?: Prisma.CliqueInviteUncheckedUpdateManyWithoutCliqueNestedInput
   recommendations?: Prisma.CliqueRecommendationUncheckedUpdateManyWithoutCliqueNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutCliqueNestedInput
 }
 
 export type CliqueCreateManyCreatorInput = {
@@ -763,6 +873,7 @@ export type CliqueUpdateWithoutCreatorInput = {
   invites?: Prisma.CliqueInviteUpdateManyWithoutCliqueNestedInput
   recommendations?: Prisma.CliqueRecommendationUpdateManyWithoutCliqueNestedInput
   membershipRequests?: Prisma.CliqueMembershipRequestUpdateManyWithoutCliqueNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutCliqueNestedInput
 }
 
 export type CliqueUncheckedUpdateWithoutCreatorInput = {
@@ -774,6 +885,7 @@ export type CliqueUncheckedUpdateWithoutCreatorInput = {
   invites?: Prisma.CliqueInviteUncheckedUpdateManyWithoutCliqueNestedInput
   recommendations?: Prisma.CliqueRecommendationUncheckedUpdateManyWithoutCliqueNestedInput
   membershipRequests?: Prisma.CliqueMembershipRequestUncheckedUpdateManyWithoutCliqueNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutCliqueNestedInput
 }
 
 export type CliqueUncheckedUpdateManyWithoutCreatorInput = {
@@ -793,6 +905,7 @@ export type CliqueCountOutputType = {
   invites: number
   recommendations: number
   membershipRequests: number
+  comments: number
 }
 
 export type CliqueCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -800,6 +913,7 @@ export type CliqueCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions
   invites?: boolean | CliqueCountOutputTypeCountInvitesArgs
   recommendations?: boolean | CliqueCountOutputTypeCountRecommendationsArgs
   membershipRequests?: boolean | CliqueCountOutputTypeCountMembershipRequestsArgs
+  comments?: boolean | CliqueCountOutputTypeCountCommentsArgs
 }
 
 /**
@@ -840,6 +954,13 @@ export type CliqueCountOutputTypeCountMembershipRequestsArgs<ExtArgs extends run
   where?: Prisma.CliqueMembershipRequestWhereInput
 }
 
+/**
+ * CliqueCountOutputType without action
+ */
+export type CliqueCountOutputTypeCountCommentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CommentWhereInput
+}
+
 
 export type CliqueSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -852,6 +973,7 @@ export type CliqueSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   invites?: boolean | Prisma.Clique$invitesArgs<ExtArgs>
   recommendations?: boolean | Prisma.Clique$recommendationsArgs<ExtArgs>
   membershipRequests?: boolean | Prisma.Clique$membershipRequestsArgs<ExtArgs>
+  comments?: boolean | Prisma.Clique$commentsArgs<ExtArgs>
   _count?: boolean | Prisma.CliqueCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["clique"]>
 
@@ -888,6 +1010,7 @@ export type CliqueInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   invites?: boolean | Prisma.Clique$invitesArgs<ExtArgs>
   recommendations?: boolean | Prisma.Clique$recommendationsArgs<ExtArgs>
   membershipRequests?: boolean | Prisma.Clique$membershipRequestsArgs<ExtArgs>
+  comments?: boolean | Prisma.Clique$commentsArgs<ExtArgs>
   _count?: boolean | Prisma.CliqueCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CliqueIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -905,6 +1028,7 @@ export type $CliquePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     invites: Prisma.$CliqueInvitePayload<ExtArgs>[]
     recommendations: Prisma.$CliqueRecommendationPayload<ExtArgs>[]
     membershipRequests: Prisma.$CliqueMembershipRequestPayload<ExtArgs>[]
+    comments: Prisma.$CommentPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1311,6 +1435,7 @@ export interface Prisma__CliqueClient<T, Null = never, ExtArgs extends runtime.T
   invites<T extends Prisma.Clique$invitesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Clique$invitesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CliqueInvitePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   recommendations<T extends Prisma.Clique$recommendationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Clique$recommendationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CliqueRecommendationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   membershipRequests<T extends Prisma.Clique$membershipRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Clique$membershipRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CliqueMembershipRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  comments<T extends Prisma.Clique$commentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Clique$commentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CommentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1839,6 +1964,30 @@ export type Clique$membershipRequestsArgs<ExtArgs extends runtime.Types.Extensio
   take?: number
   skip?: number
   distinct?: Prisma.CliqueMembershipRequestScalarFieldEnum | Prisma.CliqueMembershipRequestScalarFieldEnum[]
+}
+
+/**
+ * Clique.comments
+ */
+export type Clique$commentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Comment
+   */
+  select?: Prisma.CommentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Comment
+   */
+  omit?: Prisma.CommentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CommentInclude<ExtArgs> | null
+  where?: Prisma.CommentWhereInput
+  orderBy?: Prisma.CommentOrderByWithRelationInput | Prisma.CommentOrderByWithRelationInput[]
+  cursor?: Prisma.CommentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CommentScalarFieldEnum | Prisma.CommentScalarFieldEnum[]
 }
 
 /**
