@@ -125,8 +125,9 @@ export async function getWithinCliqueLikeCounts(
 
 /**
  * For each recommendation, the cliques the current user belongs to that contain
- * it, ranked by total member count (descending, then name ascending for stable
- * ties). Feed cards slice this to the top 2 chips; the detail view lists all.
+ * it, ranked by total member count (descending, then name then id ascending so
+ * ties are fully deterministic — `Clique.name` is not unique). Feed cards slice
+ * this to the top 2 chips; the detail view lists all.
  *
  * @param recIds - Recommendation ids to look up
  * @param userId - The current user whose memberships scope the result
@@ -156,7 +157,7 @@ export async function getUserCliquesForRecommendations(
       ON cm_all."cliqueId" = c."id"
     WHERE cr."recommendationId" IN (${Prisma.join(recIds)})
     GROUP BY cr."recommendationId", c."id", c."name"
-    ORDER BY COUNT(cm_all."userId") DESC, c."name" ASC
+    ORDER BY COUNT(cm_all."userId") DESC, c."name" ASC, c."id" ASC
   `)
   for (const row of rows) {
     const list = result.get(row.recommendationId) ?? []

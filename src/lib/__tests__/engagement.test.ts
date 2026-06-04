@@ -33,7 +33,7 @@ describe("getLikeTotals", () => {
   it("maps global upvote totals per recommendation", async () => {
     upVoteGroupBy.mockResolvedValue([
       { recommendationId: "r1", _count: { _all: 5 } },
-      { recommendationId: "r2", _count: { _all: 0 } },
+      { recommendationId: "r2", _count: { _all: 1 } },
     ])
     const result = await getLikeTotals(["r1", "r2", "r3"])
     expect(upVoteGroupBy).toHaveBeenCalledWith({
@@ -42,8 +42,9 @@ describe("getLikeTotals", () => {
       _count: { _all: true },
     })
     expect(result.get("r1")).toBe(5)
-    expect(result.get("r2")).toBe(0)
-    // r3 had no likes -> absent from the map (caller treats as 0)
+    expect(result.get("r2")).toBe(1)
+    // GROUP BY only returns groups with >=1 row, so a reco with no likes (r3)
+    // is simply absent from the map; the caller treats absence as 0.
     expect(result.has("r3")).toBe(false)
   })
 })
