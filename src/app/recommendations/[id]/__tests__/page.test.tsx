@@ -21,7 +21,25 @@ jest.mock("@/lib/prisma", () => ({
     recommendation: {
       findUnique: jest.fn(),
     },
+    cliqueMember: {
+      findUnique: jest.fn(),
+    },
+    cliqueRecommendation: {
+      findUnique: jest.fn(),
+    },
+    upVote: {
+      findUnique: jest.fn(),
+    },
+    comment: {
+      findMany: jest.fn().mockResolvedValue([]),
+    },
   },
+}))
+
+// The detail page resolves the user's cliques for the comment prompt; stub it so
+// these render-focused tests don't exercise the engagement data layer.
+jest.mock("@/lib/engagement", () => ({
+  getUserCliquesForRecommendations: jest.fn().mockResolvedValue(new Map()),
 }))
 
 // Mock auth so tests don't pull in next-auth ESM module
