@@ -3,8 +3,10 @@
 ## 1. Unit tests (jsdom — `npm test`)
 
 ### 1.1 `src/lib/__tests__/engagement.test.ts` (data-layer helpers)
-Each helper tested on **both** the Prisma-delegate path and the `$queryRaw` fallback path
-(mock the client).
+Helpers that implement a `$queryRaw` fallback are tested on **both** the Prisma-delegate path
+and the raw fallback path (mock the client). Helpers that use a single Prisma path only —
+e.g. `getCliqueCommentCounts` via `comment.groupBy` — are tested on that one path; do not
+assert a non-existent fallback for them.
 - `getLikeTotals` — returns correct global counts; recos with zero likes map to 0; empty
   `recIds` -> empty map (no query fired).
 - `getMyCliquesLikeCounts` — counts **distinct** likers sharing a reco-containing clique; a
@@ -111,6 +113,12 @@ Each helper tested on **both** the Prisma-delegate path and the `$queryRaw` fall
 
 ## 6. Coverage targets
 - New/modified code **>90%** (project policy), via the two Jest configs.
+- **Jest coverage config must be adjusted in the implementation PR:** today the unit config
+  excludes `src/lib/**` (`'!src/lib/**'` in `jest.config.js`) and the integration config only
+  collects `src/lib/clique-service.ts`. To measure the new `src/lib/engagement.ts`, add it to
+  `collectCoverageFrom` in the appropriate config (integration, mirroring `clique-service.ts`)
+  and/or carve an exception to the `!src/lib/**` exclusion — otherwise the helper will not
+  appear in either coverage report.
 - Integration thresholds respected: 70% branches / 100% functions / 80% lines & statements.
 - Unit thresholds respected: 10% branches / 20% functions / 29% lines & statements (new
   component/helper tests should comfortably exceed locally).

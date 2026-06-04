@@ -79,6 +79,11 @@ Then `npx prisma generate`.
 
 #### Reference SQL (raw-path aggregates)
 
+> **Implementation note:** the SQL below uses `= ANY($1)` purely for readability. In code,
+> follow the repo's existing `$queryRaw` tagged-template convention — interpolate id lists
+> with `IN (${Prisma.join(recIds)})` (see `src/app/api/recommendations/route.ts`) rather than
+> positional `$1`/`ANY` placeholders.
+
 My-cliques like count:
 ```sql
 SELECT uv."recommendationId", COUNT(DISTINCT uv."userId") AS cnt
