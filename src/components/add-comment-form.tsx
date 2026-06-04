@@ -17,7 +17,8 @@ interface AddCommentFormProps {
   userId?: string | null
   /**
    * The clique whose thread the comment is posted to. Comments are clique-scoped,
-   * so this is required to post; when falsy the form is not rendered.
+   * so this is required to post; when falsy, submitting is blocked with an error.
+   * (The parent only renders this form in a valid clique context.)
    */
   cliqueId?: string | null
 }
@@ -49,7 +50,8 @@ export function AddCommentForm({ recommendationId, onCommentAdded, userId, cliqu
       return
     }
 
-    if (comment.length > 500) {
+    // Validate the trimmed length to match the server, which trims before checking.
+    if (comment.trim().length > 500) {
       setError("Comment must be 500 characters or less")
       return
     }
