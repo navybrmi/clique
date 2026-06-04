@@ -32,6 +32,7 @@ const customJestConfig = {
   collectCoverageFrom: [
     'src/app/api/**/*.{js,jsx,ts,tsx}',
     'src/lib/clique-service.ts',
+    'src/lib/engagement.ts',
     '!src/app/api/**/_*.{js,jsx,ts,tsx}',
     '!**/*.d.ts',
     '!**/node_modules/**',
