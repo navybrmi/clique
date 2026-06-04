@@ -20,7 +20,7 @@ describe("CommentsSection", () => {
     jest.clearAllMocks()
   })
 
-  it("should render initial comments", () => {
+  it("should render initial comments in a valid clique context", () => {
     const mockComments = [
       {
         id: "1",
@@ -35,6 +35,8 @@ describe("CommentsSection", () => {
         recommendationId="rec1"
         initialComments={mockComments}
         initialCount={1}
+        cliqueId="clq1"
+        canComment={true}
       />
     )
 
@@ -43,12 +45,14 @@ describe("CommentsSection", () => {
     expect(screen.getByText("John")).toBeInTheDocument()
   })
 
-  it("should show 'No comments yet' when no comments", () => {
+  it("should show 'No comments yet' when the clique thread is empty", () => {
     render(
       <CommentsSection
         recommendationId="rec1"
         initialComments={[]}
         initialCount={0}
+        cliqueId="clq1"
+        canComment={true}
       />
     )
 
@@ -56,7 +60,42 @@ describe("CommentsSection", () => {
     expect(screen.getByText("No comments yet")).toBeInTheDocument()
   })
 
-  it("should refresh comments when onCommentAdded is called", async () => {
+  it("shows a clique prompt with links when there is no clique context", () => {
+    render(
+      <CommentsSection
+        recommendationId="rec1"
+        initialComments={[]}
+        initialCount={0}
+        canComment={false}
+        userCliques={[{ id: "clq1", name: "Movie Buffs" }]}
+      />
+    )
+
+    // No thread/post UI is rendered.
+    expect(screen.queryByTestId("add-comment-btn")).not.toBeInTheDocument()
+    // A link to open the reco within the user's clique is shown.
+    const link = screen.getByRole("link", { name: /Movie Buffs/i })
+    expect(link).toHaveAttribute("href", "/recommendations/rec1?cliqueId=clq1")
+  })
+
+  it("prompts to add the reco to a clique when the user has none containing it", () => {
+    render(
+      <CommentsSection
+        recommendationId="rec1"
+        initialComments={[]}
+        initialCount={0}
+        canComment={false}
+        userCliques={[]}
+      />
+    )
+
+    expect(screen.queryByTestId("add-comment-btn")).not.toBeInTheDocument()
+    expect(
+      screen.getByText(/Add this recommendation to one of your cliques/i)
+    ).toBeInTheDocument()
+  })
+
+  it("should refresh the clique thread when onCommentAdded is called", async () => {
     const mockComments = [
       {
         id: "1",
@@ -67,12 +106,7 @@ describe("CommentsSection", () => {
     ]
 
     const newComments = [
-      {
-        id: "1",
-        content: "First comment",
-        createdAt: "2026-02-06T12:00:00Z",
-        user: { id: "user1", name: "John", image: null },
-      },
+      ...mockComments,
       {
         id: "2",
         content: "Second comment",
@@ -81,16 +115,14 @@ describe("CommentsSection", () => {
       },
     ]
 
-    // Set up mock to resolve successfully
-    ;(global.fetch as jest.Mock).mockImplementation(
-      (url) =>
-        Promise.resolve({
-          ok: true,
-          json: async () => ({
-            comments: newComments,
-            _count: { comments: 2 },
-          }),
-        })
+    ;(global.fetch as jest.Mock).mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: async () => ({
+          comments: newComments,
+          _count: { comments: 2 },
+        }),
+      })
     )
 
     const user = userEvent.setup()
@@ -99,16 +131,15 @@ describe("CommentsSection", () => {
         recommendationId="rec1"
         initialComments={mockComments}
         initialCount={1}
+        cliqueId="clq1"
+        canComment={true}
       />
     )
 
-    // Verify initial state
     expect(screen.getByText("Comments (1)")).toBeInTheDocument()
 
-    const addButton = screen.getByTestId("add-comment-btn")
-    await user.click(addButton)
+    await user.click(screen.getByTestId("add-comment-btn"))
 
-    // Wait for the fetch to complete and state to update
     await waitFor(
       () => {
         expect(screen.getByText("Comments (2)")).toBeInTheDocument()
@@ -116,15 +147,14 @@ describe("CommentsSection", () => {
       { timeout: 2000 }
     )
 
+    // The refresh fetch is scoped to the active clique.
     expect(global.fetch).toHaveBeenCalledWith(
-      "/api/recommendations/rec1"
+      "/api/recommendations/rec1?cliqueId=clq1"
     )
   })
 
   it("should handle fetch errors gracefully", async () => {
-    ;(global.fetch as jest.Mock).mockRejectedValue(
-      new Error("Network error")
-    )
+    ;(global.fetch as jest.Mock).mockRejectedValue(new Error("Network error"))
 
     const user = userEvent.setup()
     const consoleSpy = jest.spyOn(console, "error").mockImplementation()
@@ -134,13 +164,13 @@ describe("CommentsSection", () => {
         recommendationId="rec1"
         initialComments={[]}
         initialCount={0}
+        cliqueId="clq1"
+        canComment={true}
       />
     )
 
-    const addButton = screen.getByTestId("add-comment-btn")
-    await user.click(addButton)
+    await user.click(screen.getByTestId("add-comment-btn"))
 
-    // Wait for the error to be logged
     await waitFor(() => {
       expect(consoleSpy).toHaveBeenCalledWith(
         "Error refreshing comments:",
@@ -167,6 +197,8 @@ describe("CommentsSection", () => {
         initialComments={mockComments}
         initialCount={1}
         currentUserId="current-user"
+        cliqueId="clq1"
+        canComment={true}
       />
     )
 
@@ -189,6 +221,8 @@ describe("CommentsSection", () => {
         initialComments={mockComments}
         initialCount={1}
         currentUserId="current-user"
+        cliqueId="clq1"
+        canComment={true}
       />
     )
 

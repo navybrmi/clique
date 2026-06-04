@@ -55,8 +55,13 @@ export function ActionsSidebar({
   const [isUpvoteLoading, setIsUpvoteLoading] = useState(false)
 
   const updateCommentCount = async () => {
+    // Comment counts are clique-scoped; without a clique context there is no
+    // thread to refresh, so the server-rendered count stands.
+    if (!cliqueId) return
     try {
-      const response = await fetch(`/api/recommendations/${recommendation.id}`)
+      const response = await fetch(
+        `/api/recommendations/${recommendation.id}?cliqueId=${cliqueId}`
+      )
       if (response.ok) {
         const data = await response.json()
         const newCount = data._count?.comments || 0
