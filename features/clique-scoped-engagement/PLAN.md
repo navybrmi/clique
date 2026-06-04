@@ -185,4 +185,84 @@ lucide-react icons.
   the migration and PR description.
 
 ## H. PR Breakdown
-_To be added in Phase 5 (PR breakdown), after the test plan is approved._
+
+Six PRs, ordered, each independently deployable. A two-phase **expand → contract**
+migration keeps `main` working at every step: `Comment.cliqueId` is added **nullable**
+first (PR 1), everything is wired up, then flipped to **NOT NULL** with legacy comments
+dropped at the end (PR 6).
+
+> **Note on the 20-file limit:** the generated Prisma client (`src/lib/generated/prisma/**`,
+> ~29 committed files) is rewritten by `prisma generate` on any schema change. PRs 1 and 6
+> therefore mechanically exceed 20 files through generated output; the **hand-authored**
+> change in each is just `schema.prisma` + one migration. Review effort should focus there.
+
+### PR 1 — Schema expand (backend / schema)
+- **Scope:** Add **nullable** `Comment.cliqueId`, the `clique` relation, the `Clique.comments`
+  back-relation, and indexes `@@index([recommendationId, cliqueId])` / `@@index([cliqueId])`.
+  Migration adds the nullable column + FK + indexes (no data drop). Regenerate the client.
+  No runtime behavior change.
+- **Files:** `prisma/schema.prisma`, `prisma/migrations/*_comment_clique_scope/migration.sql`,
+  `src/lib/generated/prisma/**` _(generated)_.
+- **Deployable:** standalone.
+
+### PR 2 — Engagement data layer (backend)
+- **Scope:** `src/lib/engagement.ts` batched helpers — `getLikeTotals`,
+  `getMyCliquesLikeCounts`, `getWithinCliqueLikeCounts`, `getUserCliquesForRecommendations`,
+  `getCliqueCommentCounts` — using the `Prisma.join()` `$queryRaw` style (per repo
+  convention) with delegate guards. Add `src/lib/engagement.ts` to `collectCoverageFrom`.
+  Not yet consumed by the UI.
+- **Files:** `src/lib/engagement.ts`, `src/lib/__tests__/engagement.test.ts`,
+  `jest.integration.config.js`.
+- **Deployable:** yes. **Depends on:** PR 1.
+
+### PR 3 — Clique-scoped comments (backend + frontend)
+- **Scope:** `POST .../comments` requires `?cliqueId=` and validates membership +
+  reco-in-clique before persisting `cliqueId`; `GET .../[id]` returns the clique-scoped thread
+  (empty without a valid clique context); comments section + add-comment form become
+  clique-aware; new `comment-clique-prompt.tsx` for the no-clique detail context; detail page
+  wires comment context + `canComment`; actions-sidebar count fetch carries `cliqueId`.
+  Includes API integration tests + component unit tests.
+- **Files:** `src/app/api/recommendations/[id]/comments/route.ts`,
+  `src/app/api/recommendations/[id]/route.ts`, `src/components/comments-section.tsx`,
+  `src/components/add-comment-form.tsx`, `src/components/comment-clique-prompt.tsx`,
+  `src/app/recommendations/[id]/page.tsx`, `src/components/actions-sidebar.tsx`, + tests.
+- **Deployable:** yes (legacy null-clique comments simply fall out of clique threads).
+  **Depends on:** PR 1.
+
+### PR 4 — Public feed cards (frontend)
+- **Scope:** New `clique-chips.tsx` + `like-counts.tsx`; enrich the public/my feed in
+  `page.tsx` via the engagement helpers; render up to 2 clique chips (largest shared cliques,
+  linking to the clique feed) + two **display-only** like counts; logged-out users see total
+  likes only. Includes unit tests.
+- **Files:** `src/types/feed.ts`, `src/app/page.tsx`,
+  `src/components/recommendation-feed.tsx`, `src/components/clique-chips.tsx`,
+  `src/components/like-counts.tsx`, + tests.
+- **Deployable:** yes. **Depends on:** PR 2.
+
+### PR 5 — Clique feed + detail engagement (frontend)
+- **Scope:** New `in-your-cliques-card.tsx` rendered under the Edit/Delete card; clique-feed
+  cards show total + within-clique likes and the clique's comment count; detail like display
+  (total + contextual secondary). Includes unit tests.
+- **Files:** `src/types/clique.ts`, `src/lib/clique-service.ts`, `src/app/page.tsx`,
+  `src/components/recommendation-feed.tsx`, `src/app/recommendations/[id]/page.tsx`,
+  `src/components/in-your-cliques-card.tsx`, `src/components/actions-sidebar.tsx`, + tests.
+- **Deployable:** yes. **Depends on:** PR 2, PR 3, PR 4.
+
+### PR 6 — Schema contract (backend / schema)
+- **Scope:** Delete remaining legacy null-clique comments; set `Comment.cliqueId`
+  **NOT NULL**; regenerate the client; tighten any nullable handling in code/tests.
+- **Files:** `prisma/schema.prisma`,
+  `prisma/migrations/*_comment_clique_required/migration.sql`,
+  `src/lib/generated/prisma/**` _(generated)_.
+- **Deployable:** yes (all live comments carry a `cliqueId` by this point).
+  **Depends on:** PR 3.
+
+### Dependency graph
+```
+PR1 ──▶ PR2 ──▶ PR4 ──┐
+  └───▶ PR3 ──────────┼──▶ PR5
+        PR3 ──▶ PR6   │
+                      ▼
+```
+- PR 3 and PR 4 touch disjoint files and may proceed in either order; PR 3 is sequenced first
+  so the detail comment context exists before PR 5.
