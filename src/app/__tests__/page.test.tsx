@@ -90,6 +90,8 @@ jest.mock('@/lib/engagement', () => ({
   getLikeTotals: jest.fn().mockResolvedValue(new Map()),
   getMyCliquesLikeCounts: jest.fn().mockResolvedValue(new Map()),
   getUserCliquesForRecommendations: jest.fn().mockResolvedValue(new Map()),
+  getWithinCliqueLikeCounts: jest.fn().mockResolvedValue(new Map()),
+  getCliqueCommentCounts: jest.fn().mockResolvedValue(new Map()),
 }))
 
 // Mock auth so tests don't pull in next-auth ESM module

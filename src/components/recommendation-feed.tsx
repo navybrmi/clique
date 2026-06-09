@@ -232,6 +232,14 @@ export function RecommendationFeed({
                           initialCount={rec._count.upvotes}
                           initialHasUpvoted={rec.upvoteContext.hasUpvoted}
                         />
+                        {rec.engagement && rec.engagement.likeSecondary !== null && (
+                          <span
+                            className="flex items-center text-xs text-zinc-400"
+                            aria-label={`${rec.engagement.likeSecondary} likes in this clique`}
+                          >
+                            {rec.engagement.likeSecondary} in clique
+                          </span>
+                        )}
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
