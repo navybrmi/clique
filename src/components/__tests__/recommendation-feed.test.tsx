@@ -249,4 +249,94 @@ describe("RecommendationFeed", () => {
     )
     expect(screen.queryByTestId("add-to-clique-1")).not.toBeInTheDocument()
   })
+
+  describe("public card engagement", () => {
+    it("shows display-only like counts (total + my-cliques) and no upvote button", () => {
+      const recs = [
+        makeRec("1", "Movie", {
+          engagement: { likeTotal: 9, likeSecondary: 4 },
+        }),
+      ]
+      render(
+        <RecommendationFeed
+          recommendations={recs}
+          showAddToCliqueActions={false}
+          activeMine={false}
+        />
+      )
+
+      expect(screen.getByLabelText("9 likes across all cliques")).toBeInTheDocument()
+      expect(screen.getByText(/4 in your cliques/i)).toBeInTheDocument()
+      // No interactive upvote on public cards.
+      expect(screen.queryByTestId("upvote-1")).not.toBeInTheDocument()
+    })
+
+    it("shows total only when logged out (secondary is null)", () => {
+      const recs = [
+        makeRec("1", "Movie", {
+          engagement: { likeTotal: 5, likeSecondary: null },
+        }),
+      ]
+      render(
+        <RecommendationFeed
+          recommendations={recs}
+          showAddToCliqueActions={false}
+          activeMine={false}
+        />
+      )
+
+      expect(screen.getByLabelText("5 likes across all cliques")).toBeInTheDocument()
+      expect(screen.queryByText(/in your cliques/i)).not.toBeInTheDocument()
+    })
+
+    it("renders up to two shared-clique chips linking to the clique feed", () => {
+      const recs = [
+        makeRec("1", "Movie", {
+          engagement: { likeTotal: 1, likeSecondary: 1 },
+          cliqueChips: [
+            { id: "clq1", name: "Movie Buffs" },
+            { id: "clq2", name: "Cinephiles" },
+          ],
+        }),
+      ]
+      render(
+        <RecommendationFeed
+          recommendations={recs}
+          showAddToCliqueActions={false}
+          activeMine={false}
+        />
+      )
+
+      expect(screen.getByRole("link", { name: /Movie Buffs/i })).toHaveAttribute(
+        "href",
+        "/?cliqueId=clq1"
+      )
+      expect(screen.getByRole("link", { name: /Cinephiles/i })).toHaveAttribute(
+        "href",
+        "/?cliqueId=clq2"
+      )
+    })
+
+    it("renders the upvote button (not like counts) in a clique context", () => {
+      const recs = [
+        makeRec("1", "Movie", {
+          upvoteContext: { cliqueId: "clq1", hasUpvoted: false },
+          engagement: { likeTotal: 9, likeSecondary: 4 },
+        }),
+      ]
+      render(
+        <RecommendationFeed
+          recommendations={recs}
+          showAddToCliqueActions={false}
+          activeMine={false}
+        />
+      )
+
+      expect(screen.getByTestId("upvote-1")).toBeInTheDocument()
+      // Display-only like counts are not shown when the interactive upvote is.
+      expect(
+        screen.queryByLabelText("9 likes across all cliques")
+      ).not.toBeInTheDocument()
+    })
+  })
 })
