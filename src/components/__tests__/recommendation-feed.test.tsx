@@ -317,6 +317,26 @@ describe("RecommendationFeed", () => {
       )
     })
 
+    it("shows 'N in clique' secondary like label alongside the upvote button", () => {
+      const recs = [
+        makeRec("1", "Movie", {
+          upvoteContext: { cliqueId: "clq1", hasUpvoted: false },
+          engagement: { likeTotal: 9, likeSecondary: 4 },
+        }),
+      ]
+      render(
+        <RecommendationFeed
+          recommendations={recs}
+          showAddToCliqueActions={false}
+          activeMine={false}
+        />
+      )
+      expect(screen.getByLabelText("4 likes in this clique")).toBeInTheDocument()
+      expect(screen.getByText("4 in clique")).toBeInTheDocument()
+      // Interactive upvote is still present.
+      expect(screen.getByTestId("upvote-1")).toBeInTheDocument()
+    })
+
     it("renders the upvote button (not like counts) in a clique context", () => {
       const recs = [
         makeRec("1", "Movie", {

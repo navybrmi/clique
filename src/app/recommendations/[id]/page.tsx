@@ -15,7 +15,6 @@ import { auth } from "@/lib/auth"
 import { SubmitterInfo } from "@/components/submitter-info"
 import {
   getUserCliquesForRecommendations,
-  getLikeTotals,
   getMyCliquesLikeCounts,
   getWithinCliqueLikeCounts,
 } from "@/lib/engagement"
@@ -118,18 +117,18 @@ export default async function RecommendationDetailPage({
       : []
   const cliqueCommentCount = cliqueComments.length
 
-  // Compute like figures for the actions sidebar and detail header.
-  // With a valid clique context, show total + within-clique count.
-  // Without, show total + my-cliques sum (or null when logged out).
-  const [likeTotalsMap, likeSecondaryMap] = await Promise.all([
-    getLikeTotals([id]),
-    isCliqueContext && cliqueId
-      ? getWithinCliqueLikeCounts([id], cliqueId)
-      : currentUserId
-        ? getMyCliquesLikeCounts([id], currentUserId)
-        : Promise.resolve(null),
-  ])
-  const likeTotal = likeTotalsMap.get(id) ?? 0
+  // Compute like figures for the actions sidebar.
+  // UpVote is not clique-scoped, so the global total is already in _count.upvotes —
+  // no extra query needed. The secondary count is:
+  //   - In a valid clique context: within-clique like count.
+  //   - Without a clique context: my-cliques sum, but only when the user has at
+  //     least one shared clique (otherwise the result is always 0 — skip the query).
+  const likeTotal = recommendation._count.upvotes
+  const likeSecondaryMap = isCliqueContext && cliqueId
+    ? await getWithinCliqueLikeCounts([id], cliqueId)
+    : currentUserId && userCliquesForReco.length > 0
+      ? await getMyCliquesLikeCounts([id], currentUserId)
+      : null
   const likeSecondary = likeSecondaryMap ? likeSecondaryMap.get(id) ?? 0 : null
 
   return (
