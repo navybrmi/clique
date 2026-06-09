@@ -187,7 +187,9 @@ describe("ActionsSidebar", () => {
       await waitFor(() => {
         expect(screen.getAllByText("6").length).toBeGreaterThan(0)
       })
-      expect(global.fetch).toHaveBeenCalledWith("/api/recommendations/rec1")
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/recommendations/rec1?cliqueId=clique1"
+      )
     })
 
     it("should call onCommentCountChange callback when count updates", async () => {
@@ -201,6 +203,7 @@ describe("ActionsSidebar", () => {
       render(
         <ActionsSidebar
           recommendation={mockRecommendation}
+          cliqueId="clique1"
           onCommentCountChange={mockCallback}
         />
       )
@@ -216,7 +219,9 @@ describe("ActionsSidebar", () => {
       ;(global.fetch as jest.Mock).mockRejectedValueOnce(new Error("Network error"))
       const consoleSpy = jest.spyOn(console, "error").mockImplementation()
 
-      render(<ActionsSidebar recommendation={mockRecommendation} />)
+      render(
+        <ActionsSidebar recommendation={mockRecommendation} cliqueId="clique1" />
+      )
 
       window.dispatchEvent(new CustomEvent("commentUpdated"))
 
@@ -229,6 +234,42 @@ describe("ActionsSidebar", () => {
 
       expect(screen.getByText("5")).toBeInTheDocument()
       consoleSpy.mockRestore()
+    })
+  })
+
+  describe("secondary like count", () => {
+    it("shows 'N in clique' label in clique context when likeSecondary is provided", () => {
+      render(
+        <ActionsSidebar
+          recommendation={mockRecommendation}
+          cliqueId="clique1"
+          likeSecondary={4}
+        />
+      )
+      expect(screen.getByLabelText("4 likes in this clique")).toBeInTheDocument()
+      expect(screen.getByText("4 in clique")).toBeInTheDocument()
+    })
+
+    it("omits the secondary label when likeSecondary is null in clique context", () => {
+      render(
+        <ActionsSidebar
+          recommendation={mockRecommendation}
+          cliqueId="clique1"
+          likeSecondary={null}
+        />
+      )
+      expect(screen.queryByText(/in clique/i)).not.toBeInTheDocument()
+    })
+
+    it("shows display-only like count with 'N yours' label when no cliqueId and likeSecondary provided", () => {
+      render(
+        <ActionsSidebar
+          recommendation={mockRecommendation}
+          likeSecondary={3}
+        />
+      )
+      expect(screen.getByLabelText("3 likes from your cliques")).toBeInTheDocument()
+      expect(screen.getByText("3 yours")).toBeInTheDocument()
     })
   })
 })

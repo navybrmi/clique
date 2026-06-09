@@ -10,8 +10,14 @@ import { RefreshEntityButton } from "@/components/refresh-entity-button"
 import { RefreshableEntityDetails } from "@/components/refreshable-entity-details"
 import { CommentsSection } from "@/components/comments-section"
 import { ActionsSidebar } from "@/components/actions-sidebar"
+import { InYourCliquesCard } from "@/components/in-your-cliques-card"
 import { auth } from "@/lib/auth"
 import { SubmitterInfo } from "@/components/submitter-info"
+import {
+  getUserCliquesForRecommendations,
+  getMyCliquesLikeCounts,
+  getWithinCliqueLikeCounts,
+} from "@/lib/engagement"
 
 export default async function RecommendationDetailPage({
   params,
@@ -50,20 +56,6 @@ export default async function RecommendationDetailPage({
             fashion: true,
             household: true,
             other: true,
-          },
-        },
-        comments: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                image: true,
-              },
-            },
-          },
-          orderBy: {
-            createdAt: "desc",
           },
         },
         _count: {
@@ -105,6 +97,39 @@ export default async function RecommendationDetailPage({
     isCliqueContext = !!membership && !!cliqueRec
     userHasUpvoted = !!existingUpvote
   }
+
+  // Comments are clique-scoped. Load the active clique's thread only when the
+  // user has a valid clique context; otherwise the section shows a prompt to
+  // open the reco within one of their cliques. Also resolve the user's cliques
+  // that contain this reco, which power both that prompt and the (PR 5) sidebar.
+  const userCliquesForReco = currentUserId
+    ? (await getUserCliquesForRecommendations([id], currentUserId)).get(id) ?? []
+    : []
+  const cliqueComments =
+    isCliqueContext && cliqueId
+      ? await prisma.comment.findMany({
+          where: { recommendationId: id, cliqueId },
+          include: {
+            user: { select: { id: true, name: true, image: true } },
+          },
+          orderBy: { createdAt: "desc" },
+        })
+      : []
+  const cliqueCommentCount = cliqueComments.length
+
+  // Compute like figures for the actions sidebar.
+  // UpVote is not clique-scoped, so the global total is already in _count.upvotes —
+  // no extra query needed. The secondary count is:
+  //   - In a valid clique context: within-clique like count.
+  //   - Without a clique context: my-cliques sum, but only when the user has at
+  //     least one shared clique (otherwise the result is always 0 — skip the query).
+  const likeTotal = recommendation._count.upvotes
+  const likeSecondaryMap = isCliqueContext && cliqueId
+    ? await getWithinCliqueLikeCounts([id], cliqueId)
+    : currentUserId && userCliquesForReco.length > 0
+      ? await getMyCliquesLikeCounts([id], currentUserId)
+      : null
+  const likeSecondary = likeSecondaryMap ? likeSecondaryMap.get(id) ?? 0 : null
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black">
@@ -281,12 +306,15 @@ export default async function RecommendationDetailPage({
               </Card>
             )}
 
-            {/* Comments Section */}
+            {/* Comments Section — clique-scoped */}
             <CommentsSection
               recommendationId={recommendation.id}
-              initialComments={recommendation.comments}
-              initialCount={recommendation._count.comments}
+              initialComments={cliqueComments}
+              initialCount={cliqueCommentCount}
               currentUserId={currentUserId}
+              cliqueId={isCliqueContext ? cliqueId : null}
+              canComment={isCliqueContext}
+              userCliques={userCliquesForReco.map((c) => ({ id: c.id, name: c.name }))}
             />
 
           </div>
@@ -295,9 +323,14 @@ export default async function RecommendationDetailPage({
           <div className="space-y-6">
             {/* Action Card */}
             <ActionsSidebar
-              recommendation={recommendation}
+              key={`${recommendation.id}-${cliqueId ?? "none"}`}
+              recommendation={{
+                ...recommendation,
+                _count: { ...recommendation._count, upvotes: likeTotal, comments: cliqueCommentCount },
+              }}
               cliqueId={isCliqueContext ? cliqueId : null}
               initialHasUpvoted={userHasUpvoted}
+              likeSecondary={likeSecondary}
               currentUserId={currentUserId}
             />
             <Card>
@@ -309,6 +342,12 @@ export default async function RecommendationDetailPage({
                 <DeleteRecommendationButton recommendation={recommendation} currentUserId={currentUserId} />
               </CardContent>
             </Card>
+            <InYourCliquesCard
+              recommendationId={recommendation.id}
+              recommendationName={recommendation.entity.name}
+              cliques={userCliquesForReco.map((c) => ({ id: c.id, name: c.name }))}
+              currentUserId={currentUserId}
+            />
           </div>
         </div>
       </main>

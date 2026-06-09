@@ -3,6 +3,45 @@
 All notable changes to Clique will be documented in this file.
 Each version links to its GitHub Release.
 
+## [v0.22.0](https://github.com/navybrmi/clique/releases/tag/v0.22.0) — 2026-06-09
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.22.0 -->
+
+## What's Changed
+### Other Changes
+* feat(feed): clique chips + like counts on public cards [PR 4/6] by @navybrmi in https://github.com/navybrmi/clique/pull/110
+
+
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.21.0...v0.22.0
+
+---
+
+## [v0.21.0](https://github.com/navybrmi/clique/releases/tag/v0.21.0) — 2026-06-04
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.21.0 -->
+
+## What's Changed
+### Other Changes
+* feat(comments): clique-scoped comment threads [PR 3/6] by @navybrmi in https://github.com/navybrmi/clique/pull/108
+
+
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.20.1...v0.21.0
+
+---
+
+## [v0.20.1](https://github.com/navybrmi/clique/releases/tag/v0.20.1) — 2026-06-04
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.20.1 -->
+
+## What's Changed
+### Other Changes
+* fix(build): apply Prisma migrations on Vercel build by @navybrmi in https://github.com/navybrmi/clique/pull/105
+
+
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.20.0...v0.20.1
+
+---
+
 ## [v0.20.0](https://github.com/navybrmi/clique/releases/tag/v0.20.0) — 2026-06-04
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.20.0 -->

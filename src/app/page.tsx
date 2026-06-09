@@ -11,6 +11,13 @@ import { auth } from "@/lib/auth"
 import { getPrismaClient } from "@/lib/prisma"
 import { getCliqueFeed } from "@/lib/clique-service"
 import { getMyRecommendations, getRecommendations, type RecommendationFeedItem } from "@/lib/recommendations"
+import {
+  getLikeTotals,
+  getMyCliquesLikeCounts,
+  getUserCliquesForRecommendations,
+  getWithinCliqueLikeCounts,
+  getCliqueCommentCounts,
+} from "@/lib/engagement"
 import type { CliqueFeedItem } from "@/types/clique"
 import type { HomeFeedItem } from "@/types/feed"
 import { cn } from "@/lib/utils"
@@ -68,6 +75,49 @@ function normalizePublicFeedItem(
     attribution: null,
     href: `/recommendations/${recommendation.id}`,
   }
+}
+
+/**
+ * Builds the public / "My Recommendations" feed cards, enriching each with
+ * display-only engagement: the global like total, the "my-cliques" like count
+ * (logged-in only), and up to two shared-clique chips (largest by member count).
+ *
+ * All engagement is computed in batched queries over the visible reco set to
+ * avoid per-card round-trips.
+ *
+ * @param feedItems - Public feed rows from the data layer
+ * @param userId - The current user id, or null when logged out
+ * @returns Home feed items ready to render
+ */
+async function buildPublicFeedItems(
+  feedItems: RecommendationFeedItem[],
+  userId: string | null
+): Promise<HomeFeedItem[]> {
+  const base = feedItems.map((item) =>
+    normalizePublicFeedItem(item, Boolean(userId))
+  )
+  const recIds = base.map((item) => item.id)
+
+  const [likeTotals, myCliqueLikes, userCliques] = await Promise.all([
+    getLikeTotals(recIds),
+    userId ? getMyCliquesLikeCounts(recIds, userId) : Promise.resolve(null),
+    userId
+      ? getUserCliquesForRecommendations(recIds, userId)
+      : Promise.resolve(null),
+  ])
+
+  return base.map((item) => ({
+    ...item,
+    engagement: {
+      likeTotal: likeTotals.get(item.id) ?? 0,
+      likeSecondary: myCliqueLikes ? myCliqueLikes.get(item.id) ?? 0 : null,
+    },
+    cliqueChips: userCliques
+      ? (userCliques.get(item.id) ?? [])
+          .slice(0, 2)
+          .map((clique) => ({ id: clique.id, name: clique.name }))
+      : [],
+  }))
 }
 
 /**
@@ -231,13 +281,28 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
               })
             : []
         const upvotedIds = new Set(userUpvoteRows.map((r) => r.recommendationId))
-        recommendations = cliqueFeed.map((item) =>
-          normalizeCliqueFeedItem(
+        const [withinCliqueLikes, cliqueCommentCounts] = await Promise.all([
+          getWithinCliqueLikeCounts(recIds, activeCliqueId),
+          getCliqueCommentCounts(recIds, activeCliqueId),
+        ])
+        recommendations = cliqueFeed.map((item) => {
+          const base = normalizeCliqueFeedItem(
             item,
             activeCliqueId,
             upvotedIds.has(item.recommendation.id)
           )
-        )
+          return {
+            ...base,
+            engagement: {
+              likeTotal: item.recommendation._count.upvotes,
+              likeSecondary: withinCliqueLikes.get(item.recommendation.id) ?? 0,
+            },
+            _count: {
+              ...base._count,
+              comments: cliqueCommentCounts.get(item.recommendation.id) ?? 0,
+            },
+          }
+        })
       } else {
         logCliqueFeedDelegateMismatch()
         cliqueError = getCliqueFeedUnavailableMessage()
@@ -269,11 +334,12 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
     }
   } else if (activeMine && session?.user?.id) {
     const myFeed = await getMyRecommendations(session.user.id)
-    recommendations = myFeed.map((item) => normalizePublicFeedItem(item, false))
+    recommendations = await buildPublicFeedItems(myFeed, session.user.id)
   } else {
     const publicFeed = await getRecommendations()
-    recommendations = publicFeed.map((item) =>
-      normalizePublicFeedItem(item, Boolean(session?.user))
+    recommendations = await buildPublicFeedItems(
+      publicFeed,
+      session?.user?.id ?? null
     )
   }
   const isEmptyFeed = !cliqueError && recommendations.length === 0

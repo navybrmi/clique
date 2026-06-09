@@ -40,6 +40,13 @@ interface ActionsSidebarProps {
   initialHasUpvoted?: boolean
   /** When provided, shows the "Add to Clique" button for logged-in users. */
   currentUserId?: string | null
+  /**
+   * Secondary like count shown alongside the global total.
+   * - In a clique context: the within-clique like count.
+   * - In the public/no-clique context: the my-cliques like count.
+   * `null` when logged out or unavailable.
+   */
+  likeSecondary?: number | null
 }
 
 export function ActionsSidebar({
@@ -48,6 +55,7 @@ export function ActionsSidebar({
   cliqueId,
   initialHasUpvoted = false,
   currentUserId,
+  likeSecondary = null,
 }: ActionsSidebarProps) {
   const [commentCount, setCommentCount] = useState(recommendation._count.comments)
   const [upvoteCount, setUpvoteCount] = useState(recommendation._count.upvotes)
@@ -55,8 +63,13 @@ export function ActionsSidebar({
   const [isUpvoteLoading, setIsUpvoteLoading] = useState(false)
 
   const updateCommentCount = async () => {
+    // Comment counts are clique-scoped; without a clique context there is no
+    // thread to refresh, so the server-rendered count stands.
+    if (!cliqueId) return
     try {
-      const response = await fetch(`/api/recommendations/${recommendation.id}`)
+      const response = await fetch(
+        `/api/recommendations/${recommendation.id}?cliqueId=${cliqueId}`
+      )
       if (response.ok) {
         const data = await response.json()
         const newCount = data._count?.comments || 0
@@ -109,26 +122,47 @@ export function ActionsSidebar({
         <TooltipProvider delayDuration={400}>
           <div className="flex items-end justify-around">
 
-            {cliqueId && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className={cn(
-                      actionBtn,
-                      hasUpvoted && "text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
-                    )}
-                    onClick={handleUpvoteClick}
-                    disabled={isUpvoteLoading}
-                    aria-label={hasUpvoted ? "Remove upvote" : "Upvote"}
+            {cliqueId ? (
+              <div className="flex flex-col items-center gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className={cn(
+                        actionBtn,
+                        hasUpvoted && "text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                      )}
+                      onClick={handleUpvoteClick}
+                      disabled={isUpvoteLoading}
+                      aria-label={hasUpvoted ? "Remove upvote" : "Upvote"}
+                    >
+                      <ArrowUp className={cn(iconCls, hasUpvoted && "fill-current")} />
+                      <span className={labelCls} aria-label={`${upvoteCount} likes total`}>{upvoteCount}</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{hasUpvoted ? "Remove upvote" : "Upvote"}</TooltipContent>
+                </Tooltip>
+                {likeSecondary !== null && (
+                  <span
+                    className="text-[10px] text-zinc-400 dark:text-zinc-500"
+                    aria-label={`${likeSecondary} likes in this clique`}
                   >
-                    <ArrowUp className={cn(iconCls, hasUpvoted && "fill-current")} />
-                    <span className={labelCls}>{upvoteCount}</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{hasUpvoted ? "Remove upvote" : "Upvote"}</TooltipContent>
-              </Tooltip>
-            )}
+                    {likeSecondary} in clique
+                  </span>
+                )}
+              </div>
+            ) : likeSecondary !== null ? (
+              <div className="flex flex-col items-center gap-1 px-5 py-4">
+                <ArrowUp className={cn(iconCls, "text-amber-500")} aria-hidden="true" />
+                <span className={cn(labelCls, "text-amber-500")} aria-label={`${upvoteCount} likes total`}>{upvoteCount}</span>
+                <span
+                  className="text-[10px] text-zinc-400 dark:text-zinc-500"
+                  aria-label={`${likeSecondary} likes from your cliques`}
+                >
+                  {likeSecondary} yours
+                </span>
+              </div>
+            ) : null}
 
             <Tooltip>
               <TooltipTrigger asChild>

@@ -84,6 +84,16 @@ jest.mock('@/lib/clique-service', () => ({
   getCliqueFeed: jest.fn(),
 }))
 
+// Engagement helpers run server-side over the feed; stub them so these
+// render-focused tests don't exercise the data layer. Return empty maps.
+jest.mock('@/lib/engagement', () => ({
+  getLikeTotals: jest.fn().mockResolvedValue(new Map()),
+  getMyCliquesLikeCounts: jest.fn().mockResolvedValue(new Map()),
+  getUserCliquesForRecommendations: jest.fn().mockResolvedValue(new Map()),
+  getWithinCliqueLikeCounts: jest.fn().mockResolvedValue(new Map()),
+  getCliqueCommentCounts: jest.fn().mockResolvedValue(new Map()),
+}))
+
 // Mock auth so tests don't pull in next-auth ESM module
 jest.mock('@/lib/auth', () => ({
   auth: jest.fn(),

@@ -15,6 +15,8 @@ import {
 import { CategoryFilter, FILTER_OPTIONS } from "@/components/category-filter"
 import { AddToCliquesDialog } from "@/components/add-to-cliques-dialog"
 import { UpvoteButton } from "@/components/upvote-button"
+import { CliqueChips } from "@/components/clique-chips"
+import { LikeCounts } from "@/components/like-counts"
 import type { HomeFeedItem } from "@/types/feed"
 
 const CATEGORY_EMOJIS: Record<string, string> = {
@@ -95,7 +97,7 @@ export function RecommendationFeed({
                   </div>
                 </div>
               )}
-              <Link href={rec.href} className="flex h-full cursor-pointer flex-col">
+              <Link href={rec.href} className="flex flex-1 cursor-pointer flex-col">
                 <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900">
                   {rec.imageUrl ? (
                     <>
@@ -212,18 +214,32 @@ export function RecommendationFeed({
                     </div>
                   )}
                 </CardHeader>
-                <CardContent className="mt-auto">
-                  <div className="flex items-center justify-between text-sm text-zinc-500">
-                    <div className="flex gap-4">
-                      {rec.upvoteContext ? (
+              </Link>
+              {/* Footer lives outside the card-wide Link so clique chips can be
+                  their own links (no nested anchors). */}
+              <CardContent className="mt-auto space-y-2">
+                {!rec.upvoteContext && rec.cliqueChips && rec.cliqueChips.length > 0 && (
+                  <CliqueChips chips={rec.cliqueChips} />
+                )}
+                <div className="flex items-center justify-between text-sm text-zinc-500">
+                  <div className="flex gap-4">
+                    {rec.upvoteContext ? (
+                      <>
                         <UpvoteButton
+                          key={`${rec.id}-${rec.upvoteContext.cliqueId}`}
                           recommendationId={rec.id}
                           cliqueId={rec.upvoteContext.cliqueId}
                           initialCount={rec._count.upvotes}
                           initialHasUpvoted={rec.upvoteContext.hasUpvoted}
                         />
-                      ) : null}
-                      {rec.upvoteContext && (
+                        {rec.engagement && rec.engagement.likeSecondary !== null && (
+                          <span
+                            className="flex items-center text-xs text-zinc-400"
+                            aria-label={`${rec.engagement.likeSecondary} likes in this clique`}
+                          >
+                            {rec.engagement.likeSecondary} in clique
+                          </span>
+                        )}
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -239,14 +255,19 @@ export function RecommendationFeed({
                             <TooltipContent>Comments</TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
-                      )}
-                    </div>
-                    {rec.attribution && (
-                      <span className="text-right text-xs">{rec.attribution}</span>
-                    )}
+                      </>
+                    ) : rec.engagement ? (
+                      <LikeCounts
+                        total={rec.engagement.likeTotal}
+                        secondary={rec.engagement.likeSecondary}
+                      />
+                    ) : null}
                   </div>
-                </CardContent>
-              </Link>
+                  {rec.attribution && (
+                    <span className="text-right text-xs">{rec.attribution}</span>
+                  )}
+                </div>
+              </CardContent>
             </Card>
           ))}
         </div>

@@ -3,27 +3,32 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 
 /**
- * POST /api/recommendations/[id]/comments
+ * POST /api/recommendations/[id]/comments?cliqueId=<id>
  *
- * Creates a new comment on a recommendation.
- * Only authenticated users can add comments.
+ * Creates a new comment in a clique's exclusive thread for a recommendation.
+ * Comments are clique-scoped: the caller must be a member of the given clique
+ * and the recommendation must belong to that clique.
  *
  * Route Parameters:
  * @param {string} id - Recommendation ID
+ *
+ * Query Parameters:
+ * @param {string} cliqueId - The clique whose thread the comment belongs to (required)
  *
  * Request Body:
  * @param {string} content - Comment text (required, 1-500 characters)
  *
  * @returns {Promise<NextResponse>} Created comment object with user info
  * @throws {401} If user is not authenticated
- * @throws {404} If recommendation is not found
- * @throws {400} If comment is invalid
+ * @throws {400} If comment is invalid or cliqueId is missing
+ * @throws {403} If the user is not a member of the clique
+ * @throws {404} If the recommendation does not belong to the clique
  * @throws {500} If database operation fails
  *
  * @example
- * // POST /api/recommendations/rec123/comments
+ * // POST /api/recommendations/rec123/comments?cliqueId=clq1
  * // Body: { content: "Great recommendation!" }
- * // Response: { id, content, createdAt, user: { id, name, image } }
+ * // Response: { id, content, createdAt, cliqueId, user: { id, name, image } }
  */
 export async function POST(
   request: NextRequest,
@@ -37,6 +42,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const userId = session.user.id
     const body = await request.json()
     const { content } = body
 
@@ -63,25 +69,47 @@ export async function POST(
       )
     }
 
-    // Verify recommendation exists
-    const recommendation = await prisma.recommendation.findUnique({
-      where: { id },
-      select: { id: true },
-    })
+    // Comments are clique-scoped: a comment belongs to one clique's exclusive
+    // thread for this recommendation. The caller must be a member of that clique
+    // and the recommendation must belong to it (mirrors the upvotes gate).
+    const cliqueId = request.nextUrl.searchParams.get("cliqueId")
 
-    if (!recommendation) {
+    if (!cliqueId) {
       return NextResponse.json(
-        { error: "Recommendation not found" },
+        { error: "cliqueId is required" },
+        { status: 400 }
+      )
+    }
+
+    const [membership, cliqueRec] = await Promise.all([
+      prisma.cliqueMember.findUnique({
+        where: { cliqueId_userId: { cliqueId, userId } },
+        select: { userId: true },
+      }),
+      prisma.cliqueRecommendation.findUnique({
+        where: { cliqueId_recommendationId: { cliqueId, recommendationId: id } },
+        select: { recommendationId: true },
+      }),
+    ])
+
+    if (!membership) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    if (!cliqueRec) {
+      return NextResponse.json(
+        { error: "Recommendation not found in clique" },
         { status: 404 }
       )
     }
 
-    // Create comment
+    // Create comment in the clique's thread
     const comment = await prisma.comment.create({
       data: {
         content: trimmedContent,
-        userId: session.user.id,
+        userId,
         recommendationId: id,
+        cliqueId,
       },
       include: {
         user: {
