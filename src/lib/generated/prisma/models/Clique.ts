@@ -328,9 +328,9 @@ export type CliqueOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
-export type CliqueNullableScalarRelationFilter = {
-  is?: Prisma.CliqueWhereInput | null
-  isNot?: Prisma.CliqueWhereInput | null
+export type CliqueScalarRelationFilter = {
+  is?: Prisma.CliqueWhereInput
+  isNot?: Prisma.CliqueWhereInput
 }
 
 export type CliqueCountOrderByAggregateInput = {
@@ -355,11 +355,6 @@ export type CliqueMinOrderByAggregateInput = {
   creatorId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-}
-
-export type CliqueScalarRelationFilter = {
-  is?: Prisma.CliqueWhereInput
-  isNot?: Prisma.CliqueWhereInput
 }
 
 export type CliqueCreateNestedManyWithoutCreatorInput = {
@@ -410,12 +405,10 @@ export type CliqueCreateNestedOneWithoutCommentsInput = {
   connect?: Prisma.CliqueWhereUniqueInput
 }
 
-export type CliqueUpdateOneWithoutCommentsNestedInput = {
+export type CliqueUpdateOneRequiredWithoutCommentsNestedInput = {
   create?: Prisma.XOR<Prisma.CliqueCreateWithoutCommentsInput, Prisma.CliqueUncheckedCreateWithoutCommentsInput>
   connectOrCreate?: Prisma.CliqueCreateOrConnectWithoutCommentsInput
   upsert?: Prisma.CliqueUpsertWithoutCommentsInput
-  disconnect?: Prisma.CliqueWhereInput | boolean
-  delete?: Prisma.CliqueWhereInput | boolean
   connect?: Prisma.CliqueWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.CliqueUpdateToOneWithWhereWithoutCommentsInput, Prisma.CliqueUpdateWithoutCommentsInput>, Prisma.CliqueUncheckedUpdateWithoutCommentsInput>
 }
