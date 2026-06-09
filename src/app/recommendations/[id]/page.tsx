@@ -304,6 +304,7 @@ export default async function RecommendationDetailPage({
           <div className="space-y-6">
             {/* Action Card */}
             <ActionsSidebar
+              key={`${recommendation.id}-${cliqueId ?? "none"}`}
               recommendation={{
                 ...recommendation,
                 _count: { ...recommendation._count, comments: cliqueCommentCount },

@@ -226,6 +226,7 @@ export function RecommendationFeed({
                     {rec.upvoteContext ? (
                       <>
                         <UpvoteButton
+                          key={`${rec.id}-${rec.upvoteContext.cliqueId}`}
                           recommendationId={rec.id}
                           cliqueId={rec.upvoteContext.cliqueId}
                           initialCount={rec._count.upvotes}
