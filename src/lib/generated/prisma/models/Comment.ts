@@ -166,7 +166,7 @@ export type CommentGroupByOutputType = {
   updatedAt: Date
   userId: string
   recommendationId: string
-  cliqueId: string | null
+  cliqueId: string
   _count: CommentCountAggregateOutputType | null
   _min: CommentMinAggregateOutputType | null
   _max: CommentMaxAggregateOutputType | null
@@ -197,10 +197,10 @@ export type CommentWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Comment"> | Date | string
   userId?: Prisma.StringFilter<"Comment"> | string
   recommendationId?: Prisma.StringFilter<"Comment"> | string
-  cliqueId?: Prisma.StringNullableFilter<"Comment"> | string | null
+  cliqueId?: Prisma.StringFilter<"Comment"> | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   recommendation?: Prisma.XOR<Prisma.RecommendationScalarRelationFilter, Prisma.RecommendationWhereInput>
-  clique?: Prisma.XOR<Prisma.CliqueNullableScalarRelationFilter, Prisma.CliqueWhereInput> | null
+  clique?: Prisma.XOR<Prisma.CliqueScalarRelationFilter, Prisma.CliqueWhereInput>
 }
 
 export type CommentOrderByWithRelationInput = {
@@ -210,7 +210,7 @@ export type CommentOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   recommendationId?: Prisma.SortOrder
-  cliqueId?: Prisma.SortOrderInput | Prisma.SortOrder
+  cliqueId?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
   recommendation?: Prisma.RecommendationOrderByWithRelationInput
   clique?: Prisma.CliqueOrderByWithRelationInput
@@ -226,10 +226,10 @@ export type CommentWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"Comment"> | Date | string
   userId?: Prisma.StringFilter<"Comment"> | string
   recommendationId?: Prisma.StringFilter<"Comment"> | string
-  cliqueId?: Prisma.StringNullableFilter<"Comment"> | string | null
+  cliqueId?: Prisma.StringFilter<"Comment"> | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   recommendation?: Prisma.XOR<Prisma.RecommendationScalarRelationFilter, Prisma.RecommendationWhereInput>
-  clique?: Prisma.XOR<Prisma.CliqueNullableScalarRelationFilter, Prisma.CliqueWhereInput> | null
+  clique?: Prisma.XOR<Prisma.CliqueScalarRelationFilter, Prisma.CliqueWhereInput>
 }, "id">
 
 export type CommentOrderByWithAggregationInput = {
@@ -239,7 +239,7 @@ export type CommentOrderByWithAggregationInput = {
   updatedAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   recommendationId?: Prisma.SortOrder
-  cliqueId?: Prisma.SortOrderInput | Prisma.SortOrder
+  cliqueId?: Prisma.SortOrder
   _count?: Prisma.CommentCountOrderByAggregateInput
   _max?: Prisma.CommentMaxOrderByAggregateInput
   _min?: Prisma.CommentMinOrderByAggregateInput
@@ -255,7 +255,7 @@ export type CommentScalarWhereWithAggregatesInput = {
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Comment"> | Date | string
   userId?: Prisma.StringWithAggregatesFilter<"Comment"> | string
   recommendationId?: Prisma.StringWithAggregatesFilter<"Comment"> | string
-  cliqueId?: Prisma.StringNullableWithAggregatesFilter<"Comment"> | string | null
+  cliqueId?: Prisma.StringWithAggregatesFilter<"Comment"> | string
 }
 
 export type CommentCreateInput = {
@@ -265,7 +265,7 @@ export type CommentCreateInput = {
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutCommentsInput
   recommendation: Prisma.RecommendationCreateNestedOneWithoutCommentsInput
-  clique?: Prisma.CliqueCreateNestedOneWithoutCommentsInput
+  clique: Prisma.CliqueCreateNestedOneWithoutCommentsInput
 }
 
 export type CommentUncheckedCreateInput = {
@@ -275,7 +275,7 @@ export type CommentUncheckedCreateInput = {
   updatedAt?: Date | string
   userId: string
   recommendationId: string
-  cliqueId?: string | null
+  cliqueId: string
 }
 
 export type CommentUpdateInput = {
@@ -285,7 +285,7 @@ export type CommentUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutCommentsNestedInput
   recommendation?: Prisma.RecommendationUpdateOneRequiredWithoutCommentsNestedInput
-  clique?: Prisma.CliqueUpdateOneWithoutCommentsNestedInput
+  clique?: Prisma.CliqueUpdateOneRequiredWithoutCommentsNestedInput
 }
 
 export type CommentUncheckedUpdateInput = {
@@ -295,7 +295,7 @@ export type CommentUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   recommendationId?: Prisma.StringFieldUpdateOperationsInput | string
-  cliqueId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cliqueId?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type CommentCreateManyInput = {
@@ -305,7 +305,7 @@ export type CommentCreateManyInput = {
   updatedAt?: Date | string
   userId: string
   recommendationId: string
-  cliqueId?: string | null
+  cliqueId: string
 }
 
 export type CommentUpdateManyMutationInput = {
@@ -322,7 +322,7 @@ export type CommentUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   recommendationId?: Prisma.StringFieldUpdateOperationsInput | string
-  cliqueId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cliqueId?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type CommentListRelationFilter = {
@@ -497,7 +497,7 @@ export type CommentCreateWithoutUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   recommendation: Prisma.RecommendationCreateNestedOneWithoutCommentsInput
-  clique?: Prisma.CliqueCreateNestedOneWithoutCommentsInput
+  clique: Prisma.CliqueCreateNestedOneWithoutCommentsInput
 }
 
 export type CommentUncheckedCreateWithoutUserInput = {
@@ -506,7 +506,7 @@ export type CommentUncheckedCreateWithoutUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   recommendationId: string
-  cliqueId?: string | null
+  cliqueId: string
 }
 
 export type CommentCreateOrConnectWithoutUserInput = {
@@ -545,7 +545,7 @@ export type CommentScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Comment"> | Date | string
   userId?: Prisma.StringFilter<"Comment"> | string
   recommendationId?: Prisma.StringFilter<"Comment"> | string
-  cliqueId?: Prisma.StringNullableFilter<"Comment"> | string | null
+  cliqueId?: Prisma.StringFilter<"Comment"> | string
 }
 
 export type CommentCreateWithoutRecommendationInput = {
@@ -554,7 +554,7 @@ export type CommentCreateWithoutRecommendationInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutCommentsInput
-  clique?: Prisma.CliqueCreateNestedOneWithoutCommentsInput
+  clique: Prisma.CliqueCreateNestedOneWithoutCommentsInput
 }
 
 export type CommentUncheckedCreateWithoutRecommendationInput = {
@@ -563,7 +563,7 @@ export type CommentUncheckedCreateWithoutRecommendationInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
-  cliqueId?: string | null
+  cliqueId: string
 }
 
 export type CommentCreateOrConnectWithoutRecommendationInput = {
@@ -642,7 +642,7 @@ export type CommentCreateManyUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   recommendationId: string
-  cliqueId?: string | null
+  cliqueId: string
 }
 
 export type CommentUpdateWithoutUserInput = {
@@ -651,7 +651,7 @@ export type CommentUpdateWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   recommendation?: Prisma.RecommendationUpdateOneRequiredWithoutCommentsNestedInput
-  clique?: Prisma.CliqueUpdateOneWithoutCommentsNestedInput
+  clique?: Prisma.CliqueUpdateOneRequiredWithoutCommentsNestedInput
 }
 
 export type CommentUncheckedUpdateWithoutUserInput = {
@@ -660,7 +660,7 @@ export type CommentUncheckedUpdateWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   recommendationId?: Prisma.StringFieldUpdateOperationsInput | string
-  cliqueId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cliqueId?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type CommentUncheckedUpdateManyWithoutUserInput = {
@@ -669,7 +669,7 @@ export type CommentUncheckedUpdateManyWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   recommendationId?: Prisma.StringFieldUpdateOperationsInput | string
-  cliqueId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cliqueId?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type CommentCreateManyRecommendationInput = {
@@ -678,7 +678,7 @@ export type CommentCreateManyRecommendationInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   userId: string
-  cliqueId?: string | null
+  cliqueId: string
 }
 
 export type CommentUpdateWithoutRecommendationInput = {
@@ -687,7 +687,7 @@ export type CommentUpdateWithoutRecommendationInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutCommentsNestedInput
-  clique?: Prisma.CliqueUpdateOneWithoutCommentsNestedInput
+  clique?: Prisma.CliqueUpdateOneRequiredWithoutCommentsNestedInput
 }
 
 export type CommentUncheckedUpdateWithoutRecommendationInput = {
@@ -696,7 +696,7 @@ export type CommentUncheckedUpdateWithoutRecommendationInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  cliqueId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cliqueId?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type CommentUncheckedUpdateManyWithoutRecommendationInput = {
@@ -705,7 +705,7 @@ export type CommentUncheckedUpdateManyWithoutRecommendationInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  cliqueId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cliqueId?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type CommentCreateManyCliqueInput = {
@@ -756,7 +756,7 @@ export type CommentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   cliqueId?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   recommendation?: boolean | Prisma.RecommendationDefaultArgs<ExtArgs>
-  clique?: boolean | Prisma.Comment$cliqueArgs<ExtArgs>
+  clique?: boolean | Prisma.CliqueDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["comment"]>
 
 export type CommentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -769,7 +769,7 @@ export type CommentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   cliqueId?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   recommendation?: boolean | Prisma.RecommendationDefaultArgs<ExtArgs>
-  clique?: boolean | Prisma.Comment$cliqueArgs<ExtArgs>
+  clique?: boolean | Prisma.CliqueDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["comment"]>
 
 export type CommentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -782,7 +782,7 @@ export type CommentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   cliqueId?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   recommendation?: boolean | Prisma.RecommendationDefaultArgs<ExtArgs>
-  clique?: boolean | Prisma.Comment$cliqueArgs<ExtArgs>
+  clique?: boolean | Prisma.CliqueDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["comment"]>
 
 export type CommentSelectScalar = {
@@ -799,17 +799,17 @@ export type CommentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
 export type CommentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   recommendation?: boolean | Prisma.RecommendationDefaultArgs<ExtArgs>
-  clique?: boolean | Prisma.Comment$cliqueArgs<ExtArgs>
+  clique?: boolean | Prisma.CliqueDefaultArgs<ExtArgs>
 }
 export type CommentIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   recommendation?: boolean | Prisma.RecommendationDefaultArgs<ExtArgs>
-  clique?: boolean | Prisma.Comment$cliqueArgs<ExtArgs>
+  clique?: boolean | Prisma.CliqueDefaultArgs<ExtArgs>
 }
 export type CommentIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   recommendation?: boolean | Prisma.RecommendationDefaultArgs<ExtArgs>
-  clique?: boolean | Prisma.Comment$cliqueArgs<ExtArgs>
+  clique?: boolean | Prisma.CliqueDefaultArgs<ExtArgs>
 }
 
 export type $CommentPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -817,7 +817,7 @@ export type $CommentPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   objects: {
     user: Prisma.$UserPayload<ExtArgs>
     recommendation: Prisma.$RecommendationPayload<ExtArgs>
-    clique: Prisma.$CliquePayload<ExtArgs> | null
+    clique: Prisma.$CliquePayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -826,7 +826,7 @@ export type $CommentPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     updatedAt: Date
     userId: string
     recommendationId: string
-    cliqueId: string | null
+    cliqueId: string
   }, ExtArgs["result"]["comment"]>
   composites: {}
 }
@@ -1223,7 +1223,7 @@ export interface Prisma__CommentClient<T, Null = never, ExtArgs extends runtime.
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   recommendation<T extends Prisma.RecommendationDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.RecommendationDefaultArgs<ExtArgs>>): Prisma.Prisma__RecommendationClient<runtime.Types.Result.GetResult<Prisma.$RecommendationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  clique<T extends Prisma.Comment$cliqueArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Comment$cliqueArgs<ExtArgs>>): Prisma.Prisma__CliqueClient<runtime.Types.Result.GetResult<Prisma.$CliquePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  clique<T extends Prisma.CliqueDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CliqueDefaultArgs<ExtArgs>>): Prisma.Prisma__CliqueClient<runtime.Types.Result.GetResult<Prisma.$CliquePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1658,25 +1658,6 @@ export type CommentDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Limit how many Comments to delete.
    */
   limit?: number
-}
-
-/**
- * Comment.clique
- */
-export type Comment$cliqueArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Clique
-   */
-  select?: Prisma.CliqueSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Clique
-   */
-  omit?: Prisma.CliqueOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.CliqueInclude<ExtArgs> | null
-  where?: Prisma.CliqueWhereInput
 }
 
 /**
