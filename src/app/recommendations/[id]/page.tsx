@@ -10,9 +10,15 @@ import { RefreshEntityButton } from "@/components/refresh-entity-button"
 import { RefreshableEntityDetails } from "@/components/refreshable-entity-details"
 import { CommentsSection } from "@/components/comments-section"
 import { ActionsSidebar } from "@/components/actions-sidebar"
+import { InYourCliquesCard } from "@/components/in-your-cliques-card"
 import { auth } from "@/lib/auth"
 import { SubmitterInfo } from "@/components/submitter-info"
-import { getUserCliquesForRecommendations } from "@/lib/engagement"
+import {
+  getUserCliquesForRecommendations,
+  getLikeTotals,
+  getMyCliquesLikeCounts,
+  getWithinCliqueLikeCounts,
+} from "@/lib/engagement"
 
 export default async function RecommendationDetailPage({
   params,
@@ -111,6 +117,20 @@ export default async function RecommendationDetailPage({
         })
       : []
   const cliqueCommentCount = cliqueComments.length
+
+  // Compute like figures for the actions sidebar and detail header.
+  // With a valid clique context, show total + within-clique count.
+  // Without, show total + my-cliques sum (or null when logged out).
+  const [likeTotalsMap, likeSecondaryMap] = await Promise.all([
+    getLikeTotals([id]),
+    isCliqueContext && cliqueId
+      ? getWithinCliqueLikeCounts([id], cliqueId)
+      : currentUserId
+        ? getMyCliquesLikeCounts([id], currentUserId)
+        : Promise.resolve(null),
+  ])
+  const likeTotal = likeTotalsMap.get(id) ?? 0
+  const likeSecondary = likeSecondaryMap ? likeSecondaryMap.get(id) ?? 0 : null
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black">
@@ -307,10 +327,11 @@ export default async function RecommendationDetailPage({
               key={`${recommendation.id}-${cliqueId ?? "none"}`}
               recommendation={{
                 ...recommendation,
-                _count: { ...recommendation._count, comments: cliqueCommentCount },
+                _count: { ...recommendation._count, upvotes: likeTotal, comments: cliqueCommentCount },
               }}
               cliqueId={isCliqueContext ? cliqueId : null}
               initialHasUpvoted={userHasUpvoted}
+              likeSecondary={likeSecondary}
               currentUserId={currentUserId}
             />
             <Card>
@@ -322,6 +343,12 @@ export default async function RecommendationDetailPage({
                 <DeleteRecommendationButton recommendation={recommendation} currentUserId={currentUserId} />
               </CardContent>
             </Card>
+            <InYourCliquesCard
+              recommendationId={recommendation.id}
+              recommendationName={recommendation.entity.name}
+              cliques={userCliquesForReco.map((c) => ({ id: c.id, name: c.name }))}
+              currentUserId={currentUserId}
+            />
           </div>
         </div>
       </main>

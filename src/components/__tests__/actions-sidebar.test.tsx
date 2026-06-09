@@ -236,4 +236,40 @@ describe("ActionsSidebar", () => {
       consoleSpy.mockRestore()
     })
   })
+
+  describe("secondary like count", () => {
+    it("shows 'N in clique' label in clique context when likeSecondary is provided", () => {
+      render(
+        <ActionsSidebar
+          recommendation={mockRecommendation}
+          cliqueId="clique1"
+          likeSecondary={4}
+        />
+      )
+      expect(screen.getByLabelText("4 likes in this clique")).toBeInTheDocument()
+      expect(screen.getByText("4 in clique")).toBeInTheDocument()
+    })
+
+    it("omits the secondary label when likeSecondary is null in clique context", () => {
+      render(
+        <ActionsSidebar
+          recommendation={mockRecommendation}
+          cliqueId="clique1"
+          likeSecondary={null}
+        />
+      )
+      expect(screen.queryByText(/in clique/i)).not.toBeInTheDocument()
+    })
+
+    it("shows display-only like count with 'N yours' label when no cliqueId and likeSecondary provided", () => {
+      render(
+        <ActionsSidebar
+          recommendation={mockRecommendation}
+          likeSecondary={3}
+        />
+      )
+      expect(screen.getByLabelText("3 likes from your cliques")).toBeInTheDocument()
+      expect(screen.getByText("3 yours")).toBeInTheDocument()
+    })
+  })
 })

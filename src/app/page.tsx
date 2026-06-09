@@ -15,6 +15,8 @@ import {
   getLikeTotals,
   getMyCliquesLikeCounts,
   getUserCliquesForRecommendations,
+  getWithinCliqueLikeCounts,
+  getCliqueCommentCounts,
 } from "@/lib/engagement"
 import type { CliqueFeedItem } from "@/types/clique"
 import type { HomeFeedItem } from "@/types/feed"
@@ -279,13 +281,28 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
               })
             : []
         const upvotedIds = new Set(userUpvoteRows.map((r) => r.recommendationId))
-        recommendations = cliqueFeed.map((item) =>
-          normalizeCliqueFeedItem(
+        const [withinCliqueLikes, cliqueCommentCounts] = await Promise.all([
+          getWithinCliqueLikeCounts(recIds, activeCliqueId),
+          getCliqueCommentCounts(recIds, activeCliqueId),
+        ])
+        recommendations = cliqueFeed.map((item) => {
+          const base = normalizeCliqueFeedItem(
             item,
             activeCliqueId,
             upvotedIds.has(item.recommendation.id)
           )
-        )
+          return {
+            ...base,
+            engagement: {
+              likeTotal: item.recommendation._count.upvotes,
+              likeSecondary: withinCliqueLikes.get(item.recommendation.id) ?? 0,
+            },
+            _count: {
+              ...base._count,
+              comments: cliqueCommentCounts.get(item.recommendation.id) ?? 0,
+            },
+          }
+        })
       } else {
         logCliqueFeedDelegateMismatch()
         cliqueError = getCliqueFeedUnavailableMessage()

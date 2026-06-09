@@ -40,6 +40,9 @@ jest.mock("@/lib/prisma", () => ({
 // these render-focused tests don't exercise the engagement data layer.
 jest.mock("@/lib/engagement", () => ({
   getUserCliquesForRecommendations: jest.fn().mockResolvedValue(new Map()),
+  getLikeTotals: jest.fn().mockResolvedValue(new Map()),
+  getMyCliquesLikeCounts: jest.fn().mockResolvedValue(new Map()),
+  getWithinCliqueLikeCounts: jest.fn().mockResolvedValue(new Map()),
 }))
 
 // Mock auth so tests don't pull in next-auth ESM module
