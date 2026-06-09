@@ -14,6 +14,8 @@ Each version links to its GitHub Release.
 
 **Full Changelog**: https://github.com/navybrmi/clique/compare/v0.21.0...v0.22.0
 
+---
+
 ## [v0.21.0](https://github.com/navybrmi/clique/releases/tag/v0.21.0) — 2026-06-04
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.21.0 -->
@@ -37,6 +39,20 @@ Each version links to its GitHub Release.
 
 
 **Full Changelog**: https://github.com/navybrmi/clique/compare/v0.20.0...v0.20.1
+
+---
+
+## [v0.20.0](https://github.com/navybrmi/clique/releases/tag/v0.20.0) — 2026-06-04
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.20.0 -->
+
+## What's Changed
+### Other Changes
+* chore: update CHANGELOG for v0.19.0 by @github-actions[bot] in https://github.com/navybrmi/clique/pull/103
+* feat(engagement): batched clique-scoped engagement read helpers [PR 2/6] by @navybrmi in https://github.com/navybrmi/clique/pull/104
+
+
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.19.0...v0.20.0
 
 ---
 
