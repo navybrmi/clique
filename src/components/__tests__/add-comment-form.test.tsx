@@ -25,40 +25,40 @@ describe("AddCommentForm", () => {
 
   describe("when userId is provided", () => {
     it("renders the comment textarea", () => {
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       expect(screen.getByPlaceholderText("Add a comment...")).toBeInTheDocument()
     })
 
     it("renders the Post Comment button", () => {
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       expect(screen.getByRole("button", { name: /post comment/i })).toBeInTheDocument()
     })
 
     it("renders the Clear button", () => {
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       expect(screen.getByRole("button", { name: /clear/i })).toBeInTheDocument()
     })
 
     it("does not show sign-in prompt", () => {
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       expect(screen.queryByText("Sign in to add a comment")).not.toBeInTheDocument()
     })
   })
 
   describe("submit button disabled state", () => {
     it("disables the submit button when comment is empty", () => {
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       expect(screen.getByRole("button", { name: /post comment/i })).toBeDisabled()
     })
 
     it("disables the clear button when comment is empty", () => {
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       expect(screen.getByRole("button", { name: /clear/i })).toBeDisabled()
     })
 
     it("enables submit and clear buttons when comment has text", async () => {
       const user = userEvent.setup()
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       await user.type(screen.getByPlaceholderText("Add a comment..."), "Hello")
       expect(screen.getByRole("button", { name: /post comment/i })).not.toBeDisabled()
       expect(screen.getByRole("button", { name: /clear/i })).not.toBeDisabled()
@@ -66,7 +66,7 @@ describe("AddCommentForm", () => {
 
     it("disables submit button when comment is only whitespace", async () => {
       const user = userEvent.setup()
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       await user.type(screen.getByPlaceholderText("Add a comment..."), "   ")
       expect(screen.getByRole("button", { name: /post comment/i })).toBeDisabled()
     })
@@ -75,7 +75,7 @@ describe("AddCommentForm", () => {
   describe("form validation", () => {
     it("shows error when submitting empty comment", async () => {
       const user = userEvent.setup()
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       // Type and then clear to get an edge case — actually trigger via fireEvent to bypass disabled
       const textarea = screen.getByPlaceholderText("Add a comment...")
       fireEvent.change(textarea, { target: { value: "   " } })
@@ -87,7 +87,7 @@ describe("AddCommentForm", () => {
     })
 
     it("shows error when comment exceeds 500 characters", async () => {
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       const textarea = screen.getByPlaceholderText("Add a comment...")
       const longComment = "a".repeat(501)
       fireEvent.change(textarea, { target: { value: longComment } })
@@ -99,7 +99,7 @@ describe("AddCommentForm", () => {
     })
 
     it("does not show an error for a comment exactly 500 characters", async () => {
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       const textarea = screen.getByPlaceholderText("Add a comment...")
       const exactComment = "a".repeat(500)
       fireEvent.change(textarea, { target: { value: exactComment } })
@@ -131,13 +131,13 @@ describe("AddCommentForm", () => {
       )
 
       const user = userEvent.setup()
-      render(<AddCommentForm recommendationId="rec-42" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-42" userId="user-123" cliqueId="clq1" />)
       await user.type(screen.getByPlaceholderText("Add a comment..."), "Great post!")
       await user.click(screen.getByRole("button", { name: /post comment/i }))
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(
-          "/api/recommendations/rec-42/comments",
+          "/api/recommendations/rec-42/comments?cliqueId=clq1",
           expect.objectContaining({
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -156,7 +156,7 @@ describe("AddCommentForm", () => {
       )
 
       const user = userEvent.setup()
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       const textarea = screen.getByPlaceholderText("Add a comment...")
       await user.type(textarea, "Nice!")
       await user.click(screen.getByRole("button", { name: /post comment/i }))
@@ -179,7 +179,7 @@ describe("AddCommentForm", () => {
       render(
         <AddCommentForm
           recommendationId="rec-1"
-          userId="user-123"
+          userId="user-123" cliqueId="clq1"
           onCommentAdded={onCommentAdded}
         />
       )
@@ -200,7 +200,7 @@ describe("AddCommentForm", () => {
       )
 
       const user = userEvent.setup()
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       await user.type(screen.getByPlaceholderText("Add a comment..."), "Nice!")
       await user.click(screen.getByRole("button", { name: /post comment/i }))
 
@@ -217,7 +217,7 @@ describe("AddCommentForm", () => {
         })
       )
 
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       const textarea = screen.getByPlaceholderText("Add a comment...")
       fireEvent.change(textarea, { target: { value: "  trimmed  " } })
       const form = textarea.closest("form")!
@@ -225,12 +225,30 @@ describe("AddCommentForm", () => {
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(
-          "/api/recommendations/rec-1/comments",
+          "/api/recommendations/rec-1/comments?cliqueId=clq1",
           expect.objectContaining({
             body: JSON.stringify({ content: "trimmed" }),
           })
         )
       })
+    })
+  })
+
+  describe("without a clique context", () => {
+    it("shows an open-in-a-clique error and does not POST when cliqueId is absent", async () => {
+      ;(global.fetch as jest.Mock).mockClear()
+
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      const textarea = screen.getByPlaceholderText("Add a comment...")
+      fireEvent.change(textarea, { target: { value: "Test comment" } })
+      fireEvent.submit(textarea.closest("form")!)
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("Open this recommendation in a clique to comment")
+        ).toBeInTheDocument()
+      })
+      expect(global.fetch).not.toHaveBeenCalled()
     })
   })
 
@@ -243,7 +261,7 @@ describe("AddCommentForm", () => {
         })
       )
 
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       const textarea = screen.getByPlaceholderText("Add a comment...")
       fireEvent.change(textarea, { target: { value: "Test comment" } })
       fireEvent.submit(textarea.closest("form")!)
@@ -261,7 +279,7 @@ describe("AddCommentForm", () => {
         })
       )
 
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       const textarea = screen.getByPlaceholderText("Add a comment...")
       fireEvent.change(textarea, { target: { value: "Test comment" } })
       fireEvent.submit(textarea.closest("form")!)
@@ -277,7 +295,7 @@ describe("AddCommentForm", () => {
       const consoleSpy = jest.spyOn(console, "error").mockImplementation()
       ;(global.fetch as jest.Mock).mockRejectedValueOnce(new Error("Network error"))
 
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       const textarea = screen.getByPlaceholderText("Add a comment...")
       fireEvent.change(textarea, { target: { value: "Test comment" } })
       fireEvent.submit(textarea.closest("form")!)
@@ -294,7 +312,7 @@ describe("AddCommentForm", () => {
       const networkError = new Error("Network error")
       ;(global.fetch as jest.Mock).mockRejectedValueOnce(networkError)
 
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       const textarea = screen.getByPlaceholderText("Add a comment...")
       fireEvent.change(textarea, { target: { value: "Test comment" } })
       fireEvent.submit(textarea.closest("form")!)
@@ -318,7 +336,7 @@ describe("AddCommentForm", () => {
       })
       ;(global.fetch as jest.Mock).mockReturnValueOnce(pendingResponse)
 
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       const textarea = screen.getByPlaceholderText("Add a comment...")
       fireEvent.change(textarea, { target: { value: "Test comment" } })
       fireEvent.submit(textarea.closest("form")!)
@@ -342,7 +360,7 @@ describe("AddCommentForm", () => {
       })
       ;(global.fetch as jest.Mock).mockReturnValueOnce(pendingResponse)
 
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       const textarea = screen.getByPlaceholderText("Add a comment...")
       fireEvent.change(textarea, { target: { value: "Test comment" } })
       fireEvent.submit(textarea.closest("form")!)
@@ -363,7 +381,7 @@ describe("AddCommentForm", () => {
   describe("clear button", () => {
     it("resets the comment text when clicked", async () => {
       const user = userEvent.setup()
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       const textarea = screen.getByPlaceholderText("Add a comment...")
       await user.type(textarea, "Some text")
       expect(textarea).toHaveValue("Some text")
@@ -373,7 +391,7 @@ describe("AddCommentForm", () => {
     })
 
     it("clears the error message when clicked", async () => {
-      render(<AddCommentForm recommendationId="rec-1" userId="user-123" />)
+      render(<AddCommentForm recommendationId="rec-1" userId="user-123" cliqueId="clq1" />)
       const textarea = screen.getByPlaceholderText("Add a comment...")
 
       // Trigger an error first

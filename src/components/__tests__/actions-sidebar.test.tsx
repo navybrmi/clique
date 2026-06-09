@@ -187,7 +187,9 @@ describe("ActionsSidebar", () => {
       await waitFor(() => {
         expect(screen.getAllByText("6").length).toBeGreaterThan(0)
       })
-      expect(global.fetch).toHaveBeenCalledWith("/api/recommendations/rec1")
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/recommendations/rec1?cliqueId=clique1"
+      )
     })
 
     it("should call onCommentCountChange callback when count updates", async () => {
@@ -201,6 +203,7 @@ describe("ActionsSidebar", () => {
       render(
         <ActionsSidebar
           recommendation={mockRecommendation}
+          cliqueId="clique1"
           onCommentCountChange={mockCallback}
         />
       )
@@ -216,7 +219,9 @@ describe("ActionsSidebar", () => {
       ;(global.fetch as jest.Mock).mockRejectedValueOnce(new Error("Network error"))
       const consoleSpy = jest.spyOn(console, "error").mockImplementation()
 
-      render(<ActionsSidebar recommendation={mockRecommendation} />)
+      render(
+        <ActionsSidebar recommendation={mockRecommendation} cliqueId="clique1" />
+      )
 
       window.dispatchEvent(new CustomEvent("commentUpdated"))
 

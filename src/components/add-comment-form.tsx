@@ -15,6 +15,12 @@ interface AddCommentFormProps {
   onCommentAdded?: () => void
   /** Authenticated user ID resolved server-side. When falsy, shows sign-in prompt. */
   userId?: string | null
+  /**
+   * The clique whose thread the comment is posted to. Comments are clique-scoped,
+   * so this is required to post; when falsy, submitting is blocked with an error.
+   * (The parent only renders this form in a valid clique context.)
+   */
+  cliqueId?: string | null
 }
 
 /**
@@ -30,7 +36,7 @@ interface AddCommentFormProps {
  * @param props - Component props
  * @returns A comment form for authenticated users, or a sign-in prompt if not authenticated
  */
-export function AddCommentForm({ recommendationId, onCommentAdded, userId }: AddCommentFormProps) {
+export function AddCommentForm({ recommendationId, onCommentAdded, userId, cliqueId }: AddCommentFormProps) {
   const [submitting, setSubmitting] = useState(false)
   const [comment, setComment] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -44,14 +50,20 @@ export function AddCommentForm({ recommendationId, onCommentAdded, userId }: Add
       return
     }
 
-    if (comment.length > 500) {
+    // Validate the trimmed length to match the server, which trims before checking.
+    if (comment.trim().length > 500) {
       setError("Comment must be 500 characters or less")
+      return
+    }
+
+    if (!cliqueId) {
+      setError("Open this recommendation in a clique to comment")
       return
     }
 
     setSubmitting(true)
     try {
-      const response = await fetch(`/api/recommendations/${recommendationId}/comments`, {
+      const response = await fetch(`/api/recommendations/${recommendationId}/comments?cliqueId=${cliqueId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

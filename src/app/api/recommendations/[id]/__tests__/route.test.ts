@@ -12,6 +12,15 @@ jest.mock("@/lib/prisma", () => ({
       update: jest.fn(),
       delete: jest.fn(),
     },
+    cliqueMember: {
+      findUnique: jest.fn(),
+    },
+    cliqueRecommendation: {
+      findUnique: jest.fn(),
+    },
+    comment: {
+      findMany: jest.fn(),
+    },
     restaurant: {
       upsert: jest.fn(),
     },
@@ -46,68 +55,99 @@ describe("GET /api/recommendations/[id]", () => {
     jest.clearAllMocks()
   })
 
-  it("should return recommendation with all related data", async () => {
-    // Arrange
-    const mockRecommendation = {
-      id: "rec1",
-      userId: "user1",
-      entityId: "entity1",
-      user: {
-        id: "user1",
-        name: "John Doe",
-        image: "https://example.com/avatar.jpg",
-      },
-      entity: {
-        id: "entity1",
-        name: "Test Restaurant",
-        category: { id: "cat1", name: "Restaurants" },
-        restaurant: { id: "rest1", cuisine: "Italian" },
-        movie: null,
-        fashion: null,
-        household: null,
-        other: null,
-      },
-      comments: [
-        {
-          id: "comment1",
-          text: "Great recommendation!",
-          user: { id: "user2", name: "Jane Doe", image: null },
-        },
-      ],
-      upvotes: [
-        { user: { id: "user3", name: "Bob Smith" } },
-      ],
-      _count: {
-        upvotes: 1,
-        comments: 1,
-      },
-    }
+  const baseRecommendation = {
+    id: "rec1",
+    userId: "user1",
+    entityId: "entity1",
+    user: {
+      id: "user1",
+      name: "John Doe",
+      image: "https://example.com/avatar.jpg",
+    },
+    entity: {
+      id: "entity1",
+      name: "Test Restaurant",
+      category: { id: "cat1", name: "Restaurants" },
+      restaurant: { id: "rest1", cuisine: "Italian" },
+      movie: null,
+      fashion: null,
+      household: null,
+      other: null,
+    },
+    upvotes: [{ user: { id: "user3", name: "Bob Smith" } }],
+    _count: { upvotes: 1, comments: 5 },
+  }
 
-    ;(prisma.recommendation.findUnique as jest.Mock).mockResolvedValue(mockRecommendation)
+  it("returns the recommendation with an empty thread when no cliqueId is given", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.recommendation.findUnique as jest.Mock).mockResolvedValue(baseRecommendation)
 
     const request = new NextRequest("http://localhost/api/recommendations/rec1")
-
-    // Act
     const response = await GET(request, { params: Promise.resolve({ id: "rec1" }) })
     const data = await response.json()
 
-    // Assert
     expect(response.status).toBe(200)
-    expect(data).toEqual(mockRecommendation)
-    expect(prisma.recommendation.findUnique).toHaveBeenCalledWith({
-      where: { id: "rec1" },
-      include: expect.objectContaining({
-        user: expect.any(Object),
-        entity: expect.any(Object),
-        comments: expect.any(Object),
-        upvotes: expect.any(Object),
-        _count: expect.any(Object),
-      }),
+    // Comments are clique-scoped: without a cliqueId there is no thread.
+    expect(data.comments).toEqual([])
+    expect(data._count.comments).toBe(0)
+    // The findUnique no longer eager-loads comments.
+    const findArgs = (prisma.recommendation.findUnique as jest.Mock).mock.calls[0][0]
+    expect(findArgs.include.comments).toBeUndefined()
+    expect(prisma.comment.findMany).not.toHaveBeenCalled()
+  })
+
+  it("returns the clique's thread for a valid clique context", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.recommendation.findUnique as jest.Mock).mockResolvedValue(baseRecommendation)
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ userId: "user1" })
+    ;(prisma.cliqueRecommendation.findUnique as jest.Mock).mockResolvedValue({
+      recommendationId: "rec1",
     })
+    const thread = [
+      { id: "c1", content: "In clique 1", user: { id: "user2", name: "Jane", image: null } },
+      { id: "c2", content: "Nice", user: { id: "user1", name: "John", image: null } },
+    ]
+    ;(prisma.comment.findMany as jest.Mock).mockResolvedValue(thread)
+
+    const request = new NextRequest(
+      "http://localhost/api/recommendations/rec1?cliqueId=clq1"
+    )
+    const response = await GET(request, { params: Promise.resolve({ id: "rec1" }) })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.comments).toEqual(thread)
+    expect(data._count.comments).toBe(2)
+    expect(prisma.comment.findMany).toHaveBeenCalledWith({
+      where: { recommendationId: "rec1", cliqueId: "clq1" },
+      include: { user: { select: { id: true, name: true, image: true } } },
+      orderBy: { createdAt: "desc" },
+    })
+  })
+
+  it("returns an empty thread (no leak) when the user is not a member of the cliqueId", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.recommendation.findUnique as jest.Mock).mockResolvedValue(baseRecommendation)
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue(null)
+    ;(prisma.cliqueRecommendation.findUnique as jest.Mock).mockResolvedValue({
+      recommendationId: "rec1",
+    })
+
+    const request = new NextRequest(
+      "http://localhost/api/recommendations/rec1?cliqueId=clq1"
+    )
+    const response = await GET(request, { params: Promise.resolve({ id: "rec1" }) })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.comments).toEqual([])
+    expect(data._count.comments).toBe(0)
+    expect(prisma.comment.findMany).not.toHaveBeenCalled()
   })
 
   it("should return 404 when recommendation not found", async () => {
     // Arrange
+    ;(auth as jest.Mock).mockResolvedValue(null)
     ;(prisma.recommendation.findUnique as jest.Mock).mockResolvedValue(null)
 
     const request = new NextRequest("http://localhost/api/recommendations/nonexistent")

@@ -4,25 +4,33 @@ import { auth } from "@/lib/auth"
 import { trackMultipleTags, decrementMultipleTags } from "@/lib/tag-service"
 
 /**
- * GET /api/recommendations/[id]
- * 
+ * GET /api/recommendations/[id]?cliqueId=<id>
+ *
  * Retrieves a single recommendation with complete details including:
  * - Entity information with category-specific data
  * - User details
- * - All comments with user info
  * - All upvotes with user info
  * - Engagement counts
- * 
+ *
+ * Comments are clique-scoped: a thread is only returned when `cliqueId` is
+ * provided and the authenticated caller is a member of that clique and the
+ * recommendation belongs to it. Otherwise `comments` is an empty array and
+ * `_count.comments` reflects the (empty) clique thread, so no other clique's
+ * comments are ever leaked.
+ *
  * Route Parameters:
  * @param {string} id - Recommendation ID
- * 
- * @returns {Promise<NextResponse>} Complete recommendation object
+ *
+ * Query Parameters:
+ * @param {string} [cliqueId] - Clique whose comment thread to return
+ *
+ * @returns {Promise<NextResponse>} Recommendation object with clique-scoped comments
  * @throws {404} If recommendation is not found
  * @throws {500} If database query fails
- * 
+ *
  * @example
- * // Response includes full recommendation with:
- * // - user, entity, comments[], upvotes[], _count
+ * // Response includes recommendation with:
+ * // - user, entity, comments[] (clique-scoped), upvotes[], _count
  */
 export async function GET(
   request: NextRequest,
@@ -30,6 +38,9 @@ export async function GET(
 ) {
   try {
     const { id } = await params
+    const cliqueId = request.nextUrl.searchParams.get("cliqueId")
+    const session = await auth()
+    const userId = session?.user?.id ?? null
 
     const recommendation = await prisma.recommendation.findUnique({
       where: { id },
@@ -49,20 +60,6 @@ export async function GET(
             fashion: true,
             household: true,
             other: true,
-          },
-        },
-        comments: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                image: true,
-              },
-            },
-          },
-          orderBy: {
-            createdAt: "desc",
           },
         },
         upvotes: {
@@ -91,7 +88,37 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(recommendation)
+    // Comments are clique-scoped. Only return a thread when the caller has a
+    // valid clique context: a cliqueId they belong to where the reco lives.
+    // Without that, return an empty thread (no leaking of other cliques' comments).
+    let comments: Array<Record<string, unknown>> = []
+    if (cliqueId && userId) {
+      const [membership, cliqueRec] = await Promise.all([
+        prisma.cliqueMember.findUnique({
+          where: { cliqueId_userId: { cliqueId, userId } },
+          select: { userId: true },
+        }),
+        prisma.cliqueRecommendation.findUnique({
+          where: { cliqueId_recommendationId: { cliqueId, recommendationId: id } },
+          select: { recommendationId: true },
+        }),
+      ])
+      if (membership && cliqueRec) {
+        comments = await prisma.comment.findMany({
+          where: { recommendationId: id, cliqueId },
+          include: {
+            user: { select: { id: true, name: true, image: true } },
+          },
+          orderBy: { createdAt: "desc" },
+        })
+      }
+    }
+
+    return NextResponse.json({
+      ...recommendation,
+      comments,
+      _count: { ...recommendation._count, comments: comments.length },
+    })
   } catch (error) {
     console.error("Error fetching recommendation:", error)
     return NextResponse.json(
