@@ -123,42 +123,40 @@ export function ActionsSidebar({
           <div className="flex items-end justify-around">
 
             {cliqueId ? (
-              <div className="flex flex-col items-center gap-1">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className={cn(
-                        actionBtn,
-                        hasUpvoted && "text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
-                      )}
-                      onClick={handleUpvoteClick}
-                      disabled={isUpvoteLoading}
-                      aria-label={hasUpvoted ? "Remove upvote" : "Upvote"}
-                    >
-                      <ArrowUp className={cn(iconCls, hasUpvoted && "fill-current")} />
-                      <span className={labelCls} aria-label={`${upvoteCount} likes total`}>{upvoteCount}</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>{hasUpvoted ? "Remove upvote" : "Upvote"}</TooltipContent>
-                </Tooltip>
-                {likeSecondary !== null && (
-                  <span
-                    className="text-[10px] text-zinc-400 dark:text-zinc-500"
-                    aria-label={`${likeSecondary} likes in this clique`}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      actionBtn,
+                      hasUpvoted && "text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                    )}
+                    onClick={handleUpvoteClick}
+                    disabled={isUpvoteLoading}
+                    aria-label={hasUpvoted ? "Remove upvote" : "Upvote"}
                   >
-                    {likeSecondary} in clique
-                  </span>
-                )}
-              </div>
+                    <ArrowUp className={cn(iconCls, hasUpvoted && "fill-current")} />
+                    <span className={labelCls} aria-label={`${upvoteCount} likes total`}>{upvoteCount}</span>
+                    {likeSecondary !== null && (
+                      <span
+                        className="text-[10px] text-zinc-400 dark:text-zinc-500"
+                        aria-label={`${likeSecondary} likes in this clique`}
+                      >
+                        {likeSecondary} in clique
+                      </span>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{hasUpvoted ? "Remove upvote" : "Upvote"}</TooltipContent>
+              </Tooltip>
             ) : likeSecondary !== null ? (
-              <div className="flex flex-col items-center gap-1 px-5 py-4">
-                <ArrowUp className={cn(iconCls, "text-amber-500")} aria-hidden="true" />
-                <span className={cn(labelCls, "text-amber-500")} aria-label={`${upvoteCount} likes total`}>{upvoteCount}</span>
-                <span
-                  className="text-[10px] text-zinc-400 dark:text-zinc-500"
-                  aria-label={`${likeSecondary} likes from your cliques`}
-                >
+              <div
+                className={cn(actionBtn, "cursor-default hover:bg-transparent")}
+                aria-label={`${upvoteCount} likes total, ${likeSecondary} from your cliques`}
+              >
+                <ArrowUp className={iconCls} aria-hidden="true" />
+                <span className={labelCls}>{upvoteCount}</span>
+                <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
                   {likeSecondary} yours
                 </span>
               </div>

@@ -268,7 +268,7 @@ describe("ActionsSidebar", () => {
           likeSecondary={3}
         />
       )
-      expect(screen.getByLabelText("3 likes from your cliques")).toBeInTheDocument()
+      expect(screen.getByLabelText("10 likes total, 3 from your cliques")).toBeInTheDocument()
       expect(screen.getByText("3 yours")).toBeInTheDocument()
     })
   })
