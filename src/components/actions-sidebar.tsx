@@ -133,15 +133,16 @@ export function ActionsSidebar({
                     )}
                     onClick={handleUpvoteClick}
                     disabled={isUpvoteLoading}
-                    aria-label={hasUpvoted ? "Remove upvote" : "Upvote"}
+                    aria-label={[
+                      hasUpvoted ? "Remove upvote" : "Upvote",
+                      `${upvoteCount} total`,
+                      likeSecondary !== null ? `${likeSecondary} in this clique` : null,
+                    ].filter(Boolean).join(", ")}
                   >
-                    <ArrowUp className={cn(iconCls, hasUpvoted && "fill-current")} />
-                    <span className={labelCls} aria-label={`${upvoteCount} likes total`}>{upvoteCount}</span>
+                    <ArrowUp className={cn(iconCls, hasUpvoted && "fill-current")} aria-hidden="true" />
+                    <span className={labelCls} aria-hidden="true">{upvoteCount}</span>
                     {likeSecondary !== null && (
-                      <span
-                        className="text-[10px] text-zinc-400 dark:text-zinc-500"
-                        aria-label={`${likeSecondary} likes in this clique`}
-                      >
+                      <span className="text-[10px] text-zinc-400 dark:text-zinc-500" aria-hidden="true">
                         {likeSecondary} in clique
                       </span>
                     )}
@@ -150,13 +151,15 @@ export function ActionsSidebar({
                 <TooltipContent>{hasUpvoted ? "Remove upvote" : "Upvote"}</TooltipContent>
               </Tooltip>
             ) : likeSecondary !== null ? (
+              // Display-only (no clique context). pointer-events-none prevents hover
+              // colour changes that would falsely imply interactivity.
               <div
-                className={cn(actionBtn, "cursor-default hover:bg-transparent")}
+                className={cn(actionBtn, "pointer-events-none cursor-default")}
                 aria-label={`${upvoteCount} likes total, ${likeSecondary} from your cliques`}
               >
                 <ArrowUp className={iconCls} aria-hidden="true" />
-                <span className={labelCls}>{upvoteCount}</span>
-                <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                <span className={labelCls} aria-hidden="true">{upvoteCount}</span>
+                <span className="text-[10px] text-zinc-400 dark:text-zinc-500" aria-hidden="true">
                   {likeSecondary} yours
                 </span>
               </div>
