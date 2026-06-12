@@ -53,7 +53,7 @@ describe("ActionsSidebar", () => {
       )
       expect(screen.getByText("5")).toBeInTheDocument()
       expect(screen.getByText("10")).toBeInTheDocument()
-      expect(screen.getByLabelText("Upvote")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /upvote/i })).toBeInTheDocument()
     })
 
     it("should show 'Remove upvote' label when already upvoted", () => {
@@ -64,7 +64,7 @@ describe("ActionsSidebar", () => {
           initialHasUpvoted={true}
         />
       )
-      expect(screen.getByLabelText("Remove upvote")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /remove upvote/i })).toBeInTheDocument()
     })
 
     it("should call POST when upvote button is clicked and not yet upvoted", async () => {
@@ -81,7 +81,7 @@ describe("ActionsSidebar", () => {
         />
       )
 
-      fireEvent.click(screen.getByLabelText("Upvote"))
+      fireEvent.click(screen.getByRole("button", { name: /upvote/i }))
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(
@@ -91,7 +91,7 @@ describe("ActionsSidebar", () => {
       })
 
       await waitFor(() => expect(screen.getByText("11")).toBeInTheDocument())
-      expect(screen.getByLabelText("Remove upvote")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /remove upvote/i })).toBeInTheDocument()
     })
 
     it("should call DELETE when upvote button is clicked and already upvoted", async () => {
@@ -108,7 +108,7 @@ describe("ActionsSidebar", () => {
         />
       )
 
-      fireEvent.click(screen.getByLabelText("Remove upvote"))
+      fireEvent.click(screen.getByRole("button", { name: /remove upvote/i }))
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(
@@ -118,7 +118,7 @@ describe("ActionsSidebar", () => {
       })
 
       await waitFor(() => expect(screen.getByText("9")).toBeInTheDocument())
-      expect(screen.getByLabelText("Upvote")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /upvote/i })).toBeInTheDocument()
     })
 
     it("should not update state when fetch fails", async () => {
@@ -132,11 +132,11 @@ describe("ActionsSidebar", () => {
         />
       )
 
-      fireEvent.click(screen.getByLabelText("Upvote"))
+      fireEvent.click(screen.getByRole("button", { name: /upvote/i }))
 
       await waitFor(() => expect(global.fetch).toHaveBeenCalled())
       expect(screen.getByText("10")).toBeInTheDocument()
-      expect(screen.getByLabelText("Upvote")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /upvote/i })).toBeInTheDocument()
     })
   })
 
@@ -246,7 +246,9 @@ describe("ActionsSidebar", () => {
           likeSecondary={4}
         />
       )
-      expect(screen.getByLabelText("4 likes in this clique")).toBeInTheDocument()
+      // The full count context is encoded in the button's aria-label so screen
+      // readers get all the information without relying on children's aria-labels.
+      expect(screen.getByRole("button", { name: /4 in this clique/i })).toBeInTheDocument()
       expect(screen.getByText("4 in clique")).toBeInTheDocument()
     })
 
@@ -268,7 +270,7 @@ describe("ActionsSidebar", () => {
           likeSecondary={3}
         />
       )
-      expect(screen.getByLabelText("3 likes from your cliques")).toBeInTheDocument()
+      expect(screen.getByLabelText("10 likes total, 3 from your cliques")).toBeInTheDocument()
       expect(screen.getByText("3 yours")).toBeInTheDocument()
     })
   })
