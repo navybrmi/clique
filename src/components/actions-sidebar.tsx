@@ -141,11 +141,6 @@ export function ActionsSidebar({
                   >
                     <ArrowUp className={cn(iconCls, hasUpvoted && "fill-current")} aria-hidden="true" />
                     <span className={labelCls} aria-hidden="true">{upvoteCount}</span>
-                    {likeSecondary !== null && (
-                      <span className="text-[10px] text-zinc-400 dark:text-zinc-500" aria-hidden="true">
-                        {likeSecondary} in clique
-                      </span>
-                    )}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>{hasUpvoted ? "Remove upvote" : "Upvote"}</TooltipContent>
@@ -159,9 +154,6 @@ export function ActionsSidebar({
               >
                 <ArrowUp className={iconCls} aria-hidden="true" />
                 <span className={labelCls} aria-hidden="true">{upvoteCount}</span>
-                <span className="text-[10px] text-zinc-400 dark:text-zinc-500" aria-hidden="true">
-                  {likeSecondary} yours
-                </span>
               </div>
             ) : null}
 
@@ -208,6 +200,15 @@ export function ActionsSidebar({
             )}
 
           </div>
+
+          {/* Secondary like count — shown below the button row so it never
+              affects button heights or alignment. */}
+          {likeSecondary !== null && (
+            <p className="mt-2 text-center text-[11px] text-zinc-400 dark:text-zinc-500">
+              {likeSecondary}{" "}
+              {cliqueId ? "in this clique" : "from your cliques"}
+            </p>
+          )}
         </TooltipProvider>
       </CardContent>
     </Card>

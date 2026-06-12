@@ -238,7 +238,7 @@ describe("ActionsSidebar", () => {
   })
 
   describe("secondary like count", () => {
-    it("shows 'N in clique' label in clique context when likeSecondary is provided", () => {
+    it("shows 'N in this clique' caption below the buttons in clique context", () => {
       render(
         <ActionsSidebar
           recommendation={mockRecommendation}
@@ -246,13 +246,13 @@ describe("ActionsSidebar", () => {
           likeSecondary={4}
         />
       )
-      // The full count context is encoded in the button's aria-label so screen
-      // readers get all the information without relying on children's aria-labels.
+      // Count context in the button aria-label for screen readers.
       expect(screen.getByRole("button", { name: /4 in this clique/i })).toBeInTheDocument()
-      expect(screen.getByText("4 in clique")).toBeInTheDocument()
+      // Visible caption below the action row.
+      expect(screen.getByText(/4.*in this clique/i)).toBeInTheDocument()
     })
 
-    it("omits the secondary label when likeSecondary is null in clique context", () => {
+    it("omits the secondary caption when likeSecondary is null", () => {
       render(
         <ActionsSidebar
           recommendation={mockRecommendation}
@@ -260,10 +260,10 @@ describe("ActionsSidebar", () => {
           likeSecondary={null}
         />
       )
-      expect(screen.queryByText(/in clique/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/in this clique/i)).not.toBeInTheDocument()
     })
 
-    it("shows display-only like count with 'N yours' label when no cliqueId and likeSecondary provided", () => {
+    it("shows 'N from your cliques' caption when no cliqueId and likeSecondary provided", () => {
       render(
         <ActionsSidebar
           recommendation={mockRecommendation}
@@ -271,7 +271,7 @@ describe("ActionsSidebar", () => {
         />
       )
       expect(screen.getByLabelText("10 likes total, 3 from your cliques")).toBeInTheDocument()
-      expect(screen.getByText("3 yours")).toBeInTheDocument()
+      expect(screen.getByText(/3.*from your cliques/i)).toBeInTheDocument()
     })
   })
 })
