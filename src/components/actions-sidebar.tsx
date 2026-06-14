@@ -146,9 +146,11 @@ export function ActionsSidebar({
                 <TooltipContent>{hasUpvoted ? "Remove upvote" : "Upvote"}</TooltipContent>
               </Tooltip>
             ) : likeSecondary !== null ? (
-              // Display-only (no clique context). pointer-events-none prevents hover
-              // colour changes that would falsely imply interactivity.
+              // Display-only (no clique context). role="img" makes the aria-label
+              // reliably announced on non-focusable containers. pointer-events-none
+              // prevents hover colour changes that would imply interactivity.
               <div
+                role="img"
                 className={cn(actionBtn, "pointer-events-none cursor-default")}
                 aria-label={`${upvoteCount} likes total, ${likeSecondary} from your cliques`}
               >
@@ -204,7 +206,10 @@ export function ActionsSidebar({
           {/* Secondary like count — shown below the button row so it never
               affects button heights or alignment. */}
           {likeSecondary !== null && (
-            <p className="mt-2 text-center text-[11px] text-zinc-400 dark:text-zinc-500">
+            // aria-hidden: the count is already exposed to assistive tech via the
+            // button's aria-label (clique context) or the div's role="img" aria-label
+            // (no-clique context). This caption is a visual supplement only.
+            <p aria-hidden="true" className="mt-2 text-center text-[11px] text-zinc-400 dark:text-zinc-500">
               {likeSecondary}{" "}
               {cliqueId ? "in this clique" : "from your cliques"}
             </p>
