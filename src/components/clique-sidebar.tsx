@@ -132,7 +132,7 @@ export function CliqueSidebar({
                 className={getNavItemClassName(activeCliqueId === clique.id)}
                 onClick={onNavigate}
               >
-                <div className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <UsersRound className="h-3.5 w-3.5 shrink-0 text-zinc-400" aria-hidden="true" />
                 {renderFeedLabel(clique.name, activeCliqueId === clique.id)}
               </Link>
             ))}

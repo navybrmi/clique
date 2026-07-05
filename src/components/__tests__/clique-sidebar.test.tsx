@@ -168,4 +168,35 @@ describe("CliqueSidebar", () => {
 
     expect(screen.queryByText("No cliques yet")).not.toBeInTheDocument()
   })
+
+  it("renders a UsersRound icon inside each clique link", () => {
+    render(<CliqueSidebar cliques={cliques} />)
+
+    for (const clique of cliques) {
+      const link = screen.getByRole("link", { name: clique.name })
+      const icon = link.querySelector("svg.lucide-users-round")
+      expect(icon).toBeInTheDocument()
+      expect(icon).toHaveAttribute("aria-hidden", "true")
+    }
+  })
+
+  it("renders one icon per clique link when there are multiple cliques", () => {
+    const manyCliques = [
+      { id: "c1", name: "Alpha" },
+      { id: "c2", name: "Beta" },
+      { id: "c3", name: "Gamma" },
+    ]
+    render(<CliqueSidebar cliques={manyCliques} />)
+
+    for (const clique of manyCliques) {
+      const link = screen.getByRole("link", { name: clique.name })
+      expect(link.querySelector("svg.lucide-users-round")).toBeInTheDocument()
+    }
+  })
+
+  it("renders no clique icon when there are no cliques", () => {
+    render(<CliqueSidebar cliques={[]} />)
+
+    expect(screen.queryByRole("link", { name: /clique/i })).not.toBeInTheDocument()
+  })
 })
