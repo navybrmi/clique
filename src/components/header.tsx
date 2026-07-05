@@ -116,7 +116,7 @@ export function Header({ showBack, showCliqueHint, session, pageTitle, mobileMen
               <Button variant="ghost" asChild>
                 <Link href="/auth/signin">Sign In</Link>
               </Button>
-              <Button asChild>
+              <Button asChild className="hidden lg:flex">
                 <Link href="/auth/signin">Get Started</Link>
               </Button>
             </>
