@@ -194,7 +194,7 @@ describe("CliqueSidebar", () => {
     }
   })
 
-  it("renders no clique icon when there are no cliques", () => {
+  it("renders no clique feed links when cliques list is empty", () => {
     render(<CliqueSidebar cliques={[]} />)
 
     expect(screen.queryByRole("link", { name: /clique/i })).not.toBeInTheDocument()
