@@ -27,12 +27,12 @@ export function LikeCounts({ total, secondary, className }: LikeCountsProps) {
         <ArrowUp className="h-4 w-4" aria-hidden="true" />
         {total}
       </span>
-      {secondary !== null && (
+      {secondary !== null && secondary > 0 && (
         <span
           className="text-xs text-amber-600 dark:text-amber-500"
-          aria-label={`${secondary} likes from your cliques`}
+          aria-label={`${secondary} likes across your cliques`}
         >
-          {secondary} in your cliques
+          {secondary} likes across your cliques
         </span>
       )}
     </span>
