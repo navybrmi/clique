@@ -266,7 +266,7 @@ describe("RecommendationFeed", () => {
       )
 
       expect(screen.getByLabelText("9 likes across all cliques")).toBeInTheDocument()
-      expect(screen.getByText(/4 in your cliques/i)).toBeInTheDocument()
+      expect(screen.getByText(/4 likes across your cliques/i)).toBeInTheDocument()
       // No interactive upvote on public cards.
       expect(screen.queryByTestId("upvote-1")).not.toBeInTheDocument()
     })
@@ -286,7 +286,7 @@ describe("RecommendationFeed", () => {
       )
 
       expect(screen.getByLabelText("5 likes across all cliques")).toBeInTheDocument()
-      expect(screen.queryByText(/in your cliques/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/likes across your cliques/i)).not.toBeInTheDocument()
     })
 
     it("renders up to two shared-clique chips linking to the clique feed", () => {
