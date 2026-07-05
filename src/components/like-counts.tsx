@@ -7,6 +7,7 @@ interface LikeCountsProps {
   /**
    * Likes attributable to the user's cliques. On the public feed this is the
    * "my-cliques" figure. `null` for logged-out users, where only the total shows.
+   * When `0`, the secondary label is suppressed — identical behaviour to `null`.
    */
   secondary: number | null
   className?: string
@@ -14,7 +15,8 @@ interface LikeCountsProps {
 
 /**
  * Display-only like counts for a feed card. Always shows the global total; when
- * `secondary` is provided, also shows the count from the user's own cliques.
+ * `secondary` is a positive number, also shows the count from the user's own cliques.
+ * A `secondary` of `null` or `0` suppresses the secondary label entirely.
  * Not interactive — liking happens within a clique context.
  */
 export function LikeCounts({ total, secondary, className }: LikeCountsProps) {

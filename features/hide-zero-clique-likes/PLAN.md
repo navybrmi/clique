@@ -13,7 +13,11 @@ No architectural changes needed. The fix is entirely within `LikeCounts` — the
 
 ## New Files to Create
 
-None.
+| File | Purpose |
+|------|---------|
+| `features/hide-zero-clique-likes/REQUIREMENTS.md` | Feature requirements document |
+| `features/hide-zero-clique-likes/PLAN.md` | This implementation plan |
+| `features/hide-zero-clique-likes/TEST_PLAN.md` | Test plan and manual checklist |
 
 ## Database / API Changes
 
@@ -21,8 +25,12 @@ None.
 
 ## PR Breakdown
 
-Single PR — 2 files changed, well within the 20-file limit.
+Single PR — 6 files changed, well within the 20-file limit.
 
 **PR 1 — Hide zero secondary like count**
 - `src/components/like-counts.tsx`
 - `src/components/__tests__/like-counts.test.tsx`
+- `src/components/__tests__/recommendation-feed.test.tsx`
+- `features/hide-zero-clique-likes/REQUIREMENTS.md`
+- `features/hide-zero-clique-likes/PLAN.md`
+- `features/hide-zero-clique-likes/TEST_PLAN.md`
