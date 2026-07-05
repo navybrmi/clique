@@ -25,7 +25,6 @@ Each version links to its GitHub Release.
 * fix(actions-sidebar): move secondary like count below the button row by @navybrmi in https://github.com/navybrmi/clique/pull/118
 
 **Full Changelog**: https://github.com/navybrmi/clique/compare/v0.24.1...v0.24.2
-**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.24.1...v0.24.2
 
 ---
 
