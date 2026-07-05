@@ -16,6 +16,19 @@ Each version links to its GitHub Release.
 
 ---
 
+## [v0.24.2](https://github.com/navybrmi/clique/releases/tag/v0.24.2) — 2026-07-05
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.24.2 -->
+
+## What's Changed
+### Other Changes
+* fix(actions-sidebar): move secondary like count below the button row by @navybrmi in https://github.com/navybrmi/clique/pull/118
+
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.24.1...v0.24.2
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.24.1...v0.24.2
+
+---
+
 ## [v0.23.0](https://github.com/navybrmi/clique/releases/tag/v0.23.0) — 2026-06-09
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.23.0 -->
