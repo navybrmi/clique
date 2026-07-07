@@ -73,6 +73,27 @@ describe('Header', () => {
     expect(screen.getByText('Get Started')).toBeInTheDocument()
   })
 
+  it('"Get Started" is hidden on mobile via the hidden class when unauthenticated', () => {
+    render(<Header />)
+    const getStarted = screen.getByText('Get Started').closest('a')!
+    expect(getStarted).toHaveClass('hidden')
+    expect(getStarted).toHaveClass('lg:flex')
+  })
+
+  it('"Sign In" does not have a hidden class and is always visible when unauthenticated', () => {
+    render(<Header />)
+    const signIn = screen.getByText('Sign In').closest('a')!
+    expect(signIn).not.toHaveClass('hidden')
+  })
+
+  it('neither Sign In nor Get Started appears when authenticated', async () => {
+    const mockSession = { user: { id: 'u1', name: 'Alice', image: null } }
+    render(<Header session={mockSession} />)
+    await screen.findByTestId('mock-user-menu')
+    expect(screen.queryByText('Sign In')).not.toBeInTheDocument()
+    expect(screen.queryByText('Get Started')).not.toBeInTheDocument()
+  })
+
   it('should show user menu when authenticated session is provided', async () => {
     const mockSession = {
       user: {
