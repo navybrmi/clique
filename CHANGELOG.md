@@ -3,6 +3,21 @@
 All notable changes to Clique will be documented in this file.
 Each version links to its GitHub Release.
 
+## [v0.26.0](https://github.com/navybrmi/clique/releases/tag/v0.26.0) — 2026-07-05
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.26.0 -->
+
+## What's Changed
+### Other Changes
+* chore: update CHANGELOG for v0.24.2 by @github-actions[bot] in https://github.com/navybrmi/clique/pull/120
+* chore: update CHANGELOG for v0.25.0 by @github-actions[bot] in https://github.com/navybrmi/clique/pull/121
+* feat(clique-sidebar): add UsersRound icon to clique feed nav items by @navybrmi in https://github.com/navybrmi/clique/pull/122
+
+
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.25.0...v0.26.0
+
+---
+
 ## [v0.25.0](https://github.com/navybrmi/clique/releases/tag/v0.25.0) — 2026-07-05
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.25.0 -->
