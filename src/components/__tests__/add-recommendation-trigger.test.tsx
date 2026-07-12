@@ -161,6 +161,28 @@ describe('AddRecommendationTrigger', () => {
     })
   })
 
+  it('renders a compact Add button in the mobile-bar layout', () => {
+    render(<AddRecommendationTrigger layout="mobile-bar" />)
+    const button = screen.getByRole('button', { name: /^add$/i })
+    expect(button).toHaveClass('flex-1')
+    expect(screen.queryByRole('button', { name: /add recommendation/i })).not.toBeInTheDocument()
+  })
+
+  it('positions the login alert above the bar in the mobile-bar layout', async () => {
+    const user = userEvent.setup()
+    render(<AddRecommendationTrigger layout="mobile-bar" />)
+
+    await user.click(screen.getByTestId('trigger-on-blocked-open'))
+
+    await waitFor(() => {
+      const alert = screen
+        .getByText(/you must be signed in to add a recommendation/i)
+        .closest('div')
+      expect(alert).toHaveClass('bottom-full')
+      expect(alert).not.toHaveClass('top-full')
+    })
+  })
+
   it('forwards userId prop to dialog', () => {
     render(<AddRecommendationTrigger userId="user-abc" />)
     expect(screen.getByTestId('mock-dialog')).toHaveAttribute('data-user-id', 'user-abc')

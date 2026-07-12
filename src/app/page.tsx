@@ -5,6 +5,7 @@ import { Header } from "@/components/header"
 import { AddRecommendationTrigger } from "@/components/add-recommendation-trigger"
 import { CliqueSidebarWrapper } from "@/components/clique-sidebar-wrapper"
 import { CliquePanelWrapper } from "@/components/clique-panel-wrapper"
+import { MobileBottomBar } from "@/components/mobile-bottom-bar"
 import { MobileCliqueActions } from "@/components/mobile-clique-actions"
 import { RecommendationFeed } from "@/components/recommendation-feed"
 import { auth } from "@/lib/auth"
@@ -383,7 +384,7 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
         </div>
       )}
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-6 pb-24 lg:pb-6">
         <div className="space-y-6">
           {!session?.user?.id && (
             <div className="mb-6 text-center">
@@ -456,6 +457,14 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
           </div>
         </div>
       </main>
+
+      <MobileBottomBar
+        userId={session?.user?.id ?? null}
+        cliques={userCliques}
+        activeCliqueId={activeCliqueId}
+        activeMine={activeMine}
+        currentCliqueId={activeCliqueId}
+      />
     </div>
   )
 }

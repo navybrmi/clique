@@ -29,19 +29,28 @@ const SheetOverlay = React.forwardRef<
 ))
 SheetOverlay.displayName = "SheetOverlay"
 
+const sheetSideClasses = {
+  left: "left-0 top-0 h-full w-72 data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left",
+  bottom:
+    "inset-x-0 bottom-0 w-full rounded-t-xl data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom",
+} as const
+
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+    /** Edge of the viewport the sheet slides in from. */
+    side?: keyof typeof sheetSideClasses
+  }
+>(({ className, children, side = "left", ...props }, ref) => (
   <DialogPrimitive.Portal data-slot="sheet-portal">
     <SheetOverlay />
     <DialogPrimitive.Content
       ref={ref}
       data-slot="sheet-content"
       className={cn(
-        "fixed left-0 top-0 z-50 h-full w-72 bg-white shadow-xl dark:bg-zinc-950",
+        "fixed z-50 bg-white shadow-xl dark:bg-zinc-950",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
-        "data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left",
+        sheetSideClasses[side],
         "duration-300",
         className
       )}

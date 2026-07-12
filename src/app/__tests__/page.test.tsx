@@ -45,6 +45,25 @@ jest.mock('@/components/add-recommendation-trigger', () => ({
   },
 }))
 
+// Mock MobileBottomBar to isolate page tests from the bottom bar's client logic
+jest.mock('@/components/mobile-bottom-bar', () => ({
+  MobileBottomBar: function MockMobileBottomBar({
+    userId,
+    currentCliqueId,
+  }: {
+    userId: string | null
+    currentCliqueId?: string
+  }) {
+    return (
+      <div
+        data-testid="mock-mobile-bottom-bar"
+        data-user-id={userId ?? ''}
+        data-current-clique-id={currentCliqueId ?? ''}
+      />
+    )
+  },
+}))
+
 jest.mock('@/components/add-to-cliques-dialog', () => ({
   AddToCliquesDialog: function MockAddToCliquesDialog({
     recommendationId,
@@ -332,6 +351,29 @@ describe('HomePage - Server Component', () => {
     await renderHomePage()
 
     expect(screen.queryByTestId('mock-trigger')).not.toBeInTheDocument()
+  })
+
+  it('renders the mobile bottom bar with the authenticated user id', async () => {
+    mockAuth.mockResolvedValue({ user: { id: 'user-1' } })
+    ;(getRecommendations as jest.Mock).mockResolvedValue([])
+
+    await renderHomePage()
+
+    expect(screen.getByTestId('mock-mobile-bottom-bar')).toHaveAttribute(
+      'data-user-id',
+      'user-1'
+    )
+  })
+
+  it('renders the mobile bottom bar without a user id when logged out', async () => {
+    ;(getRecommendations as jest.Mock).mockResolvedValue([])
+
+    await renderHomePage()
+
+    expect(screen.getByTestId('mock-mobile-bottom-bar')).toHaveAttribute(
+      'data-user-id',
+      ''
+    )
   })
 
   it('sets priority on the first card image and not subsequent ones', async () => {

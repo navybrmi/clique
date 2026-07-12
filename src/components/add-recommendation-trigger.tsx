@@ -22,7 +22,7 @@ interface AddRecommendationTriggerProps {
   /** Active clique context from the current feed URL, if any. */
   currentCliqueId?: string
   /** Visual layout for the trigger block. */
-  layout?: "hero" | "sidebar"
+  layout?: "hero" | "sidebar" | "mobile-bar"
 }
 
 /**
@@ -43,6 +43,7 @@ export function AddRecommendationTrigger({
   const [showLoginAlert, setShowLoginAlert] = useState(false)
   const router = useRouter()
   const isSidebarLayout = layout === "sidebar"
+  const isMobileBarLayout = layout === "mobile-bar"
 
   return (
     <div
@@ -50,28 +51,42 @@ export function AddRecommendationTrigger({
         "relative",
         isSidebarLayout
           ? "space-y-2"
-          : "mt-8 flex min-h-20 flex-col items-center"
+          : isMobileBarLayout
+            ? "flex flex-1"
+            : "mt-8 flex min-h-20 flex-col items-center"
       )}
     >
       <div
         className={cn(
           isSidebarLayout
             ? "flex flex-col gap-2"
-            : "flex flex-col gap-4 sm:flex-row"
+            : isMobileBarLayout
+              ? "flex flex-1"
+              : "flex flex-col gap-4 sm:flex-row"
         )}
       >
         <AddRecommendationDialog
           userId={userId}
           currentCliqueId={currentCliqueId}
           trigger={
-            <Button
-              type="button"
-              size={isSidebarLayout ? "sm" : "lg"}
-              className={cn(isSidebarLayout && "w-full justify-start")}
-            >
-              <Plus className="h-4 w-4" />
-              Add Recommendation
-            </Button>
+            isMobileBarLayout ? (
+              <button
+                type="button"
+                className="flex flex-1 flex-col items-center justify-center gap-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
+              >
+                <Plus className="h-5 w-5" aria-hidden="true" />
+                Add
+              </button>
+            ) : (
+              <Button
+                type="button"
+                size={isSidebarLayout ? "sm" : "lg"}
+                className={cn(isSidebarLayout && "w-full justify-start")}
+              >
+                <Plus className="h-4 w-4" />
+                Add Recommendation
+              </Button>
+            )
           }
           onSuccess={() => router.refresh()}
           showLoginAlert={showLoginAlert}
@@ -85,7 +100,9 @@ export function AddRecommendationTrigger({
             "flex items-center justify-center rounded border border-red-300 bg-red-50 px-4 py-3 text-red-800 shadow-lg",
             isSidebarLayout
               ? "text-sm"
-              : "absolute left-1/2 top-full mt-2 min-w-[280px] max-w-[400px] -translate-x-1/2"
+              : isMobileBarLayout
+                ? "absolute bottom-full left-1/2 mb-2 w-max min-w-[280px] max-w-[90vw] -translate-x-1/2 text-sm"
+                : "absolute left-1/2 top-full mt-2 min-w-[280px] max-w-[400px] -translate-x-1/2"
           )}
         >
           <span className="mx-auto">You must be signed in to add a recommendation.</span>
