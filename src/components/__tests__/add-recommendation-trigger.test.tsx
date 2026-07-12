@@ -164,7 +164,9 @@ describe('AddRecommendationTrigger', () => {
   it('renders a compact Add button in the mobile-bar layout', () => {
     render(<AddRecommendationTrigger layout="mobile-bar" />)
     const button = screen.getByRole('button', { name: /^add$/i })
-    expect(button).toHaveClass('flex-1')
+    // h-full/w-full (not flex-1): the dialog wraps the trigger in a non-flex
+    // inline-block div, so the button must fill it to center in the bar
+    expect(button).toHaveClass('h-full', 'w-full')
     expect(screen.queryByRole('button', { name: /add recommendation/i })).not.toBeInTheDocument()
   })
 

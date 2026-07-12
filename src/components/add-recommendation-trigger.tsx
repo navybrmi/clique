@@ -72,7 +72,7 @@ export function AddRecommendationTrigger({
             isMobileBarLayout ? (
               <button
                 type="button"
-                className="flex flex-1 flex-col items-center justify-center gap-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                className="flex h-full w-full flex-col items-center justify-center gap-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
               >
                 <Plus className="h-5 w-5" aria-hidden="true" />
                 Add
