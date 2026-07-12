@@ -40,8 +40,10 @@ const SheetContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
     /** Edge of the viewport the sheet slides in from. */
     side?: keyof typeof sheetSideClasses
+    /** Screen-reader-only dialog title announced by assistive tech. */
+    title?: string
   }
->(({ className, children, side = "left", ...props }, ref) => (
+>(({ className, children, side = "left", title = "Navigation menu", ...props }, ref) => (
   <DialogPrimitive.Portal data-slot="sheet-portal">
     <SheetOverlay />
     <DialogPrimitive.Content
@@ -56,7 +58,7 @@ const SheetContent = React.forwardRef<
       )}
       {...props}
     >
-      <DialogPrimitive.Title className="sr-only">Navigation menu</DialogPrimitive.Title>
+      <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>
       {children}
       <DialogPrimitive.Close className="absolute right-3 top-3 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent">
         <X className="h-4 w-4" />

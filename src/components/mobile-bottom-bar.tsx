@@ -49,14 +49,17 @@ export function MobileBottomBar({
             <SheetTrigger asChild>
               <button
                 type="button"
-                aria-label="Switch feed"
                 className="flex flex-1 flex-col items-center justify-center gap-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-900"
               >
                 <UsersRound className="h-5 w-5" aria-hidden="true" />
                 Cliques
               </button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto p-4 pb-6">
+            <SheetContent
+              side="bottom"
+              title="Choose a feed"
+              className="max-h-[80vh] overflow-y-auto p-4 pb-6"
+            >
               <CliqueSidebar
                 cliques={cliques}
                 activeCliqueId={activeCliqueId}

@@ -37,6 +37,23 @@ describe("Sheet", () => {
     expect(content).toHaveClass("max-h-[80vh]")
   })
 
+  it("uses 'Navigation menu' as the default sr-only dialog title", () => {
+    renderOpenSheet()
+    expect(screen.getByText("Navigation menu")).toHaveClass("sr-only")
+  })
+
+  it("renders a custom sr-only dialog title when title is provided", () => {
+    render(
+      <Sheet open>
+        <SheetContent side="bottom" title="Choose a feed">
+          <p>Sheet body</p>
+        </SheetContent>
+      </Sheet>
+    )
+    expect(screen.getByText("Choose a feed")).toHaveClass("sr-only")
+    expect(screen.queryByText("Navigation menu")).not.toBeInTheDocument()
+  })
+
   it("renders children and a close button", () => {
     renderOpenSheet()
     expect(screen.getByText("Sheet body")).toBeInTheDocument()

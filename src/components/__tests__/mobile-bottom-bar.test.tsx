@@ -103,12 +103,14 @@ jest.mock("@/components/ui/sheet", () => {
   function SheetContent({
     children,
     side,
+    title,
   }: {
     children: React.ReactNode
     side?: string
+    title?: string
   }) {
     return (
-      <div data-testid="sheet-content" data-side={side ?? ""}>
+      <div data-testid="sheet-content" data-side={side ?? ""} data-title={title ?? ""}>
         {children}
       </div>
     )
@@ -120,12 +122,12 @@ jest.mock("@/components/ui/sheet", () => {
 describe("MobileBottomBar", () => {
   it("renders the Cliques button for authenticated users", () => {
     render(<MobileBottomBar userId="user-1" cliques={cliques} />)
-    expect(screen.getByRole("button", { name: /switch feed/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /cliques/i })).toBeInTheDocument()
   })
 
   it("does not render the Cliques button for unauthenticated users", () => {
     render(<MobileBottomBar userId={null} cliques={[]} />)
-    expect(screen.queryByRole("button", { name: /switch feed/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /cliques/i })).not.toBeInTheDocument()
   })
 
   it("always renders the Add trigger with the mobile-bar layout", () => {
@@ -146,14 +148,22 @@ describe("MobileBottomBar", () => {
 
   it("opens the Cliques sheet from the bottom when the trigger is clicked", () => {
     render(<MobileBottomBar userId="user-1" cliques={cliques} />)
-    fireEvent.click(screen.getByRole("button", { name: /switch feed/i }))
+    fireEvent.click(screen.getByRole("button", { name: /cliques/i }))
     expect(screen.getByTestId("sheet")).toHaveAttribute("data-open", "true")
     expect(screen.getByTestId("sheet-content")).toHaveAttribute("data-side", "bottom")
   })
 
+  it("labels the feed switcher sheet 'Choose a feed' for assistive tech", () => {
+    render(<MobileBottomBar userId="user-1" cliques={cliques} />)
+    expect(screen.getByTestId("sheet-content")).toHaveAttribute(
+      "data-title",
+      "Choose a feed"
+    )
+  })
+
   it("closes the sheet when a feed nav link is clicked", () => {
     render(<MobileBottomBar userId="user-1" cliques={cliques} />)
-    fireEvent.click(screen.getByRole("button", { name: /switch feed/i }))
+    fireEvent.click(screen.getByRole("button", { name: /cliques/i }))
     expect(screen.getByTestId("sheet")).toHaveAttribute("data-open", "true")
     fireEvent.click(screen.getByTestId("nav-link"))
     expect(screen.getByTestId("sheet")).toHaveAttribute("data-open", "false")
