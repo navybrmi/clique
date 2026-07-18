@@ -22,6 +22,7 @@ const customJestConfig = {
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
     '<rootDir>/src/components/__tests__/', // Exclude component tests
+    '<rootDir>/src/components/ui/__tests__/', // Exclude ui primitive tests (jsdom only)
     '<rootDir>/src/app/__tests__/', // Exclude page component tests
     '<rootDir>/src/hooks/__tests__/', // Exclude hook tests (jsdom only)
     'src/app/recommendations/.+/__tests__/', // Exclude page-level unit tests (jsdom only)
