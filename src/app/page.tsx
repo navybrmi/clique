@@ -384,7 +384,7 @@ export default async function Home({ searchParams }: HomePageProps = {}) {
         </div>
       )}
 
-      <main className="container mx-auto px-4 py-6 pb-24 lg:pb-6">
+      <main className="container mx-auto px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-6">
         <div className="space-y-6">
           {!session?.user?.id && (
             <div className="mb-6 text-center">
