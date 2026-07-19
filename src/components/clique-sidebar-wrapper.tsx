@@ -93,7 +93,10 @@ export async function CliqueSidebarWrapper({
 
   return (
     <>
-      <aside className="hidden lg:block">
+      {/* Sticky must live on the grid item: the grid row is as tall as the
+          feed column, so the aside has room to stick; the inner card (which
+          is content-height) does not. */}
+      <aside className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
         <CliqueSidebar
           cliques={cliques}
           activeCliqueId={activeCliqueId}
