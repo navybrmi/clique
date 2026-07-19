@@ -11,13 +11,17 @@ import { getPrismaClient } from "@/lib/prisma"
 /**
  * Formats a date as a human-readable "member since" string.
  *
+ * Uses a fixed en-US locale and UTC timezone so the rendered month/year is
+ * stable regardless of the server's runtime locale or timezone.
+ *
  * @param date - Account creation date
- * @returns Localized month + year, e.g. "February 2026"
+ * @returns Month + year in en-US, e.g. "February 2026"
  */
 function formatMemberSince(date: Date): string {
   return new Intl.DateTimeFormat("en-US", {
     month: "long",
     year: "numeric",
+    timeZone: "UTC",
   }).format(date)
 }
 

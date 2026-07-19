@@ -83,6 +83,17 @@ describe("ProfilePage", () => {
     expect(screen.getByText(/member since february 2026/i)).toBeInTheDocument()
   })
 
+  it("formats member-since in UTC so month boundaries don't shift with server timezone", async () => {
+    // 00:30 UTC on March 1 is still February in any negative-offset zone;
+    // UTC formatting must render March regardless of runtime timezone.
+    mockFindUnique.mockResolvedValue({
+      ...user,
+      createdAt: new Date("2026-03-01T00:30:00Z"),
+    })
+    await renderProfilePage()
+    expect(screen.getByText(/member since march 2026/i)).toBeInTheDocument()
+  })
+
   it("renders recommendation and clique counts", async () => {
     await renderProfilePage()
     expect(screen.getByText("12")).toBeInTheDocument()
