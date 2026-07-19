@@ -68,6 +68,23 @@ describe('UserMenu', () => {
     expect(mockSignOut).toHaveBeenCalled()
   })
 
+  it('links Profile and My Recommendations to real routes', async () => {
+    const user = userEvent.setup()
+    render(<UserMenu user={mockUser} />)
+
+    await user.click(screen.getByRole('button'))
+
+    await waitFor(() => {
+      expect(screen.getByRole('menuitem', { name: /profile/i })).toHaveAttribute(
+        'href',
+        '/profile'
+      )
+    })
+    expect(
+      screen.getByRole('menuitem', { name: /my recommendations/i })
+    ).toHaveAttribute('href', '/?mine=true')
+  })
+
   it.skip('should render email in dropdown', async () => {
     const user = userEvent.setup()
     render(<UserMenu user={mockUser} />)
