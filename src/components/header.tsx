@@ -5,6 +5,7 @@ import type { ReactNode } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { NotificationBell } from "@/components/notification-bell"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { UserMenu } from "@/components/user-menu"
 import { ArrowLeft } from "lucide-react"
 import { signOut } from "next-auth/react"
@@ -102,6 +103,7 @@ export function Header({ showBack, showCliqueHint, session, pageTitle, mobileMen
 
         {/* Right: nav (always visible) */}
         <nav className="flex items-center gap-2">
+          <ThemeToggle />
           {session?.user ? (
             isHydrated ? (
               <>
