@@ -7,7 +7,9 @@ import { THEME_STORAGE_KEY } from "@/lib/theme"
 
 /**
  * Subscribes to theme changes by watching the <html> class attribute, so the
- * toggle reflects changes from the bootstrap script or other tabs/components.
+ * toggle reflects any same-document change to the theme class (e.g. the
+ * bootstrap script or another component instance). Cross-tab changes are not
+ * observed; each tab resolves its own theme on load.
  */
 function subscribeToThemeClass(onChange: () => void): () => void {
   const observer = new MutationObserver(onChange)

@@ -21,7 +21,9 @@ export function resolveIsDark(
  * Inline bootstrap executed before hydration so the correct theme class is on
  * <html> at first paint (no light-mode flash for dark-theme users). Must stay
  * dependency-free and swallow storage errors (private browsing).
+ *
+ * The storage key is spelled out literally (kept in sync with
+ * THEME_STORAGE_KEY by a unit test) so the script is a fully static string
+ * with no runtime code construction.
  */
-export const themeBootstrapScript = `(function(){try{var t=localStorage.getItem(${JSON.stringify(
-  THEME_STORAGE_KEY
-)});var d=t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d);}catch(e){}})();`
+export const themeBootstrapScript = `(function(){try{var t=localStorage.getItem("clique-theme");var d=t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d);}catch(e){}})();`
