@@ -68,6 +68,10 @@ describe("CliqueSidebarWrapper", () => {
     const sidebar = getByTestId("clique-sidebar")
     expect(sidebar).toBeInTheDocument()
     expect(sidebar.getAttribute("data-count")).toBe("2")
+    // Sticky must be on the grid item (aside) — the inner card is
+    // content-height and has no room to stick within its parent.
+    const aside = sidebar.closest("aside")
+    expect(aside).toHaveClass("lg:sticky", "lg:top-24", "lg:self-start")
     expect(sidebar.getAttribute("data-active")).toBe("c1")
     expect(sidebar.getAttribute("data-userid")).toBe("user1")
     expect(sidebar.getAttribute("data-current-clique")).toBe("c1")
