@@ -29,6 +29,7 @@ const customJestConfig = {
     'src/app/auth/.+/__tests__/', // Exclude auth page unit tests (jsdom only)
     'src/app/invite/.+/__tests__/', // Exclude invite page unit tests (jsdom only)
     '<rootDir>/src/app/data-deletion/__tests__/', // Exclude data-deletion page unit tests (jsdom only)
+    '<rootDir>/src/app/profile/__tests__/', // Exclude profile page unit tests (jsdom only)
   ],
   collectCoverageFrom: [
     'src/app/api/**/*.{js,jsx,ts,tsx}',
