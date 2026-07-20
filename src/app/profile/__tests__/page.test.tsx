@@ -110,6 +110,22 @@ describe("ProfilePage", () => {
     expect(screen.getByText("v")).toBeInTheDocument()
   })
 
+  it("treats empty-string name and image as missing", async () => {
+    mockFindUnique.mockResolvedValue({ ...user, name: "", image: "" })
+    const { container } = await renderProfilePage()
+    expect(screen.getByText("Anonymous")).toBeInTheDocument()
+    // An empty image src must not be forwarded to the <img> element
+    expect(container.querySelector('img[src=""]')).toBeNull()
+    // Avatar fallback initial comes from the email
+    expect(screen.getByText("v")).toBeInTheDocument()
+  })
+
+  it("renders a default avatar initial when name and email are both empty", async () => {
+    mockFindUnique.mockResolvedValue({ ...user, name: "", email: "", image: null })
+    await renderProfilePage()
+    expect(screen.getByText("U")).toBeInTheDocument()
+  })
+
   it("scopes all queries to the signed-in user", async () => {
     await renderProfilePage()
     expect(mockFindUnique).toHaveBeenCalledWith(

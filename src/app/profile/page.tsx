@@ -62,13 +62,13 @@ export default async function ProfilePage() {
           <CardHeader>
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16">
-                <AvatarImage src={user.image ?? undefined} alt={user.name ?? "User avatar"} />
+                <AvatarImage src={user.image || undefined} alt={user.name || "User avatar"} />
                 <AvatarFallback className="text-xl">
-                  {user.name?.[0] ?? user.email[0]}
+                  {user.name?.[0] || user.email?.[0] || "U"}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <CardTitle className="truncate text-2xl">{user.name ?? "Anonymous"}</CardTitle>
+                <CardTitle className="truncate text-2xl">{user.name || "Anonymous"}</CardTitle>
                 <p className="truncate text-sm text-zinc-500 dark:text-zinc-400">{user.email}</p>
                 <p className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
                   <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
