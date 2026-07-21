@@ -255,6 +255,42 @@ describe("POST /api/invites/[token]", () => {
     expect(data).toEqual({ status: "already_member", cliqueId: "clique1" })
   })
 
+  it("should return already_member for a REVOKED single-use invite when the user already belongs to the clique", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.cliqueInvite.findUnique as jest.Mock).mockResolvedValue({
+      id: "inv1",
+      cliqueId: "clique1",
+      status: "REVOKED",
+      expiresAt: new Date("2027-01-01"),
+    })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1" })
+
+    const req = new NextRequest("http://localhost/api/invites/revokedtoken", { method: "POST" })
+    const res = await POST(req, { params: Promise.resolve({ token: "revokedtoken" }) })
+    const data = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(data).toEqual({ status: "already_member", cliqueId: "clique1" })
+  })
+
+  it("should return already_member for an EXPIRED single-use invite when the user already belongs to the clique", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.cliqueInvite.findUnique as jest.Mock).mockResolvedValue({
+      id: "inv1",
+      cliqueId: "clique1",
+      status: "PENDING",
+      expiresAt: new Date("2020-01-01"),
+    })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1" })
+
+    const req = new NextRequest("http://localhost/api/invites/expiredtoken", { method: "POST" })
+    const res = await POST(req, { params: Promise.resolve({ token: "expiredtoken" }) })
+    const data = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(data).toEqual({ status: "already_member", cliqueId: "clique1" })
+  })
+
   it("should return 409 when clique already has 50 members", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
     ;(prisma.cliqueInvite.findUnique as jest.Mock).mockResolvedValue({
@@ -469,6 +505,38 @@ describe("POST /api/invites/[token] — link-type invite", () => {
 
     const req = new NextRequest("http://localhost/api/invites/linktoken", { method: "POST" })
     const res = await POST(req, { params: Promise.resolve({ token: "linktoken" }) })
+    const data = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(data).toEqual({ status: "already_member", cliqueId: "clique1" })
+  })
+
+  it("should return already_member for a REVOKED link invite when the user already belongs to the clique", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.cliqueInvite.findUnique as jest.Mock).mockResolvedValue({
+      ...linkInvite,
+      status: "REVOKED",
+    })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1" })
+
+    const req = new NextRequest("http://localhost/api/invites/revokedlink", { method: "POST" })
+    const res = await POST(req, { params: Promise.resolve({ token: "revokedlink" }) })
+    const data = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(data).toEqual({ status: "already_member", cliqueId: "clique1" })
+  })
+
+  it("should return already_member for an expired link invite when the user already belongs to the clique", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.cliqueInvite.findUnique as jest.Mock).mockResolvedValue({
+      ...linkInvite,
+      expiresAt: new Date("2020-01-01"),
+    })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1" })
+
+    const req = new NextRequest("http://localhost/api/invites/expiredlink", { method: "POST" })
+    const res = await POST(req, { params: Promise.resolve({ token: "expiredlink" }) })
     const data = await res.json()
 
     expect(res.status).toBe(200)

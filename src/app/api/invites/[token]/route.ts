@@ -94,31 +94,16 @@ export async function POST(
     const cliqueId = invite.cliqueId
     const isLinkInvite = invite.email === null
 
-    // ── Already a member? Short-circuit regardless of invite type/status. This covers
-    // link invites (whose status never leaves PENDING, since the link is reusable) and
-    // single-use invites the same user revisits after already accepting them. ──
-    const existingMembership = await prisma.cliqueMember.findUnique({
-      where: { cliqueId_userId: { cliqueId, userId } },
-      select: { cliqueId: true },
-    })
-    if (existingMembership) {
-      return NextResponse.json({ status: "already_member", cliqueId })
-    }
-
     // ── Link-type invite: create a membership request, require creator approval ──
     if (isLinkInvite) {
-      if (invite.status !== "PENDING") {
-        return NextResponse.json(
-          { error: `Invite is ${invite.status.toLowerCase()} and can no longer be used` },
-          { status: 409 }
-        )
-      }
-
-      if (invite.expiresAt < new Date()) {
-        return NextResponse.json({ error: "This invite link has expired" }, { status: 410 })
-      }
-
-      const [existingRequest, clique, requester] = await Promise.all([
+      // Fetch the membership pre-check (see below) alongside the other lookups this
+      // branch always needs, instead of awaiting it first — keeps the common
+      // first-time-request case down to a single round-trip.
+      const [existingMembership, existingRequest, clique, requester] = await Promise.all([
+        prisma.cliqueMember.findUnique({
+          where: { cliqueId_userId: { cliqueId, userId } },
+          select: { cliqueId: true },
+        }),
         prisma.cliqueMembershipRequest.findUnique({
           where: { cliqueId_userId: { cliqueId, userId } },
           select: { id: true, status: true },
@@ -132,6 +117,23 @@ export async function POST(
           select: { name: true, image: true },
         }),
       ])
+
+      // Already a member? Short-circuit regardless of the (reusable) link invite's
+      // status — takes priority over REVOKED/EXPIRED below.
+      if (existingMembership) {
+        return NextResponse.json({ status: "already_member", cliqueId })
+      }
+
+      if (invite.status !== "PENDING") {
+        return NextResponse.json(
+          { error: `Invite is ${invite.status.toLowerCase()} and can no longer be used` },
+          { status: 409 }
+        )
+      }
+
+      if (invite.expiresAt < new Date()) {
+        return NextResponse.json({ error: "This invite link has expired" }, { status: 410 })
+      }
 
       if (!clique) {
         return NextResponse.json({ error: "Clique not found" }, { status: 404 })
@@ -171,6 +173,16 @@ export async function POST(
     }
 
     // ── User-type invite: existing single-use direct-add behaviour ──
+    // Already a member? Short-circuit regardless of status — covers a user revisiting
+    // their link after already accepting it (or after it was later revoked/expired).
+    const existingMembership = await prisma.cliqueMember.findUnique({
+      where: { cliqueId_userId: { cliqueId, userId } },
+      select: { cliqueId: true },
+    })
+    if (existingMembership) {
+      return NextResponse.json({ status: "already_member", cliqueId })
+    }
+
     if (invite.status !== "PENDING") {
       return NextResponse.json(
         { error: `Invite is ${invite.status.toLowerCase()} and can no longer be accepted` },

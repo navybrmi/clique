@@ -199,4 +199,40 @@ describe("InvitePage", () => {
     )
     expect(screen.queryByText("Invite unavailable")).not.toBeInTheDocument()
   })
+
+  it("shows a 'Go to clique' link instead of 'Invite unavailable' when the user already belongs to the clique behind a REVOKED invite", async () => {
+    mockPrisma.cliqueInvite.findUnique.mockResolvedValue({
+      ...pendingInvite,
+      status: "REVOKED",
+    })
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } })
+    mockPrisma.cliqueMember.findUnique.mockResolvedValue({ cliqueId: "clique-1" })
+
+    render(await InvitePage({ params: Promise.resolve({ token: "tok123" }) }))
+
+    expect(screen.getByText(/you.re already a member of weekend crew/i)).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /go to clique/i })).toHaveAttribute(
+      "href",
+      "/?cliqueId=clique-1"
+    )
+    expect(screen.queryByText("Invite unavailable")).not.toBeInTheDocument()
+  })
+
+  it("shows a 'Go to clique' link instead of 'Invite unavailable' when the user already belongs to the clique behind an expired invite", async () => {
+    mockPrisma.cliqueInvite.findUnique.mockResolvedValue({
+      ...pendingInvite,
+      expiresAt: new Date(Date.now() - 1000),
+    })
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } })
+    mockPrisma.cliqueMember.findUnique.mockResolvedValue({ cliqueId: "clique-1" })
+
+    render(await InvitePage({ params: Promise.resolve({ token: "tok123" }) }))
+
+    expect(screen.getByText(/you.re already a member of weekend crew/i)).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /go to clique/i })).toHaveAttribute(
+      "href",
+      "/?cliqueId=clique-1"
+    )
+    expect(screen.queryByText("Invite unavailable")).not.toBeInTheDocument()
+  })
 })
