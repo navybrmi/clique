@@ -15,6 +15,9 @@ jest.mock("@/lib/prisma", () => ({
     cliqueInvite: {
       findUnique: jest.fn(),
     },
+    cliqueMember: {
+      findUnique: jest.fn(),
+    },
   },
 }))
 
@@ -36,6 +39,7 @@ import { auth } from "@/lib/auth"
 
 const mockPrisma = prisma as unknown as {
   cliqueInvite: { findUnique: jest.Mock }
+  cliqueMember: { findUnique: jest.Mock }
 }
 const mockAuth = auth as jest.Mock
 
@@ -51,6 +55,11 @@ const pendingInvite = {
 describe("InvitePage", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    // Default to "not a member" — jest.clearAllMocks() clears call history but not
+    // previously configured resolved values, so this must be set explicitly each run;
+    // individual tests override it when simulating an existing membership.
+    mockPrisma.cliqueMember.findUnique.mockResolvedValue(null)
+    mockAuth.mockResolvedValue(null)
   })
 
   it("shows an invalid invite message when the token is not found", async () => {
@@ -152,5 +161,42 @@ describe("InvitePage", () => {
     expect(screen.getByTestId("accept-btn")).toHaveAttribute("data-is-link-invite", "true")
     expect(screen.getByText("Request to join")).toBeInTheDocument()
     expect(screen.getByText(/request access/i)).toBeInTheDocument()
+  })
+
+  it("shows a 'Go to clique' link when the user already belongs to the clique behind a link invite", async () => {
+    mockPrisma.cliqueInvite.findUnique.mockResolvedValue({
+      ...pendingInvite,
+      email: null,
+    })
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } })
+    mockPrisma.cliqueMember.findUnique.mockResolvedValue({ cliqueId: "clique-1" })
+
+    render(await InvitePage({ params: Promise.resolve({ token: "tok123" }) }))
+
+    expect(screen.getByText(/you.re already a member of weekend crew/i)).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /go to clique/i })).toHaveAttribute(
+      "href",
+      "/?cliqueId=clique-1"
+    )
+    expect(screen.queryByTestId("accept-btn")).not.toBeInTheDocument()
+  })
+
+  it("shows a 'Go to clique' link instead of 'Invite unavailable' when the user already accepted a single-use invite", async () => {
+    mockPrisma.cliqueInvite.findUnique.mockResolvedValue({
+      ...pendingInvite,
+      status: "ACCEPTED",
+      email: "bob@example.com",
+    })
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } })
+    mockPrisma.cliqueMember.findUnique.mockResolvedValue({ cliqueId: "clique-1" })
+
+    render(await InvitePage({ params: Promise.resolve({ token: "tok123" }) }))
+
+    expect(screen.getByText(/you.re already a member of weekend crew/i)).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /go to clique/i })).toHaveAttribute(
+      "href",
+      "/?cliqueId=clique-1"
+    )
+    expect(screen.queryByText("Invite unavailable")).not.toBeInTheDocument()
   })
 })

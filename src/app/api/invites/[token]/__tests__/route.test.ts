@@ -34,6 +34,15 @@ jest.mock("@/lib/auth", () => ({
   auth: jest.fn(),
 }))
 
+// Default to "not already a member" for the shared pre-check in POST — individual tests
+// override this when they need to simulate an existing membership. Set here (rather than
+// relying on the mock's unconfigured default) because jest.clearAllMocks() clears call
+// history but not previously configured resolved values, which would otherwise leak between
+// tests once any test configures this mock.
+beforeEach(() => {
+  ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue(null)
+})
+
 // ──────────────────────────────────────────────────────────────────────────────
 // GET /api/invites/[token]
 // ──────────────────────────────────────────────────────────────────────────────
@@ -207,6 +216,43 @@ describe("POST /api/invites/[token]", () => {
 
     expect(res.status).toBe(409)
     expect(data.error).toContain("already a member")
+  })
+
+  it("should return already_member without starting a transaction when the user is already a member (pre-check)", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.cliqueInvite.findUnique as jest.Mock).mockResolvedValue({
+      id: "inv1",
+      cliqueId: "clique1",
+      status: "PENDING",
+      expiresAt: new Date("2027-01-01"),
+    })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1" })
+
+    const req = new NextRequest("http://localhost/api/invites/sometoken", { method: "POST" })
+    const res = await POST(req, { params: Promise.resolve({ token: "sometoken" }) })
+    const data = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(data).toEqual({ status: "already_member", cliqueId: "clique1" })
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+  })
+
+  it("should return already_member for an ACCEPTED single-use invite the user already holds", async () => {
+    ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
+    ;(prisma.cliqueInvite.findUnique as jest.Mock).mockResolvedValue({
+      id: "inv1",
+      cliqueId: "clique1",
+      status: "ACCEPTED",
+      expiresAt: new Date("2027-01-01"),
+    })
+    ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1" })
+
+    const req = new NextRequest("http://localhost/api/invites/acceptedtoken", { method: "POST" })
+    const res = await POST(req, { params: Promise.resolve({ token: "acceptedtoken" }) })
+    const data = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(data).toEqual({ status: "already_member", cliqueId: "clique1" })
   })
 
   it("should return 409 when clique already has 50 members", async () => {
@@ -416,20 +462,17 @@ describe("POST /api/invites/[token] — link-type invite", () => {
     expect(data.error).toContain("Clique not found")
   })
 
-  it("should return 409 when user is already a member via link invite", async () => {
+  it("should return already_member when user is already a member via link invite", async () => {
     ;(auth as jest.Mock).mockResolvedValue({ user: { id: "user1" } })
     ;(prisma.cliqueInvite.findUnique as jest.Mock).mockResolvedValue(linkInvite)
     ;(prisma.cliqueMember.findUnique as jest.Mock).mockResolvedValue({ cliqueId: "clique1" })
-    ;(prisma.cliqueMembershipRequest.findUnique as jest.Mock).mockResolvedValue(null)
-    ;(prisma.clique.findUnique as jest.Mock).mockResolvedValue({ name: "Movie Buffs", creatorId: "creator1" })
-    ;(prisma.user.findUnique as jest.Mock).mockResolvedValue({ name: "Alice", image: null })
 
     const req = new NextRequest("http://localhost/api/invites/linktoken", { method: "POST" })
     const res = await POST(req, { params: Promise.resolve({ token: "linktoken" }) })
     const data = await res.json()
 
-    expect(res.status).toBe(409)
-    expect(data.error).toContain("already a member")
+    expect(res.status).toBe(200)
+    expect(data).toEqual({ status: "already_member", cliqueId: "clique1" })
   })
 
   it("should return 200 with already_pending when a pending request already exists", async () => {

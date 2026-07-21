@@ -33,6 +33,29 @@ export default async function InvitePage({ params }: InvitePageProps) {
   }
 
   const cliqueName = invite.clique.name
+  const session = await auth()
+
+  if (session?.user?.id) {
+    const membership = await prisma.cliqueMember.findUnique({
+      where: { cliqueId_userId: { cliqueId: invite.cliqueId, userId: session.user.id } },
+      select: { cliqueId: true },
+    })
+
+    if (membership) {
+      return (
+        <main className="flex min-h-screen items-center justify-center p-6">
+          <div className="w-full max-w-sm space-y-4 text-center">
+            <h1 className="text-2xl font-bold">You&apos;re already a member of {cliqueName}</h1>
+            <p className="text-zinc-500">No need to accept again — jump back into the clique.</p>
+            <Button asChild size="lg" className="w-full">
+              <Link href={`/?cliqueId=${invite.cliqueId}`}>Go to clique</Link>
+            </Button>
+          </div>
+        </main>
+      )
+    }
+  }
+
   const isExpired = invite.expiresAt < new Date()
 
   if (invite.status !== "PENDING" || isExpired) {
@@ -55,8 +78,6 @@ export default async function InvitePage({ params }: InvitePageProps) {
       </main>
     )
   }
-
-  const session = await auth()
 
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
