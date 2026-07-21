@@ -858,13 +858,13 @@ export function AddRecommendationDialog({
 
               {/* Movie Suggestions */}
               {selectedCategory?.name === "MOVIE" && showSuggestions && movieSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 z-50 mt-1 border rounded-md bg-white shadow-lg max-h-48 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 z-50 mt-1 border rounded-md bg-white dark:bg-zinc-900 dark:border-zinc-800 shadow-lg max-h-48 overflow-y-auto">
                   {movieSuggestions.map((movie) => (
                     <button
                       key={movie.id}
                     type="button"
                     onClick={() => handleMovieSelect(movie)}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-start gap-3 border-b last:border-b-0"
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-start gap-3 border-b last:border-b-0 dark:border-zinc-800"
                   >
                     {movie.posterPath && (
                       <img
@@ -874,10 +874,10 @@ export function AddRecommendationDialog({
                       />
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{movie.title}</div>
-                      <div className="text-sm text-gray-600">{movie.year}</div>
+                      <div className="font-medium truncate text-zinc-900 dark:text-zinc-100">{movie.title}</div>
+                      <div className="text-sm text-gray-600 dark:text-zinc-400">{movie.year}</div>
                       {movie.genre && (
-                        <div className="text-xs text-gray-500 truncate">{movie.genre}</div>
+                        <div className="text-xs text-gray-500 dark:text-zinc-500 truncate">{movie.genre}</div>
                       )}
                     </div>
                   </button>
@@ -887,13 +887,13 @@ export function AddRecommendationDialog({
 
             {/* Restaurant Suggestions */}
             {selectedCategory?.name === "RESTAURANT" && showSuggestions && restaurantSuggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 z-50 mt-1 border rounded-md bg-white shadow-lg max-h-48 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 z-50 mt-1 border rounded-md bg-white dark:bg-zinc-900 dark:border-zinc-800 shadow-lg max-h-48 overflow-y-auto">
                 {restaurantSuggestions.map((restaurant) => (
                   <button
                     key={restaurant.id}
                     type="button"
                     onClick={() => handleRestaurantSelect(restaurant)}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-start gap-3 border-b last:border-b-0"
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-start gap-3 border-b last:border-b-0 dark:border-zinc-800"
                   >
                     {restaurant.imageUrl && (
                       <img
@@ -903,13 +903,13 @@ export function AddRecommendationDialog({
                       />
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{restaurant.name}</div>
-                      <div className="text-sm text-gray-600 truncate">{restaurant.location}</div>
+                      <div className="font-medium truncate text-zinc-900 dark:text-zinc-100">{restaurant.name}</div>
+                      <div className="text-sm text-gray-600 dark:text-zinc-400 truncate">{restaurant.location}</div>
                       {restaurant.categories && (
-                        <div className="text-xs text-gray-500 truncate">{restaurant.categories}</div>
+                        <div className="text-xs text-gray-500 dark:text-zinc-500 truncate">{restaurant.categories}</div>
                       )}
                       {restaurant.price && (
-                        <div className="text-xs text-gray-500">{restaurant.price}</div>
+                        <div className="text-xs text-gray-500 dark:text-zinc-500">{restaurant.price}</div>
                       )}
                     </div>
                   </button>
