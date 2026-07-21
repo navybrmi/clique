@@ -3,6 +3,19 @@
 All notable changes to Clique will be documented in this file.
 Each version links to its GitHub Release.
 
+## [v0.28.1](https://github.com/navybrmi/clique/releases/tag/v0.28.1) — 2026-07-21
+
+<!-- Release notes generated using configuration in .github/release.yml at v0.28.1 -->
+
+## What's Changed
+### Other Changes
+* fix(dark-mode): make movie/restaurant search suggestion text visible by @navybrmi in https://github.com/navybrmi/clique/pull/133
+
+
+**Full Changelog**: https://github.com/navybrmi/clique/compare/v0.28.0...v0.28.1
+
+---
+
 ## [v0.25.0](https://github.com/navybrmi/clique/releases/tag/v0.25.0) — 2026-07-05
 
 <!-- Release notes generated using configuration in .github/release.yml at v0.25.0 -->
