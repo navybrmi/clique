@@ -250,6 +250,9 @@ describe("AddRecommendationDialog", () => {
       if (!btns.length) throw new Error('No suggestion button')
       return btns[0]
     }, { timeout: 2000 })
+    // Title text must stay legible in dark mode (not hardcoded to a light-only color)
+    const titleEl = within(suggestion).getByText("Inception")
+    expect(titleEl.className).toContain("dark:text-zinc-100")
     fireEvent.click(suggestion)
     // Check that the Name input is populated with the movie title
     expect((screen.getByLabelText(/name/i) as HTMLInputElement).value).toBe("Inception")
@@ -422,6 +425,9 @@ describe("AddRecommendationDialog", () => {
       if (!btns.length) throw new Error('No suggestion button')
       return btns[0]
     }, { timeout: 2000 })
+    // Title text must stay legible in dark mode (not hardcoded to a light-only color)
+    const titleEl = within(suggestion).getByText("Test Pizza Place")
+    expect(titleEl.className).toContain("dark:text-zinc-100")
     fireEvent.click(suggestion)
     // Verify the details API was called with an AbortController signal
     await waitFor(() => {
