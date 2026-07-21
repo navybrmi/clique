@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -44,15 +45,20 @@ export function AcceptInviteButton({ token, isLinkInvite }: AcceptInviteButtonPr
 
   if (pending) {
     return (
-      <div className="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-center dark:border-zinc-800 dark:bg-zinc-900">
-        <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-          Request submitted!
-        </p>
-        <p className="text-sm text-zinc-500">
-          {isLinkInvite
-            ? "The clique creator will review your request. You'll be notified once it's approved."
-            : "Your request is pending approval."}
-        </p>
+      <div className="space-y-3">
+        <div className="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-center dark:border-zinc-800 dark:bg-zinc-900">
+          <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+            Request submitted!
+          </p>
+          <p className="text-sm text-zinc-500">
+            {isLinkInvite
+              ? "The clique creator will review your request. You'll be notified once it's approved."
+              : "Your request is pending approval."}
+          </p>
+        </div>
+        <Button asChild variant="outline" className="w-full">
+          <Link href="/">Browse the app while you wait</Link>
+        </Button>
       </div>
     )
   }
